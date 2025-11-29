@@ -1,6 +1,5 @@
 package com.wd.custapi.model;
 
-import com.wd.custapi.config.AppConfig;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -26,6 +25,9 @@ public class Project {
 
     @Column
     private Double progress = 0.0;
+
+    @Column
+    private String projectPhase;
 
     // Many-to-many is owned by CustomerUser via customer_project_members
     @ManyToMany(mappedBy = "projects")
@@ -55,6 +57,9 @@ public class Project {
 
     public Double getProgress() { return progress; }
     public void setProgress(Double progress) { this.progress = progress; }
+
+    public String getProjectPhase() { return projectPhase; }
+    public void setProjectPhase(String projectPhase) { this.projectPhase = projectPhase; }
 }
 
 

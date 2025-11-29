@@ -80,7 +80,7 @@ public class DashboardService {
     
     private DashboardDto.ProjectCard toProjectCard(Project project) {
         String status = determineProjectStatus(project);
-        return new DashboardDto.ProjectCard(
+        DashboardDto.ProjectCard card = new DashboardDto.ProjectCard(
             project.getId(),
             project.getName(),
             project.getCode(),
@@ -88,8 +88,10 @@ public class DashboardService {
             project.getStartDate(),
             project.getEndDate(),
             status,
-            project.getProgress() // Include progress field
+            project.getProgress(),
+            project.getProjectPhase()
         );
+        return card;
     }
     
     private String determineProjectStatus(Project project) {
@@ -169,6 +171,7 @@ public class DashboardService {
         details.setEndDate(project.getEndDate());
         details.setProgress(project.getProgress());
         details.setStatus(determineProjectStatus(project));
+        details.setPhase(project.getProjectPhase()); // Set project phase from database
         // Note: createdAt, updatedAt, state, createdBy, responsiblePerson, sqFeet, leadId 
         // are not in the current Project model - add them to the model if needed
         
