@@ -74,4 +74,25 @@ public class DashboardController {
         DashboardDto.ProjectDetails details = dashboardService.getProjectDetails(projectUuid, email);
         return ResponseEntity.ok(details);
     }
+
+    /**
+     * Update design package for a project
+     * PUT /api/dashboard/projects/{projectUuid}/design-package
+     * Request body: { "designPackage": "custom|premium|bespoke" }
+     */
+    @PutMapping("/projects/{projectUuid}/design-package")
+    public ResponseEntity<DashboardDto.ProjectDetails> updateDesignPackage(
+            @PathVariable String projectUuid,
+            @RequestBody java.util.Map<String, String> payload,
+            Authentication authentication) {
+        String email = authentication.getName();
+        String designPackage = payload.get("designPackage");
+
+        if (designPackage == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        DashboardDto.ProjectDetails details = dashboardService.updateDesignPackage(projectUuid, designPackage, email);
+        return ResponseEntity.ok(details);
+    }
 }

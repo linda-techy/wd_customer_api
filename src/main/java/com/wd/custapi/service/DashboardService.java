@@ -9,6 +9,7 @@ import com.wd.custapi.repository.ProjectDocumentRepository;
 import com.wd.custapi.repository.ProjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -192,6 +193,42 @@ public class DashboardService {
         details.setProgressData(progressData);
 
         return details;
+    }
+
+    // Update design package for a project
+    @Transactional
+    public DashboardDto.ProjectDetails updateDesignPackage(String projectUuid, String designPackage, String email) {
+        System.out.println("DEBUG: updateDesignPackage called");
+        System.out.println("DEBUG: projectUuid: " + projectUuid);
+        System.out.println("DEBUG: designPackage: " + designPackage);
+        System.out.println("DEBUG: email: " + email);
+
+        // Validate design package value
+        if (designPackage == null || designPackage.trim().isEmpty()) {
+            throw new RuntimeException("Design package cannot be empty");
+        }
+
+        String normalizedPackage = designPackage.trim().toLowerCase();
+        if (!normalizedPackage.equals("custom") && !normalizedPackage.equals("premium")
+                && !normalizedPackage.equals("bespoke")) {
+            throw new RuntimeException("Invalid design package. Must be: custom, premium, or bespoke");
+        }
+
+        // Get project (ensures user has access)
+        Project project = projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
+        if (project == null) {
+            System.out.println("DEBUG: Project not found for uuid: " + projectUuid + " and email: " + email);
+            throw new RuntimeException("Project not found or access denied");
+        }
+
+        // Update design package
+        System.out.println("DEBUG: Updating project " + project.getId() + " with package " + normalizedPackage);
+        project.setDesignPackage(normalizedPackage);
+        projectRepository.save(project);
+        System.out.println("DEBUG: Project saved");
+
+        // Return updated project details
+        return getProjectDetails(projectUuid, email);
     }
 
     private DashboardDto.ProjectDocumentSummary toDocumentSummary(ProjectDocument doc) {
