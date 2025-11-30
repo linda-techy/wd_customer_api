@@ -447,10 +447,10 @@ public class DashboardDto {
         private String phase;
         private String designPackage;
         private boolean isDesignAgreementSigned;
+        private Double sqFeet;
         private String state;
         private String createdBy;
         private String responsiblePerson;
-        private String sqFeet;
         private String leadId;
         private List<ProjectDocumentSummary> documents;
         private ProgressData progressData;
@@ -557,6 +557,14 @@ public class DashboardDto {
             isDesignAgreementSigned = designAgreementSigned;
         }
 
+        public Double getSqFeet() {
+            return sqFeet;
+        }
+
+        public void setSqFeet(Double sqFeet) {
+            this.sqFeet = sqFeet;
+        }
+
         public String getState() {
             return state;
         }
@@ -579,14 +587,6 @@ public class DashboardDto {
 
         public void setResponsiblePerson(String responsiblePerson) {
             this.responsiblePerson = responsiblePerson;
-        }
-
-        public String getSqFeet() {
-            return sqFeet;
-        }
-
-        public void setSqFeet(String sqFeet) {
-            this.sqFeet = sqFeet;
         }
 
         public String getLeadId() {

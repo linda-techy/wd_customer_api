@@ -18,8 +18,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class DashboardService {
+
+    private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
 
     @Autowired
     private CustomerUserRepository customerUserRepository;
@@ -28,7 +33,12 @@ public class DashboardService {
     private ProjectRepository projectRepository;
 
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
     private ProjectDocumentRepository projectDocumentRepository;
+
+    // ... existing code ...
 
     public DashboardDto getCustomerDashboard(String email) {
         try {
@@ -177,6 +187,17 @@ public class DashboardService {
         details.setDesignPackage(project.getDesignPackage());
         details.setDesignAgreementSigned(
                 project.getIsDesignAgreementSigned() != null ? project.getIsDesignAgreementSigned() : false);
+
+        try {
+            String sql = "SELECT sqfeet FROM customer_projects WHERE id = ?";
+            Double rawSqFeet = jdbcTemplate.queryForObject(sql, Double.class, project.getId());
+            logger.info("Project ID: {}, Entity SqFeet: {}, Raw DB SqFeet: {}", project.getId(), project.getSqFeet(),
+                    rawSqFeet);
+        } catch (Exception e) {
+            logger.error("Failed to query raw sqfeet", e);
+        }
+
+        details.setSqFeet(project.getSqFeet());
         details.setState(null); // State not in Project entity yet
         details.setCreatedBy(null); // CreatedBy not in Project entity yetPerson, sqFeet, leadId
         // are not in the current Project model - add them to the model if needed

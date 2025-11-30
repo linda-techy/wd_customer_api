@@ -91,6 +91,19 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
                 logger.warn("Could not set project_uuid to NOT NULL: {}", e.getMessage());
             }
 
+            // 5. Add sqfeet column if missing
+            String checkSqFeetSql = "SELECT count(*) FROM information_schema.columns " +
+                    "WHERE table_name = 'customer_projects' AND column_name = 'sqfeet'";
+            Integer sqFeetCount = jdbcTemplate.queryForObject(checkSqFeetSql, Integer.class);
+
+            if (sqFeetCount != null && sqFeetCount == 0) {
+                logger.info("Column 'sqfeet' missing. Adding it...");
+                jdbcTemplate.execute("ALTER TABLE customer_projects ADD COLUMN sqfeet DOUBLE PRECISION");
+                logger.info("Column 'sqfeet' added.");
+            } else {
+                logger.info("Column 'sqfeet' already exists.");
+            }
+
         } catch (Exception e) {
             logger.error("Database migration failed: ", e);
         }

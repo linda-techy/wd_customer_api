@@ -38,6 +38,9 @@ public class Project {
     @Column(name = "is_design_agreement_signed")
     private Boolean isDesignAgreementSigned = false;
 
+    @Column(name = "sqfeet")
+    private Double sqFeet;
+
     // Many-to-many is owned by CustomerUser via customer_project_members
     @ManyToMany(mappedBy = "projects")
     private java.util.Set<CustomerUser> customers;
@@ -137,5 +140,13 @@ public class Project {
 
     public void setIsDesignAgreementSigned(Boolean isDesignAgreementSigned) {
         this.isDesignAgreementSigned = isDesignAgreementSigned;
+    }
+
+    public Double getSqFeet() {
+        return sqFeet;
+    }
+
+    public void setSqFeet(Double sqFeet) {
+        this.sqFeet = sqFeet;
     }
 }
