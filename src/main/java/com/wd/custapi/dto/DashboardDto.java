@@ -181,29 +181,37 @@ public class DashboardDto {
 
     public static class ProjectCard {
         private Long id;
+        private String projectUuid;
         private String name;
         private String code;
         private String location;
-        private LocalDate startDate;
-        private LocalDate endDate;
+        private String startDate;
+        private String endDate;
         private String status;
         private Double progress;
-        private String phase;
+        private String projectPhase;
+        private String designPackage;
+        private boolean isDesignAgreementSigned;
 
         public ProjectCard() {
         }
 
-        public ProjectCard(Long id, String name, String code, String location, LocalDate startDate, LocalDate endDate,
-                String status, Double progress, String phase) {
+        public ProjectCard(Long id, String projectUuid, String name, String code, String location, LocalDate startDate,
+                LocalDate endDate,
+                String status, Double progress, String projectPhase, String designPackage,
+                boolean isDesignAgreementSigned) {
             this.id = id;
+            this.projectUuid = projectUuid;
             this.name = name;
             this.code = code;
             this.location = location;
-            this.startDate = startDate;
-            this.endDate = endDate;
+            this.startDate = startDate != null ? startDate.toString() : null;
+            this.endDate = endDate != null ? endDate.toString() : null;
             this.status = status;
             this.progress = progress;
-            this.phase = phase;
+            this.projectPhase = projectPhase;
+            this.designPackage = designPackage;
+            this.isDesignAgreementSigned = isDesignAgreementSigned;
         }
 
         // Getters and Setters
@@ -213,6 +221,14 @@ public class DashboardDto {
 
         public void setId(Long id) {
             this.id = id;
+        }
+
+        public String getProjectUuid() {
+            return projectUuid;
+        }
+
+        public void setProjectUuid(String projectUuid) {
+            this.projectUuid = projectUuid;
         }
 
         public String getName() {
@@ -239,19 +255,19 @@ public class DashboardDto {
             this.location = location;
         }
 
-        public LocalDate getStartDate() {
+        public String getStartDate() {
             return startDate;
         }
 
-        public void setStartDate(LocalDate startDate) {
+        public void setStartDate(String startDate) {
             this.startDate = startDate;
         }
 
-        public LocalDate getEndDate() {
+        public String getEndDate() {
             return endDate;
         }
 
-        public void setEndDate(LocalDate endDate) {
+        public void setEndDate(String endDate) {
             this.endDate = endDate;
         }
 
@@ -271,12 +287,28 @@ public class DashboardDto {
             this.progress = progress;
         }
 
-        public String getPhase() {
-            return phase;
+        public String getProjectPhase() {
+            return projectPhase;
         }
 
-        public void setPhase(String phase) {
-            this.phase = phase;
+        public void setProjectPhase(String projectPhase) {
+            this.projectPhase = projectPhase;
+        }
+
+        public String getDesignPackage() {
+            return designPackage;
+        }
+
+        public void setDesignPackage(String designPackage) {
+            this.designPackage = designPackage;
+        }
+
+        public boolean isDesignAgreementSigned() {
+            return isDesignAgreementSigned;
+        }
+
+        public void setDesignAgreementSigned(boolean designAgreementSigned) {
+            this.isDesignAgreementSigned = designAgreementSigned;
         }
     }
 
@@ -404,21 +436,22 @@ public class DashboardDto {
     // Project Details DTO - Used when viewing a single project
     public static class ProjectDetails {
         private Long id;
+        private String projectUuid;
         private String name;
         private String code;
         private String location;
-        private LocalDate startDate;
-        private LocalDate endDate;
-        private LocalDate createdAt;
-        private LocalDate updatedAt;
-        private Double progress;
+        private String startDate;
+        private String endDate;
         private String status;
+        private Double progress;
         private String phase;
+        private String designPackage;
+        private boolean isDesignAgreementSigned;
         private String state;
         private String createdBy;
         private String responsiblePerson;
-        private Double sqFeet;
-        private Double leadId;
+        private String sqFeet;
+        private String leadId;
         private List<ProjectDocumentSummary> documents;
         private ProgressData progressData;
 
@@ -432,6 +465,14 @@ public class DashboardDto {
 
         public void setId(Long id) {
             this.id = id;
+        }
+
+        public String getProjectUuid() {
+            return projectUuid;
+        }
+
+        public void setProjectUuid(String projectUuid) {
+            this.projectUuid = projectUuid;
         }
 
         public String getName() {
@@ -458,44 +499,20 @@ public class DashboardDto {
             this.location = location;
         }
 
-        public LocalDate getStartDate() {
+        public String getStartDate() {
             return startDate;
         }
 
-        public void setStartDate(LocalDate startDate) {
+        public void setStartDate(String startDate) {
             this.startDate = startDate;
         }
 
-        public LocalDate getEndDate() {
+        public String getEndDate() {
             return endDate;
         }
 
-        public void setEndDate(LocalDate endDate) {
+        public void setEndDate(String endDate) {
             this.endDate = endDate;
-        }
-
-        public LocalDate getCreatedAt() {
-            return createdAt;
-        }
-
-        public void setCreatedAt(LocalDate createdAt) {
-            this.createdAt = createdAt;
-        }
-
-        public LocalDate getUpdatedAt() {
-            return updatedAt;
-        }
-
-        public void setUpdatedAt(LocalDate updatedAt) {
-            this.updatedAt = updatedAt;
-        }
-
-        public Double getProgress() {
-            return progress;
-        }
-
-        public void setProgress(Double progress) {
-            this.progress = progress;
         }
 
         public String getStatus() {
@@ -506,6 +523,14 @@ public class DashboardDto {
             this.status = status;
         }
 
+        public Double getProgress() {
+            return progress;
+        }
+
+        public void setProgress(Double progress) {
+            this.progress = progress;
+        }
+
         @JsonProperty("projectPhase")
         public String getPhase() {
             return phase;
@@ -513,6 +538,23 @@ public class DashboardDto {
 
         public void setPhase(String phase) {
             this.phase = phase;
+        }
+
+        public String getDesignPackage() {
+            return designPackage;
+        }
+
+        public void setDesignPackage(String designPackage) {
+            this.designPackage = designPackage;
+        }
+
+        @JsonProperty("isDesignAgreementSigned")
+        public boolean isDesignAgreementSigned() {
+            return isDesignAgreementSigned;
+        }
+
+        public void setDesignAgreementSigned(boolean designAgreementSigned) {
+            isDesignAgreementSigned = designAgreementSigned;
         }
 
         public String getState() {
@@ -539,19 +581,19 @@ public class DashboardDto {
             this.responsiblePerson = responsiblePerson;
         }
 
-        public Double getSqFeet() {
+        public String getSqFeet() {
             return sqFeet;
         }
 
-        public void setSqFeet(Double sqFeet) {
+        public void setSqFeet(String sqFeet) {
             this.sqFeet = sqFeet;
         }
 
-        public Double getLeadId() {
+        public String getLeadId() {
             return leadId;
         }
 
-        public void setLeadId(Double leadId) {
+        public void setLeadId(String leadId) {
             this.leadId = leadId;
         }
 
@@ -569,6 +611,15 @@ public class DashboardDto {
 
         public void setProgressData(ProgressData progressData) {
             this.progressData = progressData;
+        }
+
+        // Helper setters for LocalDate conversion
+        public void setStartDate(LocalDate date) {
+            this.startDate = date != null ? date.toString() : null;
+        }
+
+        public void setEndDate(LocalDate date) {
+            this.endDate = date != null ? date.toString() : null;
         }
     }
 

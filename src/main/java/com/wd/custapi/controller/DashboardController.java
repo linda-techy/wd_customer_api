@@ -19,10 +19,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
-    
+
     @Autowired
     private DashboardService dashboardService;
-    
+
     /**
      * Get full dashboard with summary, stats, and recent activities
      * GET /api/dashboard
@@ -33,7 +33,7 @@ public class DashboardController {
         DashboardDto dashboard = dashboardService.getCustomerDashboard(email);
         return ResponseEntity.ok(dashboard);
     }
-    
+
     /**
      * Get recent N projects (default 5)
      * GET /api/dashboard/recent-projects?limit=5
@@ -46,7 +46,7 @@ public class DashboardController {
         List<DashboardDto.ProjectCard> projects = dashboardService.getRecentProjects(email, limit);
         return ResponseEntity.ok(projects);
     }
-    
+
     /**
      * Search projects by name, code, or location
      * GET /api/dashboard/search-projects?q=villa
@@ -60,18 +60,18 @@ public class DashboardController {
         List<DashboardDto.ProjectCard> projects = dashboardService.searchProjects(email, q);
         return ResponseEntity.ok(projects);
     }
-    
+
     /**
      * Get detailed project information including progress and documents
      * GET /api/dashboard/projects/{projectId}
      * Returns: Project details, progress data, progress chart data, and documents
      */
-    @GetMapping("/projects/{projectId}")
+    @GetMapping("/projects/{projectUuid}")
     public ResponseEntity<DashboardDto.ProjectDetails> getProjectDetails(
-            @PathVariable Long projectId,
+            @PathVariable String projectUuid,
             Authentication authentication) {
         String email = authentication.getName();
-        DashboardDto.ProjectDetails details = dashboardService.getProjectDetails(projectId, email);
+        DashboardDto.ProjectDetails details = dashboardService.getProjectDetails(projectUuid, email);
         return ResponseEntity.ok(details);
     }
 }
