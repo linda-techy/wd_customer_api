@@ -1,7 +1,6 @@
 package com.wd.custapi.controller;
 
 import com.wd.custapi.dto.ProjectModuleDtos.*;
-import com.wd.custapi.security.JwtAuthenticationFilter;
 import com.wd.custapi.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

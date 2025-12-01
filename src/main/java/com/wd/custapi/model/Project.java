@@ -29,7 +29,7 @@ public class Project {
     @Column
     private Double progress = 0.0;
 
-    @Column
+    @Column(name = "project_phase")
     private String projectPhase;
 
     @Column(name = "design_package")
