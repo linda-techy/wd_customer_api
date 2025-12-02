@@ -41,6 +41,9 @@ public class Project {
     @Column(name = "sqfeet")
     private Double sqFeet;
 
+    @Column(name = "design_progress")
+    private Double designProgress;
+
     // Many-to-many is owned by CustomerUser via customer_project_members
     @ManyToMany(mappedBy = "projects")
     private java.util.Set<CustomerUser> customers;
@@ -148,5 +151,13 @@ public class Project {
 
     public void setSqFeet(Double sqFeet) {
         this.sqFeet = sqFeet;
+    }
+
+    public Double getDesignProgress() {
+        return designProgress;
+    }
+
+    public void setDesignProgress(Double progress) {
+        this.designProgress = designProgress;
     }
 }

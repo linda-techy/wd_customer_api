@@ -90,6 +90,7 @@ public class DashboardService {
 
     private DashboardDto.ProjectCard toProjectCard(Project project) {
         String status = determineProjectStatus(project);
+
         DashboardDto.ProjectCard card = new DashboardDto.ProjectCard(
                 project.getId(),
                 project.getProjectUuid(),
@@ -102,7 +103,11 @@ public class DashboardService {
                 project.getProgress(),
                 project.getProjectPhase(),
                 project.getDesignPackage(),
-                project.getIsDesignAgreementSigned() != null ? project.getIsDesignAgreementSigned() : false);
+                project.getIsDesignAgreementSigned() != null
+                        ? project.getIsDesignAgreementSigned()
+                        : false,
+                project.getDesignProgress());
+
         return card;
     }
 

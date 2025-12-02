@@ -192,6 +192,7 @@ public class DashboardDto {
         private String projectPhase;
         private String designPackage;
         private boolean isDesignAgreementSigned;
+        private Double designProgress;
 
         public ProjectCard() {
         }
@@ -199,7 +200,7 @@ public class DashboardDto {
         public ProjectCard(Long id, String projectUuid, String name, String code, String location, LocalDate startDate,
                 LocalDate endDate,
                 String status, Double progress, String projectPhase, String designPackage,
-                boolean isDesignAgreementSigned) {
+                boolean isDesignAgreementSigned, Double designProgress) {
             this.id = id;
             this.projectUuid = projectUuid;
             this.name = name;
@@ -212,6 +213,7 @@ public class DashboardDto {
             this.projectPhase = projectPhase;
             this.designPackage = designPackage;
             this.isDesignAgreementSigned = isDesignAgreementSigned;
+            this.designProgress = designProgress;
         }
 
         // Getters and Setters
@@ -309,6 +311,14 @@ public class DashboardDto {
 
         public void setDesignAgreementSigned(boolean designAgreementSigned) {
             this.isDesignAgreementSigned = designAgreementSigned;
+        }
+
+        public Double getDesignProgress() {
+            return designProgress;
+        }
+
+        public void setDesignProgress(Double designProgress) {
+            this.designProgress = designProgress;
         }
     }
 
