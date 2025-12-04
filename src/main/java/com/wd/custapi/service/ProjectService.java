@@ -15,12 +15,32 @@ public class ProjectService {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private com.wd.custapi.repository.DesignStepRepository designStepRepository;
+
+    @Autowired
+    private com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
+
     public List<ProjectDtos.ProjectCard> getProjectsForCustomerEmail(String email) {
         return projectRepository.findAllByCustomerEmail(email).stream().map(this::toCard).collect(Collectors.toList());
     }
 
     public long getProjectCountForCustomer(Long customerId) {
         return projectRepository.countByCustomerId(customerId);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void initializeProjectDesignSteps(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+
+        List<com.wd.custapi.model.DesignStep> steps = designStepRepository.findAll();
+
+        for (com.wd.custapi.model.DesignStep step : steps) {
+            com.wd.custapi.model.ProjectDesignStep projectStep = new com.wd.custapi.model.ProjectDesignStep(project,
+                    step);
+            projectDesignStepRepository.save(projectStep);
+        }
     }
 
     private ProjectDtos.ProjectCard toCard(Project project) {
@@ -34,5 +54,3 @@ public class ProjectService {
         return card;
     }
 }
-
-

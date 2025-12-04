@@ -458,6 +458,7 @@ public class DashboardDto {
         private String designPackage;
         private boolean isDesignAgreementSigned;
         private Double sqFeet;
+        private Double designProgress;
         private String state;
         private String createdBy;
         private String responsiblePerson;
@@ -573,6 +574,14 @@ public class DashboardDto {
 
         public void setSqFeet(Double sqFeet) {
             this.sqFeet = sqFeet;
+        }
+
+        public Double getDesignProgress() {
+            return designProgress;
+        }
+
+        public void setDesignProgress(Double designProgress) {
+            this.designProgress = designProgress;
         }
 
         public String getState() {

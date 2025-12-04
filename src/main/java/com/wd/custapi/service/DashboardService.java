@@ -38,6 +38,9 @@ public class DashboardService {
     @Autowired
     private ProjectDocumentRepository projectDocumentRepository;
 
+    @Autowired
+    private com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
+
     // ... existing code ...
 
     public DashboardDto getCustomerDashboard(String email) {
@@ -91,6 +94,11 @@ public class DashboardService {
     private DashboardDto.ProjectCard toProjectCard(Project project) {
         String status = determineProjectStatus(project);
 
+        Double calculatedDesignProgress = projectDesignStepRepository.calculateDesignProgress(project.getId());
+        if (calculatedDesignProgress == null) {
+            calculatedDesignProgress = 0.0;
+        }
+
         DashboardDto.ProjectCard card = new DashboardDto.ProjectCard(
                 project.getId(),
                 project.getProjectUuid(),
@@ -106,7 +114,7 @@ public class DashboardService {
                 project.getIsDesignAgreementSigned() != null
                         ? project.getIsDesignAgreementSigned()
                         : false,
-                project.getDesignProgress());
+                calculatedDesignProgress);
 
         return card;
     }
@@ -192,6 +200,12 @@ public class DashboardService {
         details.setDesignPackage(project.getDesignPackage());
         details.setDesignAgreementSigned(
                 project.getIsDesignAgreementSigned() != null ? project.getIsDesignAgreementSigned() : false);
+
+        Double calculatedDesignProgress = projectDesignStepRepository.calculateDesignProgress(project.getId());
+        if (calculatedDesignProgress == null) {
+            calculatedDesignProgress = 0.0;
+        }
+        details.setDesignProgress(calculatedDesignProgress);
 
         try {
             String sql = "SELECT sqfeet FROM customer_projects WHERE id = ?";
