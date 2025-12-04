@@ -196,7 +196,7 @@ public class DashboardService {
         // Build project details
         DashboardDto.ProjectDetails details = new DashboardDto.ProjectDetails();
         details.setId(project.getId());
-        details.setProjectUuid(project.getProjectUuid());
+        details.setProjectUuid(project.getProjectUuid().toString());
         details.setName(project.getName());
         details.setCode(project.getCode());
         details.setLocation(project.getLocation());
@@ -244,12 +244,21 @@ public class DashboardService {
     }
 
     // Update design package for a project
+    // Update design package for a project
     @Transactional
-    public DashboardDto.ProjectDetails updateDesignPackage(String projectUuid, String designPackage, String email) {
+    public DashboardDto.ProjectDetails updateDesignPackage(String projectUuidStr, String designPackage, String email) {
         System.out.println("DEBUG: updateDesignPackage called");
-        System.out.println("DEBUG: projectUuid: " + projectUuid);
+        System.out.println("DEBUG: projectUuid: " + projectUuidStr);
         System.out.println("DEBUG: designPackage: " + designPackage);
         System.out.println("DEBUG: email: " + email);
+
+        // Parse UUID
+        java.util.UUID projectUuid;
+        try {
+            projectUuid = java.util.UUID.fromString(projectUuidStr);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid project UUID format: " + projectUuidStr);
+        }
 
         // Validate design package value
         if (designPackage == null || designPackage.trim().isEmpty()) {
@@ -276,7 +285,7 @@ public class DashboardService {
         System.out.println("DEBUG: Project saved");
 
         // Return updated project details
-        return getProjectDetails(projectUuid, email);
+        return getProjectDetails(projectUuidStr, email);
     }
 
     private DashboardDto.ProjectDocumentSummary toDocumentSummary(ProjectDocument doc) {
