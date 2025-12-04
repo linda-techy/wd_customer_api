@@ -53,6 +53,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "INNER JOIN customer_project_members cpm ON p.id = cpm.project_id " +
                         "INNER JOIN customer_users c ON cpm.customer_id = c.id " +
                         "WHERE p.project_uuid = :projectUuid AND c.email = :email", nativeQuery = true)
-        Project findByProjectUuidAndCustomerEmail(@Param("projectUuid") String projectUuid,
+        Project findByProjectUuidAndCustomerEmail(@Param("projectUuid") java.util.UUID projectUuid,
                         @Param("email") String email);
 }

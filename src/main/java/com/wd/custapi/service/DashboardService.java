@@ -101,7 +101,7 @@ public class DashboardService {
 
         DashboardDto.ProjectCard card = new DashboardDto.ProjectCard(
                 project.getId(),
-                project.getProjectUuid(),
+                project.getProjectUuid().toString(),
                 project.getName(),
                 project.getCode(),
                 project.getLocation(),
@@ -178,7 +178,15 @@ public class DashboardService {
     }
 
     // Get detailed project information including progress and documents
-    public DashboardDto.ProjectDetails getProjectDetails(String projectUuid, String email) {
+    public DashboardDto.ProjectDetails getProjectDetails(String projectUuidStr, String email) {
+        // Parse UUID
+        java.util.UUID projectUuid;
+        try {
+            projectUuid = java.util.UUID.fromString(projectUuidStr);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid project UUID format: " + projectUuidStr);
+        }
+
         // Get project (ensures user has access to this project)
         Project project = projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
         if (project == null) {

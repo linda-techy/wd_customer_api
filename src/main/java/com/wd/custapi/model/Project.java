@@ -13,7 +13,7 @@ public class Project {
     private Long id;
 
     @Column(name = "project_uuid", nullable = false, unique = true)
-    private String projectUuid = java.util.UUID.randomUUID().toString();
+    private java.util.UUID projectUuid = java.util.UUID.randomUUID();
 
     @Column(nullable = false)
     private String name;
@@ -65,11 +65,11 @@ public class Project {
         this.id = id;
     }
 
-    public String getProjectUuid() {
+    public java.util.UUID getProjectUuid() {
         return projectUuid;
     }
 
-    public void setProjectUuid(String projectUuid) {
+    public void setProjectUuid(java.util.UUID projectUuid) {
         this.projectUuid = projectUuid;
     }
 
