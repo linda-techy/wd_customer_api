@@ -17,7 +17,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- Link projects to customers
-INSERT INTO customer_project_members (customer_id, project_id)
+INSERT INTO project_members (customer_id, project_id)
 SELECT 
     u.id,
     p.id

@@ -44,7 +44,7 @@ public class Project {
     @Column(name = "design_progress")
     private Double designProgress;
 
-    // Many-to-many is owned by CustomerUser via customer_project_members
+    // Many-to-many is owned by CustomerUser via project_members
     @ManyToMany(mappedBy = "projects")
     private java.util.Set<CustomerUser> customers;
 
