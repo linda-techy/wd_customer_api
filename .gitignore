@@ -36,3 +36,9 @@ build/
 logs/
 *.log
 
+### Environment files (keep .env.example) ###
+.env
+.env.staging
+.env.production
+!.env.example
+
