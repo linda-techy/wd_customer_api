@@ -55,4 +55,21 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "WHERE p.project_uuid = :projectUuid AND c.email = :email", nativeQuery = true)
         Project findByProjectUuidAndCustomerEmail(@Param("projectUuid") java.util.UUID projectUuid,
                         @Param("email") String email);
+
+        // --- Admin: see all projects (no project_members filter) ---
+        @Query(value = "SELECT p.* FROM customer_projects p ORDER BY p.id DESC", nativeQuery = true)
+        List<Project> findAllForAdmin();
+
+        @Query(value = "SELECT p.* FROM customer_projects p ORDER BY p.id DESC LIMIT :limit", nativeQuery = true)
+        List<Project> findRecentForAdmin(@Param("limit") int limit);
+
+        @Query(value = "SELECT p.* FROM customer_projects p " +
+                        "WHERE (LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+                        "OR LOWER(p.code) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+                        "OR LOWER(p.location) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+                        "ORDER BY p.id DESC", nativeQuery = true)
+        List<Project> searchForAdmin(@Param("searchTerm") String searchTerm);
+
+        @Query(value = "SELECT p.* FROM customer_projects p WHERE p.project_uuid = :projectUuid", nativeQuery = true)
+        Project findByProjectUuid(@Param("projectUuid") java.util.UUID projectUuid);
 }

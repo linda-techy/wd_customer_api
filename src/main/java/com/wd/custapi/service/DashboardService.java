@@ -48,12 +48,18 @@ public class DashboardService {
             CustomerUser user = customerUserRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Customer user not found: " + email));
 
+            boolean isAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getName());
             List<Project> userProjects;
             try {
-                userProjects = projectRepository.findAllByCustomerEmail(email);
-                System.out.println("Found " + userProjects.size() + " projects for user: " + email);
+                if (isAdmin) {
+                    userProjects = projectRepository.findAllForAdmin();
+                    logger.info("Admin user {}: found {} projects (all customer_projects)", email, userProjects.size());
+                } else {
+                    userProjects = projectRepository.findAllByCustomerEmail(email);
+                    logger.info("Found {} projects for user: {}", userProjects.size(), email);
+                }
             } catch (Exception e) {
-                System.err.println("Error fetching projects for " + email + ": " + e.getMessage());
+                logger.error("Error fetching projects for {}: {}", email, e.getMessage());
                 userProjects = new ArrayList<>();
             }
 
@@ -156,9 +162,17 @@ public class DashboardService {
         );
     }
 
+    private boolean isAdminByEmail(String email) {
+        return customerUserRepository.findByEmail(email)
+                .map(u -> u.getRole() != null && "ADMIN".equalsIgnoreCase(u.getRole().getName()))
+                .orElse(false);
+    }
+
     // Get recent N projects for dashboard
     public List<DashboardDto.ProjectCard> getRecentProjects(String email, int limit) {
-        List<Project> projects = projectRepository.findRecentByCustomerEmail(email, limit);
+        List<Project> projects = isAdminByEmail(email)
+                ? projectRepository.findRecentForAdmin(limit)
+                : projectRepository.findRecentByCustomerEmail(email, limit);
         return projects.stream()
                 .map(this::toProjectCard)
                 .collect(Collectors.toList());
@@ -167,11 +181,12 @@ public class DashboardService {
     // Search projects by name, code, or location
     public List<DashboardDto.ProjectCard> searchProjects(String email, String searchTerm) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            // If no search term, return recent 5 projects
             return getRecentProjects(email, 5);
         }
-
-        List<Project> projects = projectRepository.searchByCustomerEmailAndTerm(email, searchTerm.trim());
+        String term = searchTerm.trim();
+        List<Project> projects = isAdminByEmail(email)
+                ? projectRepository.searchForAdmin(term)
+                : projectRepository.searchByCustomerEmailAndTerm(email, term);
         return projects.stream()
                 .map(this::toProjectCard)
                 .collect(Collectors.toList());
@@ -187,8 +202,13 @@ public class DashboardService {
             throw new RuntimeException("Invalid project UUID format: " + projectUuidStr);
         }
 
-        // Get project (ensures user has access to this project)
-        Project project = projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
+        // Get project (admin can access any; others must be in project_members)
+        Project project;
+        if (isAdminByEmail(email)) {
+            project = projectRepository.findByProjectUuid(projectUuid);
+        } else {
+            project = projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
+        }
         if (project == null) {
             throw new RuntimeException("Project not found or access denied");
         }
@@ -247,11 +267,6 @@ public class DashboardService {
     // Update design package for a project
     @Transactional
     public DashboardDto.ProjectDetails updateDesignPackage(String projectUuidStr, String designPackage, String email) {
-        System.out.println("DEBUG: updateDesignPackage called");
-        System.out.println("DEBUG: projectUuid: " + projectUuidStr);
-        System.out.println("DEBUG: designPackage: " + designPackage);
-        System.out.println("DEBUG: email: " + email);
-
         // Parse UUID
         java.util.UUID projectUuid;
         try {
@@ -271,18 +286,21 @@ public class DashboardService {
             throw new RuntimeException("Invalid design package. Must be: custom, premium, or bespoke");
         }
 
-        // Get project (ensures user has access)
-        Project project = projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
+        // Get project (admin can access any; others must be in project_members)
+        Project project;
+        if (isAdminByEmail(email)) {
+            project = projectRepository.findByProjectUuid(projectUuid);
+        } else {
+            project = projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
+        }
         if (project == null) {
-            System.out.println("DEBUG: Project not found for uuid: " + projectUuid + " and email: " + email);
+            logger.warn("Project not found for uuid: {} and email: {}", projectUuid, email);
             throw new RuntimeException("Project not found or access denied");
         }
 
         // Update design package
-        System.out.println("DEBUG: Updating project " + project.getId() + " with package " + normalizedPackage);
         project.setDesignPackage(normalizedPackage);
         projectRepository.save(project);
-        System.out.println("DEBUG: Project saved");
 
         // Return updated project details
         return getProjectDetails(projectUuidStr, email);
