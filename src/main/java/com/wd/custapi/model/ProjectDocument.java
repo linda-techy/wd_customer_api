@@ -12,7 +12,7 @@ public class ProjectDocument {
     private Long id;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = false)
+    @JoinColumn(name = "project_id", nullable = true)
     private Project project;
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,10 +32,10 @@ public class ProjectDocument {
     private String fileType;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploaded_by_id", nullable = false)
+    @JoinColumn(name = "uploaded_by_id", nullable = true)
     private CustomerUser uploadedBy;
     
-    @Column(name = "upload_date", nullable = false)
+    @Column(name = "upload_date", nullable = true)
     private LocalDateTime uploadDate = LocalDateTime.now();
     
     @Column(columnDefinition = "TEXT")

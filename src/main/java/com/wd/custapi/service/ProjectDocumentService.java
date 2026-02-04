@@ -91,19 +91,24 @@ public class ProjectDocumentService {
     private ProjectDocumentDto toDto(ProjectDocument doc) {
         // Generate full download URL - goes through authenticated /api/storage/ endpoint
         String downloadUrl = "https://cust-api.walldotbuilders.com/api/storage/" + doc.getFilePath();
+        Long projectId = doc.getProject() != null ? doc.getProject().getId() : null;
+        Long uploadedById = doc.getUploadedBy() != null ? doc.getUploadedBy().getId() : null;
+        String uploadedByName = doc.getUploadedBy() != null
+            ? doc.getUploadedBy().getFirstName() + " " + doc.getUploadedBy().getLastName()
+            : "Unknown";
         
         return new ProjectDocumentDto(
             doc.getId(),
-            doc.getProject().getId(),
-            doc.getCategory().getId(),
-            doc.getCategory().getName(),
+            projectId,
+            doc.getCategory() != null ? doc.getCategory().getId() : null,
+            doc.getCategory() != null ? doc.getCategory().getName() : "Uncategorized",
             doc.getFilename(),
             doc.getFilePath(),
             downloadUrl,  // Full URL for downloading/viewing
             doc.getFileSize(),
             doc.getFileType(),
-            doc.getUploadedBy().getId(),
-            doc.getUploadedBy().getFirstName() + " " + doc.getUploadedBy().getLastName(),
+            uploadedById,
+            uploadedByName,
             doc.getUploadDate(),
             doc.getDescription(),
             doc.getVersion(),
