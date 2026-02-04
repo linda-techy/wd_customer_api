@@ -12,14 +12,16 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProjectDocumentService {
-    
+
+    private static final String REFERENCE_TYPE_PROJECT = "PROJECT";
+
     private final ProjectDocumentRepository documentRepository;
     private final ProjectRepository projectRepository;
     private final DocumentCategoryRepository categoryRepository;
     private final CustomerUserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final ActivityFeedService activityFeedService;
-    
+
     public ProjectDocumentService(ProjectDocumentRepository documentRepository,
                                   ProjectRepository projectRepository,
                                   DocumentCategoryRepository categoryRepository,
@@ -33,87 +35,82 @@ public class ProjectDocumentService {
         this.fileStorageService = fileStorageService;
         this.activityFeedService = activityFeedService;
     }
-    
+
     @Transactional
-    public ProjectDocumentDto uploadDocument(Long projectId, MultipartFile file, 
+    public ProjectDocumentDto uploadDocument(Long projectId, MultipartFile file,
                                              DocumentUploadRequest request, Long userId) {
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new RuntimeException("Project not found"));
-        
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
         DocumentCategory category = categoryRepository.findById(request.categoryId())
-            .orElseThrow(() -> new RuntimeException("Category not found"));
-        
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
         CustomerUser user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        // Store file
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         String filePath = fileStorageService.storeFile(file, "projects/" + projectId + "/documents");
-        
+
         ProjectDocument document = new ProjectDocument();
-        document.setProject(project);
+        document.setReferenceId(project.getId());
+        document.setReferenceType(REFERENCE_TYPE_PROJECT);
         document.setCategory(category);
         document.setFilename(file.getOriginalFilename());
         document.setFilePath(filePath);
         document.setFileSize(file.getSize());
         document.setFileType(file.getContentType());
-        document.setUploadedBy(user);
+        document.setCreatedBy(user);
+        document.setCreatedAt(java.time.LocalDateTime.now());
         document.setDescription(request.description());
-        
+
         document = documentRepository.save(document);
-        
-        // Create activity feed
-        activityFeedService.createActivity(projectId, "DOCUMENT_UPLOADED", 
-            "Document uploaded: " + file.getOriginalFilename(), null, userId);
-        
+
+        activityFeedService.createActivity(projectId, "DOCUMENT_UPLOADED",
+                "Document uploaded: " + file.getOriginalFilename(), null, userId);
+
         return toDto(document);
     }
-    
+
     public List<ProjectDocumentDto> getProjectDocuments(Long projectId, Long categoryId) {
         List<ProjectDocument> documents;
         if (categoryId != null) {
-            // Get ALL documents for the project and category regardless of isActive status
-            // This ensures documents are returned even if isActive is false or NULL
-            documents = documentRepository.findAllByProjectIdAndCategoryId(projectId, categoryId);
+            documents = documentRepository.findAllByReferenceIdAndReferenceTypeAndCategoryId(
+                    projectId, REFERENCE_TYPE_PROJECT, categoryId);
         } else {
-            // Get ALL documents for the project regardless of isActive status
-            // This ensures documents are returned even if isActive is false or NULL
-            documents = documentRepository.findAllByProjectId(projectId);
+            documents = documentRepository.findAllByReferenceIdAndReferenceType(projectId, REFERENCE_TYPE_PROJECT);
         }
         return documents.stream().map(this::toDto).collect(Collectors.toList());
     }
-    
+
     public List<DocumentCategoryDto> getAllCategories() {
         return categoryRepository.findAllByOrderByDisplayOrderAsc().stream()
-            .map(c -> new DocumentCategoryDto(c.getId(), c.getName(), c.getDescription(), c.getDisplayOrder()))
-            .collect(Collectors.toList());
+                .map(c -> new DocumentCategoryDto(c.getId(), c.getName(), c.getDescription(), c.getDisplayOrder()))
+                .collect(Collectors.toList());
     }
-    
+
     private ProjectDocumentDto toDto(ProjectDocument doc) {
-        // Generate full download URL - goes through authenticated /api/storage/ endpoint
         String downloadUrl = "https://cust-api.walldotbuilders.com/api/storage/" + doc.getFilePath();
-        Long projectId = doc.getProject() != null ? doc.getProject().getId() : null;
-        Long uploadedById = doc.getUploadedBy() != null ? doc.getUploadedBy().getId() : null;
-        String uploadedByName = doc.getUploadedBy() != null
-            ? doc.getUploadedBy().getFirstName() + " " + doc.getUploadedBy().getLastName()
-            : "Unknown";
-        
+        Long projectId = "PROJECT".equals(doc.getReferenceType()) ? doc.getReferenceId() : null;
+        Long uploadedById = doc.getCreatedBy() != null ? doc.getCreatedBy().getId() : null;
+        String uploadedByName = doc.getCreatedBy() != null
+                ? doc.getCreatedBy().getFirstName() + " " + doc.getCreatedBy().getLastName()
+                : "Company";
+
         return new ProjectDocumentDto(
-            doc.getId(),
-            projectId,
-            doc.getCategory() != null ? doc.getCategory().getId() : null,
-            doc.getCategory() != null ? doc.getCategory().getName() : "Uncategorized",
-            doc.getFilename(),
-            doc.getFilePath(),
-            downloadUrl,  // Full URL for downloading/viewing
-            doc.getFileSize(),
-            doc.getFileType(),
-            uploadedById,
-            uploadedByName,
-            doc.getUploadDate(),
-            doc.getDescription(),
-            doc.getVersion(),
-            doc.getIsActive()
+                doc.getId(),
+                projectId,
+                doc.getCategory() != null ? doc.getCategory().getId() : null,
+                doc.getCategory() != null ? doc.getCategory().getName() : "Uncategorized",
+                doc.getFilename(),
+                doc.getFilePath(),
+                downloadUrl,
+                doc.getFileSize(),
+                doc.getFileType(),
+                uploadedById,
+                uploadedByName,
+                doc.getCreatedAt(),
+                doc.getDescription(),
+                doc.getVersion(),
+                doc.getIsActive()
         );
     }
 }
-

@@ -168,6 +168,26 @@ public class DashboardService {
                 .orElse(false);
     }
 
+    /**
+     * Resolve project by UUID and current user email (with admin bypass).
+     * Used by project module endpoints that accept projectUuid in the path.
+     */
+    public Project getProjectByUuidAndEmail(String projectUuidStr, String email) {
+        java.util.UUID projectUuid;
+        try {
+            projectUuid = java.util.UUID.fromString(projectUuidStr);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid project UUID format: " + projectUuidStr);
+        }
+        Project project = isAdminByEmail(email)
+                ? projectRepository.findByProjectUuid(projectUuid)
+                : projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
+        if (project == null) {
+            throw new RuntimeException("Project not found or access denied");
+        }
+        return project;
+    }
+
     // Get recent N projects for dashboard
     public List<DashboardDto.ProjectCard> getRecentProjects(String email, int limit) {
         List<Project> projects = isAdminByEmail(email)
@@ -250,7 +270,7 @@ public class DashboardService {
         // are not in the current Project model - add them to the model if needed
 
         // Get project documents
-        List<ProjectDocument> documents = projectDocumentRepository.findByProjectIdAndIsActiveTrue(project.getId());
+        List<ProjectDocument> documents = projectDocumentRepository.findByReferenceIdAndReferenceTypeAndIsActiveTrue(project.getId(), "PROJECT");
         List<DashboardDto.ProjectDocumentSummary> documentSummaries = documents.stream()
                 .map(this::toDocumentSummary)
                 .collect(Collectors.toList());
@@ -307,12 +327,10 @@ public class DashboardService {
     }
 
     private DashboardDto.ProjectDocumentSummary toDocumentSummary(ProjectDocument doc) {
-        // Generate full download URL - goes through authenticated /api/storage/
-        // endpoint
         String downloadUrl = "https://cust-api.walldotbuilders.com/api/storage/" + doc.getFilePath();
-        String uploadedBy = doc.getUploadedBy() != null
-                ? doc.getUploadedBy().getFirstName() + " " + doc.getUploadedBy().getLastName()
-                : "Unknown";
+        String uploadedBy = doc.getCreatedBy() != null
+                ? doc.getCreatedBy().getFirstName() + " " + doc.getCreatedBy().getLastName()
+                : "Company";
         String categoryName = doc.getCategory() != null ? doc.getCategory().getName() : "Uncategorized";
 
         return new DashboardDto.ProjectDocumentSummary(
@@ -322,7 +340,7 @@ public class DashboardService {
                 doc.getFileSize(),
                 doc.getFileType(),
                 categoryName,
-                doc.getUploadDate(),
+                doc.getCreatedAt(),
                 uploadedBy);
     }
 

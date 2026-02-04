@@ -10,29 +10,35 @@ import java.util.List;
 
 @Repository
 public interface ProjectDocumentRepository extends JpaRepository<ProjectDocument, Long> {
-    
-    List<ProjectDocument> findByProjectIdAndIsActiveTrue(Long projectId);
-    
-    List<ProjectDocument> findByProjectIdAndCategoryIdAndIsActiveTrue(Long projectId, Long categoryId);
-    
-    List<ProjectDocument> findByProjectIdAndCategoryId(Long projectId, Long categoryId);
-    
-    List<ProjectDocument> findByProjectIdOrderByUploadDateDesc(Long projectId);
-    
-    // Include documents where isActive is true or NULL (NULL treated as active)
-    @Query("SELECT d FROM ProjectDocument d WHERE d.project.id = :projectId AND (d.isActive = true OR d.isActive IS NULL) ORDER BY d.uploadDate DESC")
-    List<ProjectDocument> findByProjectIdActiveOrNull(@Param("projectId") Long projectId);
-    
-    // Include documents where isActive is true or NULL with category filter
-    @Query("SELECT d FROM ProjectDocument d WHERE d.project.id = :projectId AND d.category.id = :categoryId AND (d.isActive = true OR d.isActive IS NULL) ORDER BY d.uploadDate DESC")
-    List<ProjectDocument> findByProjectIdAndCategoryIdActiveOrNull(@Param("projectId") Long projectId, @Param("categoryId") Long categoryId);
-    
-    // Get ALL documents for a project regardless of isActive status (for debugging/fixing issues)
-    @Query("SELECT d FROM ProjectDocument d WHERE d.project.id = :projectId ORDER BY d.uploadDate DESC")
-    List<ProjectDocument> findAllByProjectId(@Param("projectId") Long projectId);
-    
-    // Get ALL documents for a project and category regardless of isActive status
-    @Query("SELECT d FROM ProjectDocument d WHERE d.project.id = :projectId AND d.category.id = :categoryId ORDER BY d.uploadDate DESC")
-    List<ProjectDocument> findAllByProjectIdAndCategoryId(@Param("projectId") Long projectId, @Param("categoryId") Long categoryId);
-}
 
+    String REFERENCE_TYPE_PROJECT = "PROJECT";
+
+    List<ProjectDocument> findByReferenceIdAndReferenceTypeAndIsActiveTrue(Long referenceId, String referenceType);
+
+    List<ProjectDocument> findByReferenceIdAndReferenceTypeAndCategoryIdAndIsActiveTrue(
+            Long referenceId, String referenceType, Long categoryId);
+
+    List<ProjectDocument> findByReferenceIdAndReferenceTypeOrderByCreatedAtDesc(Long referenceId, String referenceType);
+
+    @Query("SELECT d FROM ProjectDocument d WHERE d.referenceId = :referenceId AND d.referenceType = :referenceType AND (d.isActive = true OR d.isActive IS NULL) ORDER BY d.createdAt DESC")
+    List<ProjectDocument> findByReferenceIdAndReferenceTypeActiveOrNull(
+            @Param("referenceId") Long referenceId,
+            @Param("referenceType") String referenceType);
+
+    @Query("SELECT d FROM ProjectDocument d WHERE d.referenceId = :referenceId AND d.referenceType = :referenceType AND d.category.id = :categoryId AND (d.isActive = true OR d.isActive IS NULL) ORDER BY d.createdAt DESC")
+    List<ProjectDocument> findByReferenceIdAndReferenceTypeAndCategoryIdActiveOrNull(
+            @Param("referenceId") Long referenceId,
+            @Param("referenceType") String referenceType,
+            @Param("categoryId") Long categoryId);
+
+    @Query("SELECT d FROM ProjectDocument d WHERE d.referenceId = :referenceId AND d.referenceType = :referenceType ORDER BY d.createdAt DESC")
+    List<ProjectDocument> findAllByReferenceIdAndReferenceType(
+            @Param("referenceId") Long referenceId,
+            @Param("referenceType") String referenceType);
+
+    @Query("SELECT d FROM ProjectDocument d WHERE d.referenceId = :referenceId AND d.referenceType = :referenceType AND d.category.id = :categoryId ORDER BY d.createdAt DESC")
+    List<ProjectDocument> findAllByReferenceIdAndReferenceTypeAndCategoryId(
+            @Param("referenceId") Long referenceId,
+            @Param("referenceType") String referenceType,
+            @Param("categoryId") Long categoryId);
+}

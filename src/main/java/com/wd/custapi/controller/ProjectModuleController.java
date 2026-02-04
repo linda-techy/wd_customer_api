@@ -1,6 +1,8 @@
 package com.wd.custapi.controller;
 
 import com.wd.custapi.dto.ProjectModuleDtos.*;
+import com.wd.custapi.model.Project;
+import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,6 +20,8 @@ import java.util.List;
 public class ProjectModuleController {
     
     private final ProjectDocumentService documentService;
+    private final DashboardService dashboardService;
+    private final CustomerUserRepository customerUserRepository;
     private final QualityCheckService qualityCheckService;
     private final ActivityFeedService activityFeedService;
     private final GalleryService galleryService;
@@ -28,8 +32,10 @@ public class ProjectModuleController {
     private final SiteVisitService siteVisitService;
     private final FeedbackService feedbackService;
     private final BoqService boqService;
-    
+
     public ProjectModuleController(ProjectDocumentService documentService,
+                                   DashboardService dashboardService,
+                                   CustomerUserRepository customerUserRepository,
                                    QualityCheckService qualityCheckService,
                                    ActivityFeedService activityFeedService,
                                    GalleryService galleryService,
@@ -41,6 +47,8 @@ public class ProjectModuleController {
                                    FeedbackService feedbackService,
                                    BoqService boqService) {
         this.documentService = documentService;
+        this.dashboardService = dashboardService;
+        this.customerUserRepository = customerUserRepository;
         this.qualityCheckService = qualityCheckService;
         this.activityFeedService = activityFeedService;
         this.galleryService = galleryService;
@@ -54,30 +62,42 @@ public class ProjectModuleController {
     }
     
     // ===== DOCUMENT ENDPOINTS =====
-    
+    // Path segment is projectUuid (String); project is resolved for access control.
+
     @PostMapping(value = "/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ProjectDocumentDto>> uploadDocument(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @RequestParam("file") MultipartFile file,
             @RequestParam Long categoryId,
             @RequestParam(required = false) String description,
             Authentication auth) {
-        Long userId = getUserIdFromAuth(auth);
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        Long userId = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
         DocumentUploadRequest request = new DocumentUploadRequest(categoryId, description);
-        ProjectDocumentDto doc = documentService.uploadDocument(projectId, file, request, userId);
+        ProjectDocumentDto doc = documentService.uploadDocument(project.getId(), file, request, userId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Document uploaded successfully", doc));
     }
-    
+
     @GetMapping("/documents")
     public ResponseEntity<ApiResponse<List<ProjectDocumentDto>>> getDocuments(
-            @PathVariable Long projectId,
-            @RequestParam(required = false) Long categoryId) {
-        List<ProjectDocumentDto> docs = documentService.getProjectDocuments(projectId, categoryId);
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) Long categoryId,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<ProjectDocumentDto> docs = documentService.getProjectDocuments(project.getId(), categoryId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Documents retrieved successfully", docs));
     }
-    
+
     @GetMapping("/documents/categories")
-    public ResponseEntity<ApiResponse<List<DocumentCategoryDto>>> getDocumentCategories() {
+    public ResponseEntity<ApiResponse<List<DocumentCategoryDto>>> getDocumentCategories(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        dashboardService.getProjectByUuidAndEmail(projectUuid, email);
         List<DocumentCategoryDto> categories = documentService.getAllCategories();
         return ResponseEntity.ok(new ApiResponse<>(true, "Categories retrieved successfully", categories));
     }
