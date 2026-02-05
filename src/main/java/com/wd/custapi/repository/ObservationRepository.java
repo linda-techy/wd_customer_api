@@ -15,5 +15,8 @@ public interface ObservationRepository extends JpaRepository<Observation, Long> 
     
     List<Observation> findByProjectIdAndStatusOrderByPriorityDescReportedDateDesc(
         Long projectId, Observation.ObservationStatus status);
+    
+    List<Observation> findByProjectIdAndStatusInOrderByPriorityDescReportedDateDesc(
+        Long projectId, List<Observation.ObservationStatus> statuses);
 }
 

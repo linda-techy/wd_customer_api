@@ -81,6 +81,20 @@ public class GalleryService {
             .collect(Collectors.toList());
     }
     
+    /**
+     * Get gallery images grouped by date for timeline display.
+     */
+    public java.util.Map<LocalDate, List<GalleryImageDto>> getImagesGroupedByDate(Long projectId) {
+        List<GalleryImage> images = galleryImageRepository.findByProjectIdOrderByTakenDateDesc(projectId);
+        return images.stream()
+            .map(this::toDto)
+            .collect(Collectors.groupingBy(
+                GalleryImageDto::takenDate,
+                java.util.LinkedHashMap::new,
+                Collectors.toList()
+            ));
+    }
+    
     private GalleryImageDto toDto(GalleryImage image) {
         return new GalleryImageDto(
             image.getId(),

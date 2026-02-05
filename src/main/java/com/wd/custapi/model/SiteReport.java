@@ -37,9 +37,20 @@ public class SiteReport {
     @Column(name = "equipment_used", columnDefinition = "TEXT")
     private String equipmentUsed;
     
+    @Column(length = 50)
+    private String status;
+    
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
+    @JoinColumn(name = "created_by_id")
     private CustomerUser createdBy;
+    
+    // For portal user who submitted the report (from wd_portal)
+    @Column(name = "submitted_by")
+    private Long submittedById;
+    
+    // Transient field to hold portal user name for display
+    @Transient
+    private String submittedByName;
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -134,6 +145,30 @@ public class SiteReport {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    
+    public String getStatus() {
+        return status;
+    }
+    
+    public void setStatus(String status) {
+        this.status = status;
+    }
+    
+    public Long getSubmittedById() {
+        return submittedById;
+    }
+    
+    public void setSubmittedById(Long submittedById) {
+        this.submittedById = submittedById;
+    }
+    
+    public String getSubmittedByName() {
+        return submittedByName;
+    }
+    
+    public void setSubmittedByName(String submittedByName) {
+        this.submittedByName = submittedByName;
     }
 }
 

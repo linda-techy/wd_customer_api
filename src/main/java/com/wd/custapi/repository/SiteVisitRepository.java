@@ -16,5 +16,9 @@ public interface SiteVisitRepository extends JpaRepository<SiteVisit, Long> {
     
     Optional<SiteVisit> findTopByProjectIdAndVisitorIdAndCheckOutTimeIsNullOrderByCheckInTimeDesc(
         Long projectId, Long visitorId);
+    
+    List<SiteVisit> findByProjectIdAndCheckOutTimeIsNotNullOrderByCheckInTimeDesc(Long projectId);
+    
+    List<SiteVisit> findByProjectIdAndCheckOutTimeIsNullOrderByCheckInTimeDesc(Long projectId);
 }
 

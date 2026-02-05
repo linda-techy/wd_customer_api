@@ -138,26 +138,62 @@ public class ProjectModuleController {
     
     @GetMapping("/activities")
     public ResponseEntity<ApiResponse<List<ActivityFeedDto>>> getActivities(
-            @PathVariable Long projectId) {
-        List<ActivityFeedDto> activities = activityFeedService.getProjectActivities(projectId);
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<ActivityFeedDto> activities = activityFeedService.getProjectActivities(project.getId());
         return ResponseEntity.ok(new ApiResponse<>(true, "Activities retrieved successfully", activities));
     }
     
     @GetMapping("/activities/range")
     public ResponseEntity<ApiResponse<List<ActivityFeedDto>>> getActivitiesByDateRange(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @RequestParam LocalDateTime startDate,
-            @RequestParam LocalDateTime endDate) {
+            @RequestParam LocalDateTime endDate,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
         List<ActivityFeedDto> activities = activityFeedService.getProjectActivitiesByDateRange(
-            projectId, startDate, endDate);
+            project.getId(), startDate, endDate);
         return ResponseEntity.ok(new ApiResponse<>(true, "Activities retrieved successfully", activities));
+    }
+    
+    /**
+     * Combined activity feed with site reports and queries.
+     * Returns a chronological timeline for display.
+     */
+    @GetMapping("/activities/combined")
+    public ResponseEntity<ApiResponse<List<ActivityFeedService.CombinedActivityItem>>> getCombinedActivityFeed(
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) String type,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<ActivityFeedService.CombinedActivityItem> activities = 
+            activityFeedService.getCombinedActivityFeedByType(project.getId(), type);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Combined activities retrieved successfully", activities));
+    }
+    
+    /**
+     * Combined activity feed grouped by date for timeline display.
+     */
+    @GetMapping("/activities/combined/grouped")
+    public ResponseEntity<ApiResponse<java.util.Map<LocalDate, List<ActivityFeedService.CombinedActivityItem>>>> getCombinedActivityFeedGrouped(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        java.util.Map<LocalDate, List<ActivityFeedService.CombinedActivityItem>> activities = 
+            activityFeedService.getCombinedActivityFeedGroupedByDate(project.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Grouped activities retrieved successfully", activities));
     }
     
     // ===== GALLERY ENDPOINTS =====
     
     @PostMapping(value = "/gallery", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<GalleryImageDto>> uploadImage(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) String caption,
             @RequestParam(required = false) LocalDate takenDate,
@@ -165,31 +201,51 @@ public class ProjectModuleController {
             @RequestParam(required = false) String locationTag,
             @RequestParam(required = false) List<String> tags,
             Authentication auth) {
-        Long userId = getUserIdFromAuth(auth);
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        Long userId = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
         GalleryUploadRequest request = new GalleryUploadRequest(caption, takenDate, siteReportId, locationTag, tags);
-        GalleryImageDto image = galleryService.uploadImage(projectId, file, request, userId);
+        GalleryImageDto image = galleryService.uploadImage(project.getId(), file, request, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(true, "Image uploaded successfully", image));
     }
     
     @GetMapping("/gallery")
     public ResponseEntity<ApiResponse<List<GalleryImageDto>>> getGalleryImages(
-            @PathVariable Long projectId,
-            @RequestParam(required = false) LocalDate date) {
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) LocalDate date,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
         List<GalleryImageDto> images;
         if (date != null) {
-            images = galleryService.getImagesByDate(projectId, date);
+            images = galleryService.getImagesByDate(project.getId(), date);
         } else {
-            images = galleryService.getProjectImages(projectId);
+            images = galleryService.getProjectImages(project.getId());
         }
         return ResponseEntity.ok(new ApiResponse<>(true, "Gallery images retrieved successfully", images));
     }
     
-    // ===== OBSERVATION ENDPOINTS =====
+    /**
+     * Get gallery images grouped by date for timeline display.
+     */
+    @GetMapping("/gallery/grouped")
+    public ResponseEntity<ApiResponse<java.util.Map<LocalDate, List<GalleryImageDto>>>> getGalleryImagesGrouped(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        java.util.Map<LocalDate, List<GalleryImageDto>> groupedImages = galleryService.getImagesGroupedByDate(project.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Gallery images grouped by date", groupedImages));
+    }
+    
+    // ===== OBSERVATION (SNAGS) ENDPOINTS =====
     
     @PostMapping(value = "/observations", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ObservationDto>> createObservation(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @RequestParam String title,
             @RequestParam String description,
             @RequestParam(required = false) Long reportedByRoleId,
@@ -197,28 +253,78 @@ public class ProjectModuleController {
             @RequestParam(required = false) String location,
             @RequestParam(required = false) MultipartFile image,
             Authentication auth) {
-        Long userId = getUserIdFromAuth(auth);
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        Long userId = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
         ObservationRequest request = new ObservationRequest(title, description, reportedByRoleId, priority, location);
-        ObservationDto obs = observationService.createObservation(projectId, request, image, userId);
+        ObservationDto obs = observationService.createObservation(project.getId(), request, image, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(true, "Observation created successfully", obs));
     }
     
     @GetMapping("/observations")
     public ResponseEntity<ApiResponse<List<ObservationDto>>> getObservations(
-            @PathVariable Long projectId,
-            @RequestParam(required = false) String status) {
-        List<ObservationDto> observations = observationService.getObservations(projectId, status);
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) String status,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<ObservationDto> observations = observationService.getObservations(project.getId(), status);
         return ResponseEntity.ok(new ApiResponse<>(true, "Observations retrieved successfully", observations));
+    }
+    
+    /**
+     * Get active (OPEN, IN_PROGRESS) observations/snags.
+     */
+    @GetMapping("/observations/active")
+    public ResponseEntity<ApiResponse<List<ObservationDto>>> getActiveObservations(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<ObservationDto> observations = observationService.getActiveObservations(project.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Active observations retrieved", observations));
+    }
+    
+    /**
+     * Get resolved observations/snags.
+     */
+    @GetMapping("/observations/resolved")
+    public ResponseEntity<ApiResponse<List<ObservationDto>>> getResolvedObservations(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<ObservationDto> observations = observationService.getResolvedObservations(project.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Resolved observations retrieved", observations));
+    }
+    
+    /**
+     * Get observation counts (active, resolved, total).
+     */
+    @GetMapping("/observations/counts")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Long>>> getObservationCounts(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        java.util.Map<String, Long> counts = observationService.getObservationCounts(project.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Observation counts retrieved", counts));
     }
     
     @PutMapping("/observations/{obsId}")
     public ResponseEntity<ApiResponse<ObservationDto>> resolveObservation(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @PathVariable Long obsId,
             @RequestBody ObservationResolveRequest request,
             Authentication auth) {
-        Long userId = getUserIdFromAuth(auth);
+        String email = auth.getName();
+        dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        Long userId = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
         ObservationDto obs = observationService.resolveObservation(obsId, request, userId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Observation resolved successfully", obs));
     }
@@ -320,29 +426,65 @@ public class ProjectModuleController {
     
     @PostMapping("/site-visits/check-in")
     public ResponseEntity<ApiResponse<SiteVisitDto>> checkIn(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @RequestBody SiteVisitCheckInRequest request,
             Authentication auth) {
-        Long userId = getUserIdFromAuth(auth);
-        SiteVisitDto visit = siteVisitService.checkIn(projectId, request, userId);
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        Long userId = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
+        SiteVisitDto visit = siteVisitService.checkIn(project.getId(), request, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(true, "Checked in successfully", visit));
     }
     
     @PutMapping("/site-visits/{visitId}/check-out")
     public ResponseEntity<ApiResponse<SiteVisitDto>> checkOut(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @PathVariable Long visitId,
-            @RequestBody SiteVisitCheckOutRequest request) {
+            @RequestBody SiteVisitCheckOutRequest request,
+            Authentication auth) {
+        String email = auth.getName();
+        dashboardService.getProjectByUuidAndEmail(projectUuid, email);
         SiteVisitDto visit = siteVisitService.checkOut(visitId, request);
         return ResponseEntity.ok(new ApiResponse<>(true, "Checked out successfully", visit));
     }
     
     @GetMapping("/site-visits")
     public ResponseEntity<ApiResponse<List<SiteVisitDto>>> getSiteVisits(
-            @PathVariable Long projectId) {
-        List<SiteVisitDto> visits = siteVisitService.getProjectVisits(projectId);
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<SiteVisitDto> visits = siteVisitService.getProjectVisits(project.getId());
         return ResponseEntity.ok(new ApiResponse<>(true, "Site visits retrieved successfully", visits));
+    }
+    
+    /**
+     * Get completed site visits (with checkout time).
+     */
+    @GetMapping("/site-visits/completed")
+    public ResponseEntity<ApiResponse<List<SiteVisitDto>>> getCompletedSiteVisits(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<SiteVisitDto> visits = siteVisitService.getCompletedVisits(project.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Completed site visits retrieved", visits));
+    }
+    
+    /**
+     * Get ongoing site visits (without checkout time).
+     */
+    @GetMapping("/site-visits/ongoing")
+    public ResponseEntity<ApiResponse<List<SiteVisitDto>>> getOngoingSiteVisits(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        String email = auth.getName();
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        List<SiteVisitDto> visits = siteVisitService.getOngoingVisits(project.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Ongoing site visits retrieved", visits));
     }
     
     // ===== FEEDBACK ENDPOINTS =====

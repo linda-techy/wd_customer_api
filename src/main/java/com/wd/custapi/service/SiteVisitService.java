@@ -97,6 +97,26 @@ public class SiteVisitService {
             .collect(Collectors.toList());
     }
     
+    /**
+     * Get completed visits (with checkout time).
+     */
+    public List<SiteVisitDto> getCompletedVisits(Long projectId) {
+        return siteVisitRepository.findByProjectIdAndCheckOutTimeIsNotNullOrderByCheckInTimeDesc(projectId)
+            .stream()
+            .map(this::toDto)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get upcoming/ongoing visits (without checkout time or scheduled in future).
+     */
+    public List<SiteVisitDto> getOngoingVisits(Long projectId) {
+        return siteVisitRepository.findByProjectIdAndCheckOutTimeIsNullOrderByCheckInTimeDesc(projectId)
+            .stream()
+            .map(this::toDto)
+            .collect(Collectors.toList());
+    }
+    
     private SiteVisitDto toDto(SiteVisit visit) {
         return new SiteVisitDto(
             visit.getId(),

@@ -105,6 +105,47 @@ public class ObservationService {
         return observations.stream().map(this::toDto).collect(Collectors.toList());
     }
     
+    /**
+     * Get active (OPEN, IN_PROGRESS) observations for the project.
+     */
+    public List<ObservationDto> getActiveObservations(Long projectId) {
+        List<Observation.ObservationStatus> activeStatuses = List.of(
+            Observation.ObservationStatus.OPEN,
+            Observation.ObservationStatus.IN_PROGRESS
+        );
+        return observationRepository.findByProjectIdAndStatusInOrderByPriorityDescReportedDateDesc(projectId, activeStatuses)
+            .stream()
+            .map(this::toDto)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get resolved observations for the project.
+     */
+    public List<ObservationDto> getResolvedObservations(Long projectId) {
+        return observationRepository.findByProjectIdAndStatusOrderByPriorityDescReportedDateDesc(
+                projectId, Observation.ObservationStatus.RESOLVED)
+            .stream()
+            .map(this::toDto)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get observation counts by status.
+     */
+    public java.util.Map<String, Long> getObservationCounts(Long projectId) {
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        List<Observation> all = observationRepository.findByProjectIdOrderByReportedDateDesc(projectId);
+        counts.put("total", (long) all.size());
+        counts.put("active", all.stream()
+            .filter(o -> o.getStatus() != Observation.ObservationStatus.RESOLVED)
+            .count());
+        counts.put("resolved", all.stream()
+            .filter(o -> o.getStatus() == Observation.ObservationStatus.RESOLVED)
+            .count());
+        return counts;
+    }
+    
     private ObservationDto toDto(Observation obs) {
         return new ObservationDto(
             obs.getId(),
