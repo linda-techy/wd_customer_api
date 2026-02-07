@@ -158,6 +158,6 @@ public class Project {
     }
 
     public void setDesignProgress(Double progress) {
-        this.designProgress = designProgress;
+        this.designProgress = progress;
     }
 }
