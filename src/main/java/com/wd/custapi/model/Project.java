@@ -44,6 +44,12 @@ public class Project {
     @Column(name = "design_progress")
     private Double designProgress;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     // Many-to-many is owned by CustomerUser via project_members
     @ManyToMany(mappedBy = "projects")
     private java.util.Set<CustomerUser> customers;
@@ -159,5 +165,25 @@ public class Project {
 
     public void setDesignProgress(Double progress) {
         this.designProgress = progress;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public boolean hasLocation() {
+        return latitude != null && longitude != null;
     }
 }

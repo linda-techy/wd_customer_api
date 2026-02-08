@@ -46,6 +46,24 @@ public class SiteVisit {
     
     @Column(columnDefinition = "varchar(255)[]")
     private String[] attendees;
+
+    @Column(name = "check_in_latitude")
+    private Double checkInLatitude;
+
+    @Column(name = "check_in_longitude")
+    private Double checkInLongitude;
+
+    @Column(name = "check_out_latitude")
+    private Double checkOutLatitude;
+
+    @Column(name = "check_out_longitude")
+    private Double checkOutLongitude;
+
+    @Column(name = "distance_from_project_checkin")
+    private Double distanceFromProjectCheckIn;
+
+    @Column(name = "distance_from_project_checkout")
+    private Double distanceFromProjectCheckOut;
     
     // Constructors
     public SiteVisit() {}
@@ -145,6 +163,54 @@ public class SiteVisit {
     
     public void setAttendees(String[] attendees) {
         this.attendees = attendees;
+    }
+
+    public Double getCheckInLatitude() {
+        return checkInLatitude;
+    }
+
+    public void setCheckInLatitude(Double checkInLatitude) {
+        this.checkInLatitude = checkInLatitude;
+    }
+
+    public Double getCheckInLongitude() {
+        return checkInLongitude;
+    }
+
+    public void setCheckInLongitude(Double checkInLongitude) {
+        this.checkInLongitude = checkInLongitude;
+    }
+
+    public Double getCheckOutLatitude() {
+        return checkOutLatitude;
+    }
+
+    public void setCheckOutLatitude(Double checkOutLatitude) {
+        this.checkOutLatitude = checkOutLatitude;
+    }
+
+    public Double getCheckOutLongitude() {
+        return checkOutLongitude;
+    }
+
+    public void setCheckOutLongitude(Double checkOutLongitude) {
+        this.checkOutLongitude = checkOutLongitude;
+    }
+
+    public Double getDistanceFromProjectCheckIn() {
+        return distanceFromProjectCheckIn;
+    }
+
+    public void setDistanceFromProjectCheckIn(Double distanceFromProjectCheckIn) {
+        this.distanceFromProjectCheckIn = distanceFromProjectCheckIn;
+    }
+
+    public Double getDistanceFromProjectCheckOut() {
+        return distanceFromProjectCheckOut;
+    }
+
+    public void setDistanceFromProjectCheckOut(Double distanceFromProjectCheckOut) {
+        this.distanceFromProjectCheckOut = distanceFromProjectCheckOut;
     }
 }
 

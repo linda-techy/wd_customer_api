@@ -104,10 +104,35 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
                 logger.info("Column 'sqfeet' already exists.");
             }
 
+            // 6. Add GPS distance tracking columns to site_visits
+            addColumnIfMissing("site_visits", "distance_from_project_checkin", "DOUBLE PRECISION");
+            addColumnIfMissing("site_visits", "distance_from_project_checkout", "DOUBLE PRECISION");
+
         } catch (Exception e) {
             logger.error("Database migration failed: ", e);
         }
 
         logger.info("Database migration check completed.");
+    }
+
+    /**
+     * Helper to add a column to a table if it doesn't already exist.
+     */
+    private void addColumnIfMissing(String tableName, String columnName, String columnType) {
+        try {
+            String checkSql = "SELECT count(*) FROM information_schema.columns " +
+                    "WHERE table_name = '" + tableName + "' AND column_name = '" + columnName + "'";
+            Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class);
+
+            if (count != null && count == 0) {
+                logger.info("Column '{}' missing from '{}'. Adding it...", columnName, tableName);
+                jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType);
+                logger.info("Column '{}' added to '{}'.", columnName, tableName);
+            } else {
+                logger.info("Column '{}' already exists in '{}'.", columnName, tableName);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to add column '{}' to '{}': {}", columnName, tableName, e.getMessage());
+        }
     }
 }

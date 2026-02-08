@@ -270,7 +270,13 @@ public class ProjectModuleDtos {
         String findings,
         String location,
         String weatherConditions,
-        List<String> attendees
+        List<String> attendees,
+        Double checkInLatitude,
+        Double checkInLongitude,
+        Double checkOutLatitude,
+        Double checkOutLongitude,
+        Double distanceFromProjectCheckIn,
+        Double distanceFromProjectCheckOut
     ) {}
     
     public record SiteVisitCheckInRequest(
@@ -278,12 +284,16 @@ public class ProjectModuleDtos {
         String purpose,
         String location,
         String weatherConditions,
-        List<String> attendees
+        List<String> attendees,
+        Double latitude,
+        Double longitude
     ) {}
     
     public record SiteVisitCheckOutRequest(
         String notes,
-        String findings
+        String findings,
+        Double latitude,
+        Double longitude
     ) {}
     
     // ===== FEEDBACK MODULE DTOs =====
