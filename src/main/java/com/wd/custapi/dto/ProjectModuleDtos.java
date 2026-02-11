@@ -395,26 +395,22 @@ public class ProjectModuleDtos {
     public record SiteReportDto(
         Long id,
         Long projectId,
-        LocalDate reportDate,
+        String projectName,
+        LocalDateTime reportDate,
         String title,
         String description,
-        String weather,
-        String workProgress,
-        Integer manpowerDeployed,
-        String equipmentUsed,
-        Long createdById,
-        String createdByName,
+        String status,
+        String reportType,
+        Long submittedById,
+        String submittedByName,
         LocalDateTime createdAt
     ) {}
     
     public record SiteReportRequest(
-        LocalDate reportDate,
+        LocalDateTime reportDate,
         String title,
         String description,
-        String weather,
-        String workProgress,
-        Integer manpowerDeployed,
-        String equipmentUsed
+        String reportType
     ) {}
     
     // ===== COMMON DTOs =====

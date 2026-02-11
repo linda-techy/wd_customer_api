@@ -168,11 +168,19 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             @RequestParam(required = false) String type,
             Authentication auth) {
-        String email = auth.getName();
-        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-        List<ActivityFeedService.CombinedActivityItem> activities = 
-            activityFeedService.getCombinedActivityFeedByType(project.getId(), type);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Combined activities retrieved successfully", activities));
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            List<ActivityFeedService.CombinedActivityItem> activities = 
+                activityFeedService.getCombinedActivityFeedByType(project.getId(), type);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Combined activities retrieved successfully", activities));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>(false, "Failed to retrieve combined activities: " + e.getMessage(), null));
+        }
     }
     
     /**
@@ -182,11 +190,19 @@ public class ProjectModuleController {
     public ResponseEntity<ApiResponse<java.util.Map<LocalDate, List<ActivityFeedService.CombinedActivityItem>>>> getCombinedActivityFeedGrouped(
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
-        String email = auth.getName();
-        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-        java.util.Map<LocalDate, List<ActivityFeedService.CombinedActivityItem>> activities = 
-            activityFeedService.getCombinedActivityFeedGroupedByDate(project.getId());
-        return ResponseEntity.ok(new ApiResponse<>(true, "Grouped activities retrieved successfully", activities));
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            java.util.Map<LocalDate, List<ActivityFeedService.CombinedActivityItem>> activities = 
+                activityFeedService.getCombinedActivityFeedGroupedByDate(project.getId());
+            return ResponseEntity.ok(new ApiResponse<>(true, "Grouped activities retrieved successfully", activities));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>(false, "Failed to retrieve grouped activities: " + e.getMessage(), null));
+        }
     }
     
     // ===== GALLERY ENDPOINTS =====

@@ -1,11 +1,12 @@
 package com.wd.custapi.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "site_reports")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class SiteReport {
     
     @Id
@@ -17,7 +18,7 @@ public class SiteReport {
     private Project project;
     
     @Column(name = "report_date", nullable = false)
-    private LocalDate reportDate;
+    private LocalDateTime reportDate;
     
     @Column(nullable = false, length = 255)
     private String title;
@@ -25,24 +26,15 @@ public class SiteReport {
     @Column(columnDefinition = "TEXT")
     private String description;
     
-    @Column(length = 100)
-    private String weather;
-    
-    @Column(name = "work_progress", columnDefinition = "TEXT")
-    private String workProgress;
-    
-    @Column(name = "manpower_deployed")
-    private Integer manpowerDeployed;
-    
-    @Column(name = "equipment_used", columnDefinition = "TEXT")
-    private String equipmentUsed;
-    
     @Column(length = 50)
     private String status;
     
+    @Column(name = "report_type", length = 50)
+    private String reportType;
+    
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id")
-    private CustomerUser createdBy;
+    @JoinColumn(name = "site_visit_id")
+    private SiteVisit siteVisit;
     
     // For portal user who submitted the report (from wd_portal)
     @Column(name = "submitted_by")
@@ -53,7 +45,22 @@ public class SiteReport {
     private String submittedByName;
     
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+        if (reportDate == null) reportDate = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
     
     // Constructors
     public SiteReport() {}
@@ -75,11 +82,11 @@ public class SiteReport {
         this.project = project;
     }
     
-    public LocalDate getReportDate() {
+    public LocalDateTime getReportDate() {
         return reportDate;
     }
     
-    public void setReportDate(LocalDate reportDate) {
+    public void setReportDate(LocalDateTime reportDate) {
         this.reportDate = reportDate;
     }
     
@@ -99,60 +106,28 @@ public class SiteReport {
         this.description = description;
     }
     
-    public String getWeather() {
-        return weather;
-    }
-    
-    public void setWeather(String weather) {
-        this.weather = weather;
-    }
-    
-    public String getWorkProgress() {
-        return workProgress;
-    }
-    
-    public void setWorkProgress(String workProgress) {
-        this.workProgress = workProgress;
-    }
-    
-    public Integer getManpowerDeployed() {
-        return manpowerDeployed;
-    }
-    
-    public void setManpowerDeployed(Integer manpowerDeployed) {
-        this.manpowerDeployed = manpowerDeployed;
-    }
-    
-    public String getEquipmentUsed() {
-        return equipmentUsed;
-    }
-    
-    public void setEquipmentUsed(String equipmentUsed) {
-        this.equipmentUsed = equipmentUsed;
-    }
-    
-    public CustomerUser getCreatedBy() {
-        return createdBy;
-    }
-    
-    public void setCreatedBy(CustomerUser createdBy) {
-        this.createdBy = createdBy;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
     public String getStatus() {
         return status;
     }
     
     public void setStatus(String status) {
         this.status = status;
+    }
+    
+    public String getReportType() {
+        return reportType;
+    }
+    
+    public void setReportType(String reportType) {
+        this.reportType = reportType;
+    }
+    
+    public SiteVisit getSiteVisit() {
+        return siteVisit;
+    }
+    
+    public void setSiteVisit(SiteVisit siteVisit) {
+        this.siteVisit = siteVisit;
     }
     
     public Long getSubmittedById() {
@@ -170,5 +145,20 @@ public class SiteReport {
     public void setSubmittedByName(String submittedByName) {
         this.submittedByName = submittedByName;
     }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+    
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }
-

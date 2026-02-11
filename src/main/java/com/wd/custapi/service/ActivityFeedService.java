@@ -77,18 +77,25 @@ public class ActivityFeedService {
     }
     
     private ActivityFeedDto toDto(ActivityFeed activity) {
+        Long createdById = null;
+        String createdByFullName = "Unknown";
+        if (activity.getCreatedBy() != null) {
+            createdById = activity.getCreatedBy().getId();
+            createdByFullName = activity.getCreatedBy().getFirstName() + " " + activity.getCreatedBy().getLastName();
+        }
+        
         return new ActivityFeedDto(
             activity.getId(),
-            activity.getProject().getId(),
-            activity.getActivityType().getName(),
-            activity.getActivityType().getIcon(),
-            activity.getActivityType().getColor(),
+            activity.getProject() != null ? activity.getProject().getId() : null,
+            activity.getActivityType() != null ? activity.getActivityType().getName() : null,
+            activity.getActivityType() != null ? activity.getActivityType().getIcon() : null,
+            activity.getActivityType() != null ? activity.getActivityType().getColor() : null,
             activity.getTitle(),
             activity.getDescription(),
             activity.getReferenceId(),
             activity.getReferenceType(),
-            activity.getCreatedBy().getId(),
-            activity.getCreatedBy().getFirstName() + " " + activity.getCreatedBy().getLastName(),
+            createdById,
+            createdByFullName,
             activity.getCreatedAt(),
             activity.getMetadata()
         );
@@ -160,20 +167,21 @@ public class ActivityFeedService {
     
     private CombinedActivityItem toActivityItem(SiteReport report) {
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("weather", report.getWeather());
-        metadata.put("workProgress", report.getWorkProgress());
-        metadata.put("manpowerDeployed", report.getManpowerDeployed());
+        metadata.put("reportType", report.getReportType());
+        metadata.put("status", report.getStatus());
         
-        String createdByName = "Company";
-        if (report.getCreatedBy() != null) {
-            createdByName = report.getCreatedBy().getFirstName() + " " + report.getCreatedBy().getLastName();
-        } else if (report.getSubmittedByName() != null) {
+        String createdByName = "Company Staff";
+        if (report.getSubmittedByName() != null && !report.getSubmittedByName().isEmpty()) {
             createdByName = report.getSubmittedByName();
         }
         
         LocalDateTime timestamp = report.getReportDate() != null 
-            ? report.getReportDate().atStartOfDay() 
+            ? report.getReportDate()
             : report.getCreatedAt();
+        
+        LocalDate date = report.getReportDate() != null 
+            ? report.getReportDate().toLocalDate() 
+            : LocalDate.now();
         
         return new CombinedActivityItem(
             report.getId(),
@@ -181,7 +189,7 @@ public class ActivityFeedService {
             report.getTitle(),
             report.getDescription(),
             timestamp,
-            report.getReportDate(),
+            date,
             report.getStatus(),
             createdByName,
             metadata
