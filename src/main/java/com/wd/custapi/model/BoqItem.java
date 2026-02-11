@@ -23,13 +23,13 @@ public class BoqItem {
     @Column(name = "item_code", length = 50)
     private String itemCode;
     
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, length = 255)
     private String description;
     
-    @Column(nullable = false, precision = 15, scale = 3)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
     
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 50)
     private String unit;
     
     @Column(nullable = false, precision = 15, scale = 2)

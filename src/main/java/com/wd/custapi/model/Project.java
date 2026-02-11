@@ -26,7 +26,7 @@ public class Project {
 
     private LocalDate endDate;
 
-    @Column
+    @Column(name = "overall_progress")
     private Double progress = 0.0;
 
     @Column(name = "project_phase")

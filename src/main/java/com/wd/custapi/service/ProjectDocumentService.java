@@ -88,7 +88,7 @@ public class ProjectDocumentService {
     }
 
     private ProjectDocumentDto toDto(ProjectDocument doc) {
-        String downloadUrl = "https://cust-api.walldotbuilders.com/api/storage/" + doc.getFilePath();
+        String downloadUrl = "/api/storage/" + doc.getFilePath();
         Long projectId = "PROJECT".equals(doc.getReferenceType()) ? doc.getReferenceId() : null;
         Long uploadedById = doc.getCreatedBy() != null ? doc.getCreatedBy().getId() : null;
         String uploadedByName = doc.getCreatedBy() != null

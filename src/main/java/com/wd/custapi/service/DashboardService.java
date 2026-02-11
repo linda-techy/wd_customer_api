@@ -327,7 +327,7 @@ public class DashboardService {
     }
 
     private DashboardDto.ProjectDocumentSummary toDocumentSummary(ProjectDocument doc) {
-        String downloadUrl = "https://cust-api.walldotbuilders.com/api/storage/" + doc.getFilePath();
+        String downloadUrl = "/api/storage/" + doc.getFilePath();
         String uploadedBy = doc.getCreatedBy() != null
                 ? doc.getCreatedBy().getFirstName() + " " + doc.getCreatedBy().getLastName()
                 : "Company";
