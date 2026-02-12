@@ -169,6 +169,18 @@ public class DashboardService {
     }
 
     /**
+     * Get all projects accessible by the current user.
+     * Admin users see all projects; regular users see only their assigned projects.
+     * Used by customer-facing controllers for authorization checks.
+     */
+    public List<Project> getProjectsForUser(String email) {
+        if (isAdminByEmail(email)) {
+            return projectRepository.findAllForAdmin();
+        }
+        return projectRepository.findAllByCustomerEmail(email);
+    }
+
+    /**
      * Resolve project by UUID and current user email (with admin bypass).
      * Used by project module endpoints that accept projectUuid in the path.
      */

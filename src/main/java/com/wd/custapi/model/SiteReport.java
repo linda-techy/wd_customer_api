@@ -3,6 +3,8 @@ package com.wd.custapi.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "site_reports")
@@ -47,7 +49,10 @@ public class SiteReport {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     
-    @Column(name = "updated_at")
+    @OneToMany(mappedBy = "siteReport", cascade = CascadeType.ALL)
+    private List<SiteReportPhoto> photos = new ArrayList<>();
+    
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     
     @PrePersist
@@ -160,5 +165,13 @@ public class SiteReport {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public List<SiteReportPhoto> getPhotos() {
+        return photos;
+    }
+    
+    public void setPhotos(List<SiteReportPhoto> photos) {
+        this.photos = photos;
     }
 }

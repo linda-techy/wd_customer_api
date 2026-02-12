@@ -1,5 +1,7 @@
 package com.wd.custapi.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -27,6 +29,8 @@ import java.nio.file.Paths;
 @RequestMapping("/api/storage")
 public class FileDownloadController {
 
+    private static final Logger logger = LoggerFactory.getLogger(FileDownloadController.class);
+
     @Value("${storageBasePath}")
     private String storageBasePath;
 
@@ -34,7 +38,9 @@ public class FileDownloadController {
      * Serve files from storage path
      * GET /api/storage/projects/1/documents/file.pdf
      * 
-     * @param filePath - The relative path after /api/storage/
+     * @param request - The HTTP request
+     * @param download - Whether to force download
+     * @param rangeHeader - Range header for streaming
      * @return File as Resource with appropriate content type
      */
     @GetMapping("/**")
@@ -65,7 +71,7 @@ public class FileDownloadController {
             
             // Validate request path is not empty
             if (requestPath == null || requestPath.isEmpty()) {
-                System.err.println("Empty request path for URI: " + requestURI);
+                logger.warn("Empty request path for URI: {}", requestURI);
                 return ResponseEntity.badRequest().build();
             }
             
@@ -73,32 +79,27 @@ public class FileDownloadController {
             try {
                 requestPath = URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
             } catch (Exception e) {
-                System.err.println("Failed to decode request path: " + requestPath);
+                logger.warn("Failed to decode request path '{}': {}", requestPath, e.getMessage());
                 // Continue with original path if decoding fails
             }
 
-            // Debug logging
-            System.out.println("=== File Download Request ===");
-            System.out.println("Storage Base Path: " + storageBasePath);
-            System.out.println("Request URI: " + requestURI);
-            System.out.println("Request Path: " + requestPath);
+            logger.debug("File download request - URI: {}, Path: {}", requestURI, requestPath);
 
             // Build full file path
             Path filePath = Paths.get(storageBasePath).resolve(requestPath).normalize();
-            System.out.println("Resolved File Path: " + filePath.toString());
-            System.out.println("File Exists: " + java.nio.file.Files.exists(filePath));
-            System.out.println("============================");
 
             // Security check - ensure file is within storage directory
             Path basePath = Paths.get(storageBasePath).toAbsolutePath().normalize();
             Path normalizedFilePath = filePath.toAbsolutePath().normalize();
             if (!normalizedFilePath.startsWith(basePath)) {
+                logger.warn("Path traversal attempt blocked: {} (resolved to {})", requestPath, normalizedFilePath);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // Check if file exists
             Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists() || !resource.isReadable()) {
+                logger.debug("File not found or not readable: {}", filePath);
                 return ResponseEntity.notFound().build();
             }
 
@@ -125,7 +126,7 @@ public class FileDownloadController {
             // Handle range requests for video/audio streaming
             if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
                 long fileSize = Files.size(filePath);
-                return handleRangeRequest(resource, rangeHeader, fileSize, contentType);
+                return handleRangeRequest(resource, rangeHeader, fileSize, contentType, requestPath);
             }
 
             return ResponseEntity.ok()
@@ -134,16 +135,13 @@ public class FileDownloadController {
                     .body(resource);
 
         } catch (MalformedURLException e) {
-            System.err.println("MalformedURLException: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Malformed URL for file request: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         } catch (IOException e) {
-            System.err.println("IOException: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("IO error serving file: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {
-            System.err.println("Unexpected error: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Unexpected error serving file: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -152,7 +150,7 @@ public class FileDownloadController {
      * Handle range requests for streaming (videos, large PDFs)
      */
     private ResponseEntity<Resource> handleRangeRequest(Resource resource, String rangeHeader, 
-                                                         long fileSize, String contentType) {
+                                                         long fileSize, String contentType, String fileName) {
         try {
             String[] ranges = rangeHeader.substring(6).split("-");
             long start = Long.parseLong(ranges[0]);
@@ -178,7 +176,11 @@ public class FileDownloadController {
                     .headers(headers)
                     .body(resource);
 
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid range header format for file {}: {}", fileName, rangeHeader);
+            return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE).build();
         } catch (Exception e) {
+            logger.error("Range request failed for file {}: {}", fileName, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -213,6 +215,7 @@ public class FileDownloadController {
             
             // Validate request path is not empty
             if (requestPath == null || requestPath.isEmpty()) {
+                logger.warn("Empty request path for HEAD request: {}", requestURI);
                 return ResponseEntity.badRequest().build();
             }
             
@@ -220,7 +223,7 @@ public class FileDownloadController {
             try {
                 requestPath = URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
             } catch (Exception e) {
-                // Continue with original path if decoding fails
+                logger.warn("Failed to decode path for HEAD request '{}': {}", requestPath, e.getMessage());
             }
 
             Path filePath = Paths.get(storageBasePath).resolve(requestPath).normalize();
@@ -229,6 +232,7 @@ public class FileDownloadController {
             Path basePath = Paths.get(storageBasePath).toAbsolutePath().normalize();
             Path normalizedFilePath = filePath.toAbsolutePath().normalize();
             if (!normalizedFilePath.startsWith(basePath)) {
+                logger.warn("Path traversal attempt blocked on HEAD: {} (resolved to {})", requestPath, normalizedFilePath);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
@@ -250,9 +254,8 @@ public class FileDownloadController {
             return ResponseEntity.ok().headers(headers).build();
 
         } catch (Exception e) {
+            logger.error("Error getting file metadata: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
-
-
