@@ -174,10 +174,15 @@ public class DashboardService {
      * Used by customer-facing controllers for authorization checks.
      */
     public List<Project> getProjectsForUser(String email) {
+        logger.info("Fetching projects for user: {}", email);
         if (isAdminByEmail(email)) {
-            return projectRepository.findAllForAdmin();
+            List<Project> allProjects = projectRepository.findAllForAdmin();
+            logger.info("Admin user {} retrieved {} projects", email, allProjects.size());
+            return allProjects;
         }
-        return projectRepository.findAllByCustomerEmail(email);
+        List<Project> userProjects = projectRepository.findAllByCustomerEmail(email);
+        logger.info("Customer user {} retrieved {} projects", email, userProjects.size());
+        return userProjects;
     }
 
     /**
@@ -282,7 +287,8 @@ public class DashboardService {
         // are not in the current Project model - add them to the model if needed
 
         // Get project documents
-        List<ProjectDocument> documents = projectDocumentRepository.findByReferenceIdAndReferenceTypeAndIsActiveTrue(project.getId(), "PROJECT");
+        List<ProjectDocument> documents = projectDocumentRepository
+                .findByReferenceIdAndReferenceTypeAndIsActiveTrue(project.getId(), "PROJECT");
         List<DashboardDto.ProjectDocumentSummary> documentSummaries = documents.stream()
                 .map(this::toDocumentSummary)
                 .collect(Collectors.toList());
