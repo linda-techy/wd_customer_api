@@ -18,10 +18,10 @@ public class RequestLoggingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        
+
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        
+
         // Only log storage-related requests
         String requestURI = httpRequest.getRequestURI();
         if (requestURI != null && requestURI.contains("/api/storage")) {
@@ -35,7 +35,7 @@ public class RequestLoggingFilter implements Filter {
             System.out.println("Query String: " + httpRequest.getQueryString());
             System.out.println("Remote Address: " + httpRequest.getRemoteAddr());
             System.out.println("Auth Present: " + (httpRequest.getHeader("Authorization") != null));
-            
+
             // Log headers
             System.out.println("Headers:");
             Enumeration<String> headerNames = httpRequest.getHeaderNames();
@@ -44,20 +44,20 @@ public class RequestLoggingFilter implements Filter {
                 String headerValue = httpRequest.getHeader(headerName);
                 // Don't log full Authorization token for security
                 if (headerName.equalsIgnoreCase("Authorization")) {
-                    headerValue = headerValue != null && headerValue.length() > 20 
-                        ? headerValue.substring(0, 20) + "..." 
-                        : headerValue;
+                    headerValue = headerValue != null && headerValue.length() > 20
+                            ? headerValue.substring(0, 20) + "..."
+                            : headerValue;
                 }
                 System.out.println("  " + headerName + ": " + headerValue);
             }
             System.out.println("################################################");
             System.out.println("\n");
         }
-        
+
         try {
             // Continue with the request
             chain.doFilter(request, response);
-            
+
             // Log response status
             if (requestURI != null && requestURI.contains("/api/storage")) {
                 System.out.println("\n");
@@ -71,7 +71,7 @@ public class RequestLoggingFilter implements Filter {
                 System.out.println("################################################");
                 System.out.println("\n\n");
             }
-            
+
         } catch (Exception e) {
             System.err.println("\n\n");
             System.err.println("################################################");
@@ -85,7 +85,7 @@ public class RequestLoggingFilter implements Filter {
             e.printStackTrace();
             System.err.println("################################################");
             System.err.println("\n\n");
-            
+
             // Re-throw to let Spring handle it
             throw e;
         }
@@ -101,4 +101,3 @@ public class RequestLoggingFilter implements Filter {
         System.out.println("RequestLoggingFilter destroyed");
     }
 }
-

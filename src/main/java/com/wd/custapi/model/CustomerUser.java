@@ -37,7 +37,7 @@ public class CustomerUser implements UserDetails {
     private Role role;
 
     @ManyToMany
-    @JoinTable(name = "project_members", joinColumns = @JoinColumn(name = "customer_id"), inverseJoinColumns = @JoinColumn(name = "project_id"))
+    @JoinTable(name = "project_members", joinColumns = @JoinColumn(name = "customer_user_id"), inverseJoinColumns = @JoinColumn(name = "project_id"))
     private Set<Project> projects;
 
     @Column(nullable = false)
