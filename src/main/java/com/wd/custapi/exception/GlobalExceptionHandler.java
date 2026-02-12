@@ -1,5 +1,7 @@
 package com.wd.custapi.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,6 +19,8 @@ import java.util.Map;
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Handle IO exceptions (file access issues)
@@ -81,21 +85,78 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle Spring MVC Resource Not Found (404)
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFound(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex, WebRequest request) {
+        logger.warn("Resource not found: {} {}", ex.getHttpMethod(), ex.getResourcePath());
+
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("error", "Not Found");
+        errorDetails.put("message", "Resource not found: " + ex.getResourcePath());
+        errorDetails.put("path", request.getDescription(false));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorDetails);
+    }
+
+    /**
+     * Handle Validation Exceptions (400)
+     */
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
+            org.springframework.web.bind.MethodArgumentNotValidException ex, WebRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors()
+                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("error", "Validation Failed");
+        errorDetails.put("message", "Input validation failed");
+        errorDetails.put("details", errors);
+        errorDetails.put("path", request.getDescription(false));
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
+    }
+
+    /**
+     * Handle Missing Request Parameter (400)
+     */
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingParams(
+            org.springframework.web.bind.MissingServletRequestParameterException ex, WebRequest request) {
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("error", "Bad Request");
+        errorDetails.put("message", "Missing required parameter: " + ex.getParameterName());
+        errorDetails.put("path", request.getDescription(false));
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
+    }
+
+    /**
+     * Handle Method Not Supported (405)
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex, WebRequest request) {
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("error", "Method Not Allowed");
+        errorDetails.put("message", "HTTP method " + ex.getMethod() + " is not supported for this endpoint");
+        errorDetails.put("path", request.getDescription(false));
+
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(errorDetails);
+    }
+
+    /**
      * Handle all other exceptions
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, WebRequest request) {
-        System.err.println("=== UNHANDLED EXCEPTION ===");
-        System.err.println("Type: " + ex.getClass().getName());
-        System.err.println("Message: " + ex.getMessage());
-        System.err.println("Request: " + request.getDescription(false));
-        System.err.println("Stack Trace:");
-        ex.printStackTrace();
-        System.err.println("===========================");
+        logger.error("UNHANDLED EXCEPTION: {} - {}", ex.getClass().getName(), ex.getMessage(), ex);
 
         Map<String, Object> errorDetails = new HashMap<>();
         errorDetails.put("error", "Internal Server Error");
-        errorDetails.put("message", ex.getMessage());
+        errorDetails.put("message", "An unexpected error occurred");
         errorDetails.put("type", ex.getClass().getSimpleName());
         errorDetails.put("path", request.getDescription(false));
 
