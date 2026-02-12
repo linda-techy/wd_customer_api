@@ -4,7 +4,6 @@ import com.wd.custapi.dto.CustomerSiteReportDto;
 import com.wd.custapi.dto.ProjectModuleDtos.ApiResponse;
 import com.wd.custapi.model.Project;
 import com.wd.custapi.model.SiteReport;
-import com.wd.custapi.repository.ProjectRepository;
 import com.wd.custapi.repository.SiteReportRepository;
 import com.wd.custapi.service.DashboardService;
 import org.slf4j.Logger;
@@ -31,15 +30,12 @@ public class CustomerSiteReportController {
     private static final Logger logger = LoggerFactory.getLogger(CustomerSiteReportController.class);
 
     private final SiteReportRepository siteReportRepository;
-    private final ProjectRepository projectRepository;
     private final DashboardService dashboardService;
 
     public CustomerSiteReportController(
             SiteReportRepository siteReportRepository,
-            ProjectRepository projectRepository,
             DashboardService dashboardService) {
         this.siteReportRepository = siteReportRepository;
-        this.projectRepository = projectRepository;
         this.dashboardService = dashboardService;
     }
 

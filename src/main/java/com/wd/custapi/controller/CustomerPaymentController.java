@@ -5,7 +5,6 @@ import com.wd.custapi.dto.ProjectModuleDtos.ApiResponse;
 import com.wd.custapi.model.Project;
 import com.wd.custapi.model.PaymentSchedule;
 import com.wd.custapi.repository.PaymentScheduleRepository;
-import com.wd.custapi.repository.ProjectRepository;
 import com.wd.custapi.service.DashboardService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,15 +30,12 @@ public class CustomerPaymentController {
     private static final Logger logger = LoggerFactory.getLogger(CustomerPaymentController.class);
 
     private final PaymentScheduleRepository paymentScheduleRepository;
-    private final ProjectRepository projectRepository;
     private final DashboardService dashboardService;
 
     public CustomerPaymentController(
             PaymentScheduleRepository paymentScheduleRepository,
-            ProjectRepository projectRepository,
             DashboardService dashboardService) {
         this.paymentScheduleRepository = paymentScheduleRepository;
-        this.projectRepository = projectRepository;
         this.dashboardService = dashboardService;
     }
 
