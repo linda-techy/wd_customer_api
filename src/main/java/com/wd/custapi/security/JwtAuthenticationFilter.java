@@ -88,8 +88,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (Exception e) {
             // If user not found in customer users, skip authentication
-            // This allows the request to proceed to the controller where it will be
-            // rejected
+            // This allows the request to proceed to the controller where it will be rejected
+            logger.debug("Authentication skipped: {}", e.getMessage());
         }
     }
 }

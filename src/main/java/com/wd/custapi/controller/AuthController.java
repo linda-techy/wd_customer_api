@@ -1,6 +1,12 @@
 package com.wd.custapi.controller;
 
-import com.wd.custapi.dto.*;
+import com.wd.custapi.dto.ForgotPasswordRequest;
+import com.wd.custapi.dto.LoginRequest;
+import com.wd.custapi.dto.LoginResponse;
+import com.wd.custapi.dto.RefreshTokenRequest;
+import com.wd.custapi.dto.RefreshTokenResponse;
+import com.wd.custapi.dto.RegisterRequest;
+import com.wd.custapi.dto.ResetPasswordRequest;
 import com.wd.custapi.service.AuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -10,7 +16,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -58,11 +68,9 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
-            String resetCode = authService.forgotPassword(request);
-            // In production, the code would be sent via email and not returned here
+            authService.forgotPassword(request);
             return ResponseEntity.ok(Map.of(
-                "message", "A reset code has been sent to your email address",
-                "resetCode", resetCode // Remove this in production
+                "message", "A reset code has been sent to your email address"
             ));
         } catch (IllegalArgumentException e) {
             logger.warn("Forgot password validation failed: {}", e.getMessage());

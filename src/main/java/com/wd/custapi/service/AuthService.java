@@ -203,8 +203,8 @@ public class AuthService {
         // Delete any existing reset tokens for this email
         passwordResetTokenRepository.deleteByEmail(request.getEmail().toLowerCase().trim());
 
-        // Generate a 6-digit reset code
-        String resetCode = String.format("%06d", new Random().nextInt(999999));
+        // Generate a 6-digit reset code using SecureRandom for security
+        String resetCode = String.format("%06d", new java.security.SecureRandom().nextInt(999999));
 
         // Save the reset token (valid for 15 minutes)
         PasswordResetToken token = new PasswordResetToken();
