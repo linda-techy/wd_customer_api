@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/customer/site-reports")
+@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 public class CustomerSiteReportController {
 
         private static final Logger logger = LoggerFactory.getLogger(CustomerSiteReportController.class);

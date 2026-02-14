@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/customer/payments")
+@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 public class CustomerPaymentController {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerPaymentController.class);
@@ -96,11 +98,8 @@ public class CustomerPaymentController {
         try {
             String email = auth.getName();
 
-            PaymentSchedule schedule = paymentScheduleRepository.findById(id).orElse(null);
-            if (schedule == null) {
-                return ResponseEntity.status(404)
-                        .body(new ApiResponse<>(false, "Payment schedule not found", null));
-            }
+            PaymentSchedule schedule = paymentScheduleRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Payment schedule not found"));
 
             // Resolve project via DesignPackagePayment -> Project
             Long scheduleProjectId = schedule.getDesignPayment() != null

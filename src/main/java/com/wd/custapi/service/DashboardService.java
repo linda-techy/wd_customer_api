@@ -41,6 +41,12 @@ public class DashboardService {
     @Autowired
     private com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
 
+    @Autowired
+    private com.wd.custapi.repository.ActivityFeedRepository activityFeedRepository;
+
+    @Autowired
+    private com.wd.custapi.repository.PaymentScheduleRepository paymentScheduleRepository;
+
     // ... existing code ...
 
     public DashboardDto getCustomerDashboard(String email) {
@@ -138,28 +144,117 @@ public class DashboardService {
     private List<DashboardDto.RecentActivity> buildRecentActivities(List<Project> projects) {
         List<DashboardDto.RecentActivity> activities = new ArrayList<>();
 
-        // Mock recent activities - in real app, these would come from an activity log
-        for (Project project : projects.stream().limit(3).collect(Collectors.toList())) {
-            activities.add(new DashboardDto.RecentActivity(
-                    "PROJECT_UPDATE",
-                    "Project " + project.getName() + " was updated",
-                    LocalDate.now().minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
-                    project.getId(),
-                    project.getName()));
+        if (projects.isEmpty()) {
+            return activities;
+        }
+
+        // Query real activities from ActivityFeed for all user's projects
+        try {
+            List<Long> projectIds = projects.stream()
+                    .map(Project::getId)
+                    .collect(Collectors.toList());
+
+            // Get activities for all projects, ordered by creation date descending
+            List<com.wd.custapi.model.ActivityFeed> activityFeeds = new ArrayList<>();
+            for (Long projectId : projectIds) {
+                List<com.wd.custapi.model.ActivityFeed> projectActivities = 
+                        activityFeedRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+                activityFeeds.addAll(projectActivities);
+            }
+
+            // Sort by createdAt descending and limit to 10 most recent
+            activityFeeds.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+            activityFeeds = activityFeeds.stream()
+                    .limit(10)
+                    .collect(Collectors.toList());
+
+            // Convert to DTO format
+            for (com.wd.custapi.model.ActivityFeed feed : activityFeeds) {
+                String activityType = feed.getActivityType() != null 
+                        ? feed.getActivityType().getName() 
+                        : "ACTIVITY";
+                String description = feed.getDescription() != null 
+                        ? feed.getDescription() 
+                        : feed.getTitle();
+                String timestamp = feed.getCreatedAt().toLocalDate()
+                        .format(DateTimeFormatter.ISO_LOCAL_DATE);
+                Long projectId = feed.getProject() != null ? feed.getProject().getId() : null;
+                String projectName = feed.getProject() != null ? feed.getProject().getName() : "Unknown";
+
+                activities.add(new DashboardDto.RecentActivity(
+                        activityType,
+                        description,
+                        timestamp,
+                        projectId,
+                        projectName));
+            }
+        } catch (Exception e) {
+            logger.warn("Error fetching recent activities: {}", e.getMessage());
+            // Return empty list if there's an error - never return fake data
         }
 
         return activities;
     }
 
     private DashboardDto.QuickStats buildQuickStats(Long customerId) {
-        // Mock stats - in real app, these would come from bills/payments tables
-        return new DashboardDto.QuickStats(
-                10L, // totalBills
-                3L, // pendingBills
-                7L, // paidBills
-                150000.0, // totalAmount
-                45000.0 // pendingAmount
-        );
+        // Get real payment statistics from PaymentSchedule
+        try {
+            // Get all projects for this customer
+            CustomerUser user = customerUserRepository.findById(customerId)
+                    .orElse(null);
+            if (user == null) {
+                return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
+            }
+
+            List<Project> userProjects;
+            if (user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+                userProjects = projectRepository.findAllForAdmin();
+            } else {
+                userProjects = projectRepository.findAllByCustomerEmail(user.getEmail());
+            }
+
+            if (userProjects.isEmpty()) {
+                return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
+            }
+
+            List<Long> projectIds = userProjects.stream()
+                    .map(Project::getId)
+                    .collect(Collectors.toList());
+
+            // Query all payment schedules for these projects
+            org.springframework.data.domain.Pageable pageable = 
+                    org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE);
+            org.springframework.data.domain.Page<com.wd.custapi.model.PaymentSchedule> paymentSchedules = 
+                    paymentScheduleRepository.findByProjectIdIn(projectIds, pageable);
+
+            long totalBills = paymentSchedules.getTotalElements();
+            long pendingBills = paymentSchedules.getContent().stream()
+                    .filter(ps -> ps.getStatus() != null && 
+                            ("PENDING".equalsIgnoreCase(ps.getStatus()) || 
+                             "OVERDUE".equalsIgnoreCase(ps.getStatus())))
+                    .count();
+            long paidBills = paymentSchedules.getContent().stream()
+                    .filter(ps -> ps.getStatus() != null && 
+                            "PAID".equalsIgnoreCase(ps.getStatus()))
+                    .count();
+
+            double totalAmount = paymentSchedules.getContent().stream()
+                    .map(ps -> ps.getAmount() != null ? ps.getAmount().doubleValue() : 0.0)
+                    .reduce(0.0, Double::sum);
+
+            double pendingAmount = paymentSchedules.getContent().stream()
+                    .filter(ps -> ps.getStatus() != null && 
+                            ("PENDING".equalsIgnoreCase(ps.getStatus()) || 
+                             "OVERDUE".equalsIgnoreCase(ps.getStatus())))
+                    .map(ps -> ps.getAmount() != null ? ps.getAmount().doubleValue() : 0.0)
+                    .reduce(0.0, Double::sum);
+
+            return new DashboardDto.QuickStats(totalBills, pendingBills, paidBills, totalAmount, pendingAmount);
+        } catch (Exception e) {
+            logger.warn("Error fetching payment statistics: {}", e.getMessage());
+            // Return zeros if there's an error - never return fake data
+            return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
+        }
     }
 
     private boolean isAdminByEmail(String email) {
@@ -402,35 +497,10 @@ public class DashboardService {
             progressData.setProgressStatus("UNKNOWN");
         }
 
-        // Build mock milestones (in real app, these would come from a milestones table)
+        // TODO: Milestones feature needs to be implemented
+        // Real milestones should come from a project_milestones table or project_phases table
+        // For now, return empty list - never return fake/mock data in production
         List<DashboardDto.ProgressMilestone> milestones = new ArrayList<>();
-        if (startDate != null && endDate != null) {
-            long totalDays = ChronoUnit.DAYS.between(startDate, endDate);
-
-            milestones.add(new DashboardDto.ProgressMilestone(
-                    "Foundation", 25.0,
-                    startDate.plusDays(totalDays / 4),
-                    startDate.plusDays(totalDays / 4),
-                    "COMPLETED"));
-
-            milestones.add(new DashboardDto.ProgressMilestone(
-                    "Structure", 50.0,
-                    startDate.plusDays(totalDays / 2),
-                    null,
-                    project.getProgress() >= 50 ? "COMPLETED" : "IN_PROGRESS"));
-
-            milestones.add(new DashboardDto.ProgressMilestone(
-                    "Finishes", 75.0,
-                    startDate.plusDays(totalDays * 3 / 4),
-                    null,
-                    project.getProgress() >= 75 ? "IN_PROGRESS" : "PENDING"));
-
-            milestones.add(new DashboardDto.ProgressMilestone(
-                    "Completion", 100.0,
-                    endDate,
-                    null,
-                    project.getProgress() >= 100 ? "COMPLETED" : "PENDING"));
-        }
         progressData.setMilestones(milestones);
 
         return progressData;
