@@ -58,6 +58,20 @@ public class BoqItem {
     @Column(name = "is_active")
     private Boolean isActive = true;
     
+    // Financial tracking fields (READ-ONLY for customers)
+    @Column(name = "executed_quantity", precision = 15, scale = 4, insertable = false, updatable = false)
+    private BigDecimal executedQuantity = BigDecimal.ZERO;
+    
+    @Column(name = "billed_quantity", precision = 15, scale = 4, insertable = false, updatable = false)
+    private BigDecimal billedQuantity = BigDecimal.ZERO;
+    
+    @Column(name = "status", length = 20, insertable = false, updatable = false)
+    private String status = "DRAFT";
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
+    private BoqCategory category;
+    
     // Constructors
     public BoqItem() {}
     
@@ -184,6 +198,79 @@ public class BoqItem {
     
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+    
+    public BigDecimal getExecutedQuantity() {
+        return executedQuantity != null ? executedQuantity : BigDecimal.ZERO;
+    }
+    
+    public void setExecutedQuantity(BigDecimal executedQuantity) {
+        this.executedQuantity = executedQuantity;
+    }
+    
+    public BigDecimal getBilledQuantity() {
+        return billedQuantity != null ? billedQuantity : BigDecimal.ZERO;
+    }
+    
+    public void setBilledQuantity(BigDecimal billedQuantity) {
+        this.billedQuantity = billedQuantity;
+    }
+    
+    public String getStatus() {
+        return status != null ? status : "DRAFT";
+    }
+    
+    public void setStatus(String status) {
+        this.status = status;
+    }
+    
+    public BoqCategory getCategory() {
+        return category;
+    }
+    
+    public void setCategory(BoqCategory category) {
+        this.category = category;
+    }
+    
+    // Computed getters for customer view
+    @Transient
+    public BigDecimal getRemainingQuantity() {
+        BigDecimal remaining = quantity.subtract(getExecutedQuantity());
+        return remaining.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : remaining;
+    }
+    
+    @Transient
+    public BigDecimal getTotalExecutedAmount() {
+        if (getExecutedQuantity() != null && rate != null) {
+            return getExecutedQuantity().multiply(rate);
+        }
+        return BigDecimal.ZERO;
+    }
+    
+    @Transient
+    public BigDecimal getTotalBilledAmount() {
+        if (getBilledQuantity() != null && rate != null) {
+            return getBilledQuantity().multiply(rate);
+        }
+        return BigDecimal.ZERO;
+    }
+    
+    @Transient
+    public BigDecimal getExecutionPercentage() {
+        if (quantity != null && quantity.compareTo(BigDecimal.ZERO) > 0) {
+            return getExecutedQuantity().divide(quantity, 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
+        }
+        return BigDecimal.ZERO;
+    }
+    
+    @Transient
+    public BigDecimal getBillingPercentage() {
+        if (getExecutedQuantity().compareTo(BigDecimal.ZERO) > 0) {
+            return getBilledQuantity().divide(getExecutedQuantity(), 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
+        }
+        return BigDecimal.ZERO;
     }
     
     @PreUpdate
