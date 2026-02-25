@@ -70,7 +70,7 @@ public class AuthController {
         try {
             authService.forgotPassword(request);
             return ResponseEntity.ok(Map.of(
-                "message", "A reset code has been sent to your email address"
+                "message", "If an account exists for this email, a password reset link has been sent"
             ));
         } catch (IllegalArgumentException e) {
             logger.warn("Forgot password validation failed: {}", e.getMessage());

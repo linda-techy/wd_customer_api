@@ -12,6 +12,7 @@ import com.wd.custapi.repository.RoleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,9 +20,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +52,12 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${app.customer-portal-base-url:https://cust.walldotbuilders.com}")
+    private String customerPortalBaseUrl;
 
     public LoginResponse login(LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -195,31 +204,41 @@ public class AuthService {
     // ===== FORGOT PASSWORD =====
 
     @Transactional
-    public String forgotPassword(ForgotPasswordRequest request) {
-        // Check if user exists
-        customerUserRepository.findByEmail(request.getEmail().toLowerCase().trim())
-                .orElseThrow(() -> new RuntimeException("No account found with this email address"));
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.getEmail().toLowerCase().trim();
+
+        // Check if user exists — silently succeed if not found to prevent email enumeration
+        CustomerUser user = customerUserRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            log.warn("Password reset requested for unknown email: {}", email);
+            return;
+        }
 
         // Delete any existing reset tokens for this email
-        passwordResetTokenRepository.deleteByEmail(request.getEmail().toLowerCase().trim());
+        passwordResetTokenRepository.deleteByEmail(email);
 
-        // Generate a 6-digit reset code using SecureRandom for security
-        String resetCode = String.format("%06d", new java.security.SecureRandom().nextInt(999999));
+        // Generate a secure UUID token (stored in the resetCode column)
+        String resetToken = UUID.randomUUID().toString();
 
         // Save the reset token (valid for 15 minutes)
         PasswordResetToken token = new PasswordResetToken();
-        token.setEmail(request.getEmail().toLowerCase().trim());
-        token.setResetCode(resetCode);
+        token.setEmail(email);
+        token.setResetCode(resetToken);
         token.setExpiresAt(LocalDateTime.now().plusMinutes(15));
         token.setUsed(false);
 
         passwordResetTokenRepository.save(token);
 
-        log.info("Password reset code generated for: {}", request.getEmail());
+        // Build the deep-link reset URL pointing at the customer portal
+        String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+        String resetLink = customerPortalBaseUrl
+                + "/reset-password?token=" + resetToken
+                + "&email=" + encodedEmail;
 
-        // In a production environment, send this code via email
-        // For now, return it in the response (for development/testing)
-        return resetCode;
+        log.info("Password reset link generated for: {}", email);
+
+        // Send the reset email (async — falls back to log simulation when email is disabled)
+        emailService.sendPasswordResetEmail(email, user.getFirstName(), resetLink);
     }
 
     // ===== RESET PASSWORD =====
