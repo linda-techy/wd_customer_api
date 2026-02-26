@@ -141,17 +141,29 @@ public class BoqService {
     }
     
     private BoqItemDto toDto(BoqItem item) {
+        Long categoryId = item.getCategory() != null ? item.getCategory().getId() : null;
+        String categoryName = item.getCategory() != null ? item.getCategory().getName() : null;
         return new BoqItemDto(
             item.getId(),
             item.getProject().getId(),
             item.getWorkType().getId(),
             item.getWorkType().getName(),
+            categoryId,
+            categoryName,
             item.getItemCode(),
             item.getDescription(),
             item.getQuantity(),
             item.getUnit(),
             item.getRate(),
             item.getAmount(),
+            item.getExecutedQuantity(),
+            item.getBilledQuantity(),
+            item.getRemainingQuantity(),
+            item.getTotalExecutedAmount(),
+            item.getTotalBilledAmount(),
+            item.getExecutionPercentage(),
+            item.getBillingPercentage(),
+            item.getStatus(),
             item.getSpecifications(),
             item.getNotes(),
             item.getCreatedAt(),
