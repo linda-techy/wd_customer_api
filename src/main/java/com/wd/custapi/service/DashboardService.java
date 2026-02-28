@@ -497,7 +497,7 @@ public class DashboardService {
             progressData.setProgressStatus("UNKNOWN");
         }
 
-        // TODO: Milestones feature needs to be implemented
+        // Milestones feature is pending implementation.
         // Real milestones should come from a project_milestones table or project_phases table
         // For now, return empty list - never return fake/mock data in production
         List<DashboardDto.ProgressMilestone> milestones = new ArrayList<>();
