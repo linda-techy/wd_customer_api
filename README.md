@@ -13,13 +13,23 @@ REST API for customer-facing features including authentication, project manageme
 
 ### 1. Environment Configuration
 
-Copy the example environment file and configure with your values:
+Use separate env files for each environment:
+
+- Local: `.env`
+- Staging: `.env.staging`
+- Production: `.env.production`
+
+`.env.local` is not used by scripts; local runtime is strictly `.env`.
+
+Start by copying templates:
 
 ```bash
 cp .env.example .env
+cp .env.staging.example .env.staging
+cp .env.production.example .env.production
 ```
 
-Edit `.env` and set your actual values:
+Edit each env file and set your actual values:
 
 ```properties
 # Database Configuration
@@ -45,6 +55,47 @@ CREATE DATABASE your_database_name;
 ```
 
 ### 3. Build and Run
+
+PowerShell startup by environment:
+
+```powershell
+# Local
+.\scripts\start-api.ps1 -Environment local
+
+# Staging
+.\scripts\start-api.ps1 -Environment staging
+
+# Production
+.\scripts\start-api.ps1 -Environment production
+```
+
+Optional:
+
+```powershell
+# Skip compile step
+.\scripts\start-api.ps1 -Environment local -SkipBuild
+
+# Skip preflight (not recommended)
+.\scripts\start-api.ps1 -Environment local -SkipPreflight
+```
+
+Run environment preflight checks only:
+
+```powershell
+.\scripts\check-env.ps1 -Environment local
+.\scripts\check-env.ps1 -Environment staging
+.\scripts\check-env.ps1 -Environment production
+```
+
+Detailed deployment checklist: `docs/environment-checklist.md`.
+
+If placeholders are intentionally present in a template-derived file:
+
+```powershell
+.\scripts\check-env.ps1 -Environment staging -AllowPlaceholderValues
+```
+
+Manual run (if preferred):
 
 ```bash
 # Build the project
@@ -72,11 +123,12 @@ LOGGING_LEVEL_APP=INFO           # Use INFO level logging
 
 ### Security Best Practices
 
-1. **Never commit `.env` files** - They contain sensitive credentials
+1. **Never commit real `.env.*` files** - They contain sensitive credentials
 2. **Rotate secrets regularly** - See `SECURITY.md` for instructions
 3. **Use strong passwords** - Minimum 12 characters with mixed case, numbers, and symbols
 4. **Generate JWT secrets properly** - Use `openssl rand -hex 32` or similar
 5. **Use environment-specific configs** - Different secrets for dev/staging/production
+6. **Pass preflight before deployment** - `check-env.ps1` must pass with no placeholders
 
 ## API Documentation
 

@@ -36,9 +36,9 @@ build/
 logs/
 *.log
 
-### Environment files (keep .env.example) ###
-.env
-.env.staging
-.env.production
+### Environment files (track only templates) ###
+.env*
 !.env.example
+!.env.staging.example
+!.env.production.example
 

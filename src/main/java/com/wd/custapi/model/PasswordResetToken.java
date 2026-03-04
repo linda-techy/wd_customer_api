@@ -14,13 +14,14 @@ public class PasswordResetToken {
     @Column(nullable = false)
     private String email;
 
-    @Column(name = "reset_code", nullable = false)
+    // Stores a hashed reset token (never store raw token)
+    @Column(name = "reset_code", nullable = false, length = 128)
     private String resetCode;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(name = "used")
+    @Column(name = "used", nullable = false)
     private Boolean used = false;
 
     @Column(name = "created_at")

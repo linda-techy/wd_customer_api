@@ -1,6 +1,8 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 
@@ -39,6 +41,7 @@ public class Project {
     private Boolean isDesignAgreementSigned = false;
 
     @Column(name = "sqfeet")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     private Double sqFeet;
 
     @Column(name = "design_progress")

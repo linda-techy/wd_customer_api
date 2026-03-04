@@ -12,7 +12,7 @@ public class ResetPasswordRequest {
     private String resetCode;
 
     @NotBlank(message = "New password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Size(min = 8, message = "Password must be at least 8 characters")
     private String newPassword;
 
     public String getEmail() { return email; }

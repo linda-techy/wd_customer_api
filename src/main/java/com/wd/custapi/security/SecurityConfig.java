@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,6 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -29,10 +29,7 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     
-    @Autowired
-    private Environment environment;
-    
-    @Value("${cors.allowed-origins:https://app.walldotbuilders.com,https://www.walldotbuilders.com}")
+    @Value("${cors.allowed-origins:https://app.walldotbuilders.com,https://www.walldotbuilders.com,http://localhost:*,http://127.0.0.1:*}")
     private String allowedOrigins;
     
     @Bean
@@ -68,14 +65,11 @@ public class SecurityConfig {
         // Allow specific origins - cannot use wildcard "*" with credentials
         // Using origin patterns for flexibility while maintaining security
         // Pattern format supports wildcards for ports: http://127.0.0.1:*
-        List<String> originPatterns = new ArrayList<>(Arrays.asList(allowedOrigins.split(",")));
-        
-        // Add localhost origins only in dev profile
-        boolean isDevProfile = Arrays.asList(environment.getActiveProfiles()).contains("dev");
-        if (isDevProfile) {
-            originPatterns.add("http://localhost:*");
-            originPatterns.add("http://127.0.0.1:*");
-        }
+        List<String> originPatterns = new ArrayList<>(
+                Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(origin -> !origin.isEmpty())
+                        .collect(Collectors.toList()));
         
         configuration.setAllowedOriginPatterns(originPatterns);
         

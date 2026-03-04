@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -42,7 +43,7 @@ public class EmailService {
                 helper.setText(buildPasswordResetHtml(firstName, resetLink), true);
                 mailSender.send(message);
                 logger.info("Password reset email sent successfully to {}", to);
-            } catch (MessagingException e) {
+            } catch (MessagingException | MailException e) {
                 logger.error("Failed to send password reset email to {}. Falling back to simulation.", to, e);
                 logEmailSimulation(to, firstName, resetLink);
             }
@@ -135,8 +136,8 @@ public class EmailService {
         logger.info("================ EMAIL SIMULATION ================");
         logger.info("TO: {}", to);
         logger.info("SUBJECT: Reset Your Walldot Password");
-        logger.info("Hi {}, click the following link to reset your password:", firstName);
-        logger.info("RESET LINK: {}", resetLink);
+        logger.info("Hi {}, a password reset email would be sent here.", firstName);
+        logger.info("RESET LINK: [REDACTED - token not logged]");
         logger.info("(Link expires in 15 minutes)");
         logger.info("==================================================");
     }

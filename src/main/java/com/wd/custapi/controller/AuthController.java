@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -66,15 +67,18 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
         try {
-            authService.forgotPassword(request);
+            authService.forgotPassword(request, extractClientKey(httpRequest));
             return ResponseEntity.ok(Map.of(
                 "message", "If an account exists for this email, a password reset link has been sent"
             ));
         } catch (IllegalArgumentException e) {
             logger.warn("Forgot password validation failed: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            HttpStatus status = e.getMessage() != null && e.getMessage().startsWith("Too many")
+                    ? HttpStatus.TOO_MANY_REQUESTS
+                    : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status)
                 .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             logger.error("Forgot password failed for request: {}", e.getMessage(), e);
@@ -84,12 +88,19 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
         try {
-            authService.resetPassword(request);
+            authService.resetPassword(request, extractClientKey(httpRequest));
             return ResponseEntity.ok(Map.of("message", "Password has been reset successfully"));
         } catch (IllegalArgumentException e) {
             logger.warn("Reset password validation failed: {}", e.getMessage());
+            HttpStatus status = e.getMessage() != null && e.getMessage().startsWith("Too many")
+                    ? HttpStatus.TOO_MANY_REQUESTS
+                    : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status)
+                .body(Map.of("error", e.getMessage()));
+        } catch (RuntimeException e) {
+            logger.warn("Reset password rejected: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -144,6 +155,15 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Authentication failed"));
         }
+    }
+
+    private String extractClientKey(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String remoteAddr = request.getRemoteAddr();
+        return remoteAddr == null || remoteAddr.isBlank() ? "unknown-client" : remoteAddr;
     }
 
 }

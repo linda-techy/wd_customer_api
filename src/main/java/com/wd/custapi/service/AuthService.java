@@ -22,9 +22,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,6 +66,15 @@ public class AuthService {
 
     @Value("${app.customer-portal-base-url:https://cust.walldotbuilders.com}")
     private String customerPortalBaseUrl;
+
+    private static final int FORGOT_PASSWORD_MAX_ATTEMPTS = 5;
+    private static final int RESET_PASSWORD_MAX_ATTEMPTS = 10;
+    private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(15);
+    private static final int MAX_RATE_LIMIT_KEYS = 10_000;
+    private static final int MAX_CLIENT_KEY_LENGTH = 128;
+
+    private final ConcurrentHashMap<String, Deque<LocalDateTime>> forgotPasswordAttempts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Deque<LocalDateTime>> resetPasswordAttempts = new ConcurrentHashMap<>();
 
     public LoginResponse login(LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -205,51 +222,82 @@ public class AuthService {
 
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
+        forgotPassword(request, "unknown-client");
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request, String clientKey) {
+        long startedAtMs = System.currentTimeMillis();
         String email = request.getEmail().toLowerCase().trim();
+        String normalizedClientKey = normalizeClientKey(clientKey);
+        enforceRateLimit(
+                forgotPasswordAttempts,
+                "forgot:" + normalizedClientKey + ":" + email,
+                FORGOT_PASSWORD_MAX_ATTEMPTS,
+                RATE_LIMIT_WINDOW);
 
         // Check if user exists — silently succeed if not found to prevent email enumeration
         CustomerUser user = customerUserRepository.findByEmail(email).orElse(null);
         if (user == null) {
-            log.warn("Password reset requested for unknown email: {}", email);
+            log.info("Password reset requested for unknown email.");
+            log.info("Forgot password completed in {} ms", System.currentTimeMillis() - startedAtMs);
             return;
         }
 
         // Delete any existing reset tokens for this email
         passwordResetTokenRepository.deleteByEmail(email);
 
-        // Generate a secure UUID token (stored in the resetCode column)
-        String resetToken = UUID.randomUUID().toString();
+        // Generate high-entropy raw token for URL, but store only its hash.
+        String resetToken = UUID.randomUUID() + "." + UUID.randomUUID();
+        String resetTokenHash = hashToken(resetToken);
 
         // Save the reset token (valid for 15 minutes)
         PasswordResetToken token = new PasswordResetToken();
         token.setEmail(email);
-        token.setResetCode(resetToken);
+        token.setResetCode(resetTokenHash);
         token.setExpiresAt(LocalDateTime.now().plusMinutes(15));
         token.setUsed(false);
 
         passwordResetTokenRepository.save(token);
 
         // Build the deep-link reset URL pointing at the customer portal
-        String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        String resetLink = customerPortalBaseUrl
-                + "/reset-password?token=" + resetToken
-                + "&email=" + encodedEmail;
+        String resetLink = buildResetLink(resetToken, email);
 
         log.info("Password reset link generated for: {}", email);
 
         // Send the reset email (async — falls back to log simulation when email is disabled)
         emailService.sendPasswordResetEmail(email, user.getFirstName(), resetLink);
+        log.info("Forgot password completed in {} ms", System.currentTimeMillis() - startedAtMs);
     }
 
     // ===== RESET PASSWORD =====
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
+        resetPassword(request, "unknown-client");
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request, String clientKey) {
+        String normalizedEmail = request.getEmail().toLowerCase().trim();
+        String normalizedClientKey = normalizeClientKey(clientKey);
+        enforceRateLimit(
+                resetPasswordAttempts,
+                "reset:" + normalizedClientKey + ":" + normalizedEmail,
+                RESET_PASSWORD_MAX_ATTEMPTS,
+                RATE_LIMIT_WINDOW);
+
+        String resetCode = request.getResetCode().trim();
+        if (resetCode.isEmpty()) {
+            throw new IllegalArgumentException("Reset code is required");
+        }
+        String resetTokenHash = hashToken(resetCode);
+
         // Find the reset token
         PasswordResetToken token = passwordResetTokenRepository
                 .findByEmailAndResetCodeAndUsedFalse(
-                        request.getEmail().toLowerCase().trim(),
-                        request.getResetCode())
+                        normalizedEmail,
+                        resetTokenHash)
                 .orElseThrow(() -> new RuntimeException("Invalid or expired reset code"));
 
         // Check if token is expired
@@ -257,18 +305,112 @@ public class AuthService {
             throw new RuntimeException("Reset code has expired. Please request a new one.");
         }
 
+        int consumedRows = passwordResetTokenRepository.markTokenUsedIfUnused(token.getId());
+        if (consumedRows == 0) {
+            throw new RuntimeException("Reset code has already been used. Please request a new one.");
+        }
+
         // Find the user
-        CustomerUser user = customerUserRepository.findByEmail(request.getEmail().toLowerCase().trim())
+        CustomerUser user = customerUserRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         customerUserRepository.save(user);
 
-        // Mark token as used
-        token.setUsed(true);
-        passwordResetTokenRepository.save(token);
+        // Revoke existing sessions after password reset.
+        refreshTokenRepository.deleteByUser_Id(user.getId());
 
-        log.info("Password reset successful for: {}", request.getEmail());
+        log.info("Password reset successful.");
+    }
+
+    private String hashToken(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(hashBytes.length * 2);
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
+    }
+
+    private String buildResetLink(String resetToken, String email) {
+        String normalizedBaseUrl = customerPortalBaseUrl == null
+                ? ""
+                : customerPortalBaseUrl.trim().replaceAll("/+$", "");
+        if (normalizedBaseUrl.isEmpty()) {
+            normalizedBaseUrl = "https://app.walldotbuilders.com";
+        }
+        String encodedToken = URLEncoder.encode(resetToken, StandardCharsets.UTF_8);
+        String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+        return normalizedBaseUrl
+                + "/#/reset_password?token=" + encodedToken
+                + "&email=" + encodedEmail;
+    }
+
+    private String normalizeClientKey(String rawClientKey) {
+        if (rawClientKey == null) {
+            return "unknown-client";
+        }
+        String trimmed = rawClientKey.trim();
+        if (trimmed.isEmpty()) {
+            return "unknown-client";
+        }
+        String sanitized = trimmed.replaceAll("[^A-Za-z0-9:._\\-]", "_");
+        if (sanitized.length() > MAX_CLIENT_KEY_LENGTH) {
+            sanitized = sanitized.substring(0, MAX_CLIENT_KEY_LENGTH);
+        }
+        return sanitized;
+    }
+
+    private void enforceRateLimit(
+            ConcurrentHashMap<String, Deque<LocalDateTime>> store,
+            String key,
+            int maxAttempts,
+            Duration window) {
+        LocalDateTime now = LocalDateTime.now();
+        cleanupRateLimitStore(store, now, window);
+        Deque<LocalDateTime> attempts = store.computeIfAbsent(key, k -> new ArrayDeque<>());
+
+        synchronized (attempts) {
+            LocalDateTime cutoff = now.minus(window);
+            while (!attempts.isEmpty() && attempts.peekFirst().isBefore(cutoff)) {
+                attempts.pollFirst();
+            }
+
+            if (attempts.size() >= maxAttempts) {
+                throw new IllegalArgumentException("Too many requests. Please try again later.");
+            }
+
+            attempts.addLast(now);
+        }
+    }
+
+    private void cleanupRateLimitStore(
+            ConcurrentHashMap<String, Deque<LocalDateTime>> store,
+            LocalDateTime now,
+            Duration window) {
+        if (store.size() <= MAX_RATE_LIMIT_KEYS) {
+            return;
+        }
+
+        LocalDateTime cutoff = now.minus(window);
+        Iterator<Map.Entry<String, Deque<LocalDateTime>>> iterator = store.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, Deque<LocalDateTime>> entry = iterator.next();
+            Deque<LocalDateTime> attempts = entry.getValue();
+            synchronized (attempts) {
+                while (!attempts.isEmpty() && attempts.peekFirst().isBefore(cutoff)) {
+                    attempts.pollFirst();
+                }
+                if (attempts.isEmpty()) {
+                    iterator.remove();
+                }
+            }
+        }
     }
 }
