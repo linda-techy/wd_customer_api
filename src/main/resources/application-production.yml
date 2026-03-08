@@ -31,8 +31,8 @@ jwt:
   refresh-token-expiration: 604800000
 
 file:
-  upload-dir: /var/wd_storage/uploads
-storageBasePath: /var/wd_storage/uploads
+  upload-dir: /home/ftpuser/var/www/app/walldotbuilders/storage
+storageBasePath: /home/ftpuser/var/www/app/walldotbuilders/storage
 
 logging:
   level:
