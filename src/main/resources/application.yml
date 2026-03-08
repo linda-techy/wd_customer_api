@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: cust-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  main:
+    banner-mode: off
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connectionTimeout: 10000
+      validationTimeout: 5000
+      maximumPoolSize: 5
+      minimumIdle: 1
+      initializationFailTimeout: 20000
+      idleTimeout: 300000
+      maxLifetime: 1200000
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 20MB
+
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: false
+            trust: smtp.hostinger.com
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+jwt:
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000

@@ -49,6 +49,7 @@ public class DashboardService {
 
     // ... existing code ...
 
+    @Transactional(readOnly = true)
     public DashboardDto getCustomerDashboard(String email) {
         try {
             CustomerUser user = customerUserRepository.findByEmail(email)
@@ -79,7 +80,8 @@ public class DashboardService {
 
             DashboardDto.ProjectSummary projectSummary = buildProjectSummary(userProjects);
             List<DashboardDto.RecentActivity> recentActivities = buildRecentActivities(userProjects);
-            DashboardDto.QuickStats quickStats = buildQuickStats(user.getId());
+            // Pass already-resolved user to avoid a second DB hit
+            DashboardDto.QuickStats quickStats = buildQuickStats(user, userProjects);
 
             return new DashboardDto(userSummary, projectSummary, recentActivities, quickStats);
         } catch (Exception e) {
@@ -148,33 +150,23 @@ public class DashboardService {
             return activities;
         }
 
-        // Query real activities from ActivityFeed for all user's projects
         try {
             List<Long> projectIds = projects.stream()
                     .map(Project::getId)
                     .collect(Collectors.toList());
 
-            // Get activities for all projects, ordered by creation date descending
-            List<com.wd.custapi.model.ActivityFeed> activityFeeds = new ArrayList<>();
-            for (Long projectId : projectIds) {
-                List<com.wd.custapi.model.ActivityFeed> projectActivities = 
-                        activityFeedRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
-                activityFeeds.addAll(projectActivities);
-            }
+            // Single bulk DB query — replaces old per-project N+1 loop
+            org.springframework.data.domain.Pageable top10 =
+                    org.springframework.data.domain.PageRequest.of(0, 10);
+            List<com.wd.custapi.model.ActivityFeed> activityFeeds =
+                    activityFeedRepository.findTop10ByProjectIdInOrderByCreatedAtDesc(projectIds, top10);
 
-            // Sort by createdAt descending and limit to 10 most recent
-            activityFeeds.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
-            activityFeeds = activityFeeds.stream()
-                    .limit(10)
-                    .collect(Collectors.toList());
-
-            // Convert to DTO format
             for (com.wd.custapi.model.ActivityFeed feed : activityFeeds) {
-                String activityType = feed.getActivityType() != null 
-                        ? feed.getActivityType().getName() 
+                String activityType = feed.getActivityType() != null
+                        ? feed.getActivityType().getName()
                         : "ACTIVITY";
-                String description = feed.getDescription() != null 
-                        ? feed.getDescription() 
+                String description = feed.getDescription() != null
+                        ? feed.getDescription()
                         : feed.getTitle();
                 String timestamp = feed.getCreatedAt().toLocalDate()
                         .format(DateTimeFormatter.ISO_LOCAL_DATE);
@@ -190,29 +182,17 @@ public class DashboardService {
             }
         } catch (Exception e) {
             logger.warn("Error fetching recent activities: {}", e.getMessage());
-            // Return empty list if there's an error - never return fake data
         }
 
         return activities;
     }
 
-    private DashboardDto.QuickStats buildQuickStats(Long customerId) {
-        // Get real payment statistics from PaymentSchedule
+    /**
+     * Uses DB-side aggregation instead of loading all payment rows into memory.
+     * Accepts the already-resolved user and projects to avoid redundant DB hits.
+     */
+    private DashboardDto.QuickStats buildQuickStats(CustomerUser user, List<Project> userProjects) {
         try {
-            // Get all projects for this customer
-            CustomerUser user = customerUserRepository.findById(customerId)
-                    .orElse(null);
-            if (user == null) {
-                return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
-            }
-
-            List<Project> userProjects;
-            if (user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getName())) {
-                userProjects = projectRepository.findAllForAdmin();
-            } else {
-                userProjects = projectRepository.findAllByCustomerEmail(user.getEmail());
-            }
-
             if (userProjects.isEmpty()) {
                 return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
             }
@@ -221,38 +201,21 @@ public class DashboardService {
                     .map(Project::getId)
                     .collect(Collectors.toList());
 
-            // Query all payment schedules for these projects
-            org.springframework.data.domain.Pageable pageable = 
-                    org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE);
-            org.springframework.data.domain.Page<com.wd.custapi.model.PaymentSchedule> paymentSchedules = 
-                    paymentScheduleRepository.findByProjectIdIn(projectIds, pageable);
+            // Single DB aggregate query — no full row loading
+            Object[] row = paymentScheduleRepository.getPaymentSummaryForProjects(projectIds);
+            if (row == null || row[0] == null) {
+                return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
+            }
 
-            long totalBills = paymentSchedules.getTotalElements();
-            long pendingBills = paymentSchedules.getContent().stream()
-                    .filter(ps -> ps.getStatus() != null && 
-                            ("PENDING".equalsIgnoreCase(ps.getStatus()) || 
-                             "OVERDUE".equalsIgnoreCase(ps.getStatus())))
-                    .count();
-            long paidBills = paymentSchedules.getContent().stream()
-                    .filter(ps -> ps.getStatus() != null && 
-                            "PAID".equalsIgnoreCase(ps.getStatus()))
-                    .count();
-
-            double totalAmount = paymentSchedules.getContent().stream()
-                    .map(ps -> ps.getAmount() != null ? ps.getAmount().doubleValue() : 0.0)
-                    .reduce(0.0, Double::sum);
-
-            double pendingAmount = paymentSchedules.getContent().stream()
-                    .filter(ps -> ps.getStatus() != null && 
-                            ("PENDING".equalsIgnoreCase(ps.getStatus()) || 
-                             "OVERDUE".equalsIgnoreCase(ps.getStatus())))
-                    .map(ps -> ps.getAmount() != null ? ps.getAmount().doubleValue() : 0.0)
-                    .reduce(0.0, Double::sum);
+            long totalBills   = ((Number) row[0]).longValue();
+            long pendingBills = ((Number) row[1]).longValue();
+            long paidBills    = ((Number) row[2]).longValue();
+            double totalAmount   = ((Number) row[3]).doubleValue();
+            double pendingAmount = ((Number) row[4]).doubleValue();
 
             return new DashboardDto.QuickStats(totalBills, pendingBills, paidBills, totalAmount, pendingAmount);
         } catch (Exception e) {
             logger.warn("Error fetching payment statistics: {}", e.getMessage());
-            // Return zeros if there's an error - never return fake data
             return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
         }
     }
@@ -268,6 +231,7 @@ public class DashboardService {
      * Admin users see all projects; regular users see only their assigned projects.
      * Used by customer-facing controllers for authorization checks.
      */
+    @Transactional(readOnly = true)
     public List<Project> getProjectsForUser(String email) {
         logger.info("Fetching projects for user: {}", email);
         if (isAdminByEmail(email)) {
@@ -284,6 +248,7 @@ public class DashboardService {
      * Resolve project by UUID and current user email (with admin bypass).
      * Used by project module endpoints that accept projectUuid in the path.
      */
+    @Transactional(readOnly = true)
     public Project getProjectByUuidAndEmail(String projectUuidStr, String email) {
         java.util.UUID projectUuid;
         try {
@@ -301,6 +266,7 @@ public class DashboardService {
     }
 
     // Get recent N projects for dashboard
+    @Transactional(readOnly = true)
     public List<DashboardDto.ProjectCard> getRecentProjects(String email, int limit) {
         List<Project> projects = isAdminByEmail(email)
                 ? projectRepository.findRecentForAdmin(limit)
@@ -311,6 +277,7 @@ public class DashboardService {
     }
 
     // Search projects by name, code, or location
+    @Transactional(readOnly = true)
     public List<DashboardDto.ProjectCard> searchProjects(String email, String searchTerm) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             return getRecentProjects(email, 5);
@@ -325,6 +292,7 @@ public class DashboardService {
     }
 
     // Get detailed project information including progress and documents
+    @Transactional(readOnly = true)
     public DashboardDto.ProjectDetails getProjectDetails(String projectUuidStr, String email) {
         // Parse UUID
         java.util.UUID projectUuid;

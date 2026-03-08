@@ -2,7 +2,7 @@
 
 ## Rotating Secrets
 
-If secrets have been exposed (e.g., committed to git), follow these steps immediately:
+If secrets have been exposed (e.g., printed to logs or accidentally shared), follow these steps immediately:
 
 ### 1. Generate New Secrets
 
@@ -15,12 +15,9 @@ openssl rand -hex 32
 
 ### 2. Update Environment Variables
 
-Update `.env` with new values:
-
-```properties
-JWT_SECRET=<new_generated_secret>
-DB_PASSWORD=<new_database_password>
-```
+Update your hosting provider's environment variables (e.g. AWS Secrets Manager, Heroku Config Vars, System Environment Variables) with the new values:
+- `JWT_SECRET`
+- `DB_PASSWORD`
 
 ### 3. Update Database Passwords
 
@@ -32,70 +29,22 @@ ALTER USER your_username WITH PASSWORD 'new_secure_password';
 
 ### 4. Restart Services
 
-After updating secrets:
-
-```bash
-# Stop the application
-# Update .env file
-# Restart the application
-mvn spring-boot:run
-```
+After updating secrets on your hosting environment, restart the application to pull the new variables.
 
 ### 5. Invalidate Old Sessions
 
-When rotating JWT secrets, all existing user sessions will be invalidated automatically. Users will need to log in again.
-
-## Removing Secrets from Git History
-
-If secrets were committed to git:
-
-### Option 1: Using git filter-branch (for local cleanup)
-
-```bash
-# Remove specific file from all commits
-git filter-branch --force --index-filter \
-  "git rm --cached --ignore-unmatch .env" \
-  --prune-empty --tag-name-filter cat -- --all
-
-# Force push (ONLY if you haven't shared the repository)
-git push origin --force --all
-```
-
-### Option 2: Using BFG Repo-Cleaner (recommended)
-
-```bash
-# Install BFG
-# https://rtyley.github.io/bfg-repo-cleaner/
-
-# Remove all .env files from history
-bfg --delete-files .env
-
-# Clean up
-git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-```
-
-### Option 3: Fresh Repository (safest for already-shared repos)
-
-1. Create a new repository
-2. Copy files (excluding .env files)
-3. Commit to new repository
-4. Update remote URL
-5. Archive old repository
+When rotating JWT secrets, all existing user sessions will be invalidated automatically as old tokens will no longer be verified. Users will need to log in again.
 
 ## Security Checklist
 
 ### Before Deployment
 
-- [ ] All `.env` files are in `.gitignore`
-- [ ] `.env.example` exists with no real secrets
-- [ ] All secrets are environment-specific (dev ≠ staging ≠ production)
-- [ ] JWT secrets are at least 32 characters (256 bits)
-- [ ] Database passwords are strong (12+ characters, mixed case, numbers, symbols)
-- [ ] `DDL_AUTO` is set to `validate` (never `update` or `create`)
-- [ ] `SHOW_SQL` is set to `false`
-- [ ] Logging level is `INFO` or `WARN` (not `DEBUG`)
-- [ ] Error messages don't expose internal details (`ERROR_INCLUDE_MESSAGE=never`)
+- [ ] All production secrets are provided securely as system environment variables.
+- [ ] No hardcoded tokens, passwords, or secrets exist in the source code.
+- [ ] `SPRING_PROFILES_ACTIVE` is explicitly set to `production`.
+- [ ] JWT secrets are at least 32 characters (256 bits).
+- [ ] Database passwords are strong (12+ characters, mixed case, numbers, symbols).
+- [ ] Ensure that `application-production.yml` strictly enforces these behaviors.
 
 ### Regular Maintenance
 

@@ -1,0 +1,47 @@
+server:
+  port: 8081
+  error:
+    include-message: always
+
+spring:
+  datasource:
+    url: jdbc:postgresql://46.202.164.251:5432/wdTestDB
+    username: postgres
+    password: Staygether@2025
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  mail:
+    host: smtp.hostinger.com
+    port: 465
+    username: info@walldotbuilders.com
+    password: Staygether@2025
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
+
+file:
+  upload-dir: N:\Projects\wd projects git\storage
+storageBasePath: N:\Projects\wd projects git\storage
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.wd.custapi: DEBUG
+
+app:
+  email:
+    enabled: true
+  customer-portal-base-url: http://localhost:3000
+  cors:
+    allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3002

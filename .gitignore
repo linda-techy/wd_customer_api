@@ -36,9 +36,13 @@ build/
 logs/
 *.log
 
+### Build artifacts ###
+cust-api.jar
+
 ### Environment files (track only templates) ###
 .env*
 !.env.example
 !.env.staging.example
 !.env.production.example
+
 

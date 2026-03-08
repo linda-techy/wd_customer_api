@@ -13,25 +13,18 @@ REST API for customer-facing features including authentication, project manageme
 
 ### 1. Environment Configuration
 
-Use separate env files for each environment:
+The application uses **Spring Profiles** to manage environments (`local` and `production`) alongside strict environment variables.
 
-- Local: `.env`
-- Staging: `.env.staging`
-- Production: `.env.production`
+Configuration files:
+- `application.yml` (Common configurations)
+- `application-local.yml` (Developer defaults)
+- `application-production.yml` (Production - requires actual system environment variables)
 
-`.env.local` is not used by scripts; local runtime is strictly `.env`.
+To switch environments, set the `SPRING_PROFILES_ACTIVE` environment variable (e.g., `local` or `production`). 
 
-Start by copying templates:
-
+**For Production:**
+All sensitive data must be passed strictly as system environment variables:
 ```bash
-cp .env.example .env
-cp .env.staging.example .env.staging
-cp .env.production.example .env.production
-```
-
-Edit each env file and set your actual values:
-
-```properties
 # Database Configuration
 DB_URL=jdbc:postgresql://your-host:5432/your_database
 DB_USERNAME=your_username
@@ -39,11 +32,6 @@ DB_PASSWORD=your_secure_password
 
 # JWT Configuration - Generate with: openssl rand -hex 32
 JWT_SECRET=your_generated_secret_key
-JWT_ACCESS_EXPIRATION=3600000
-JWT_REFRESH_EXPIRATION=604800000
-
-# File Storage Path
-STORAGE_BASE_PATH=/path/to/storage
 ```
 
 ### 2. Database Setup
@@ -56,85 +44,54 @@ CREATE DATABASE your_database_name;
 
 ### 3. Build and Run
 
-PowerShell startup by environment:
-
-```powershell
-# Local
-.\scripts\start-api.ps1 -Environment local
-
-# Staging
-.\scripts\start-api.ps1 -Environment staging
-
-# Production
-.\scripts\start-api.ps1 -Environment production
-```
-
-Optional:
-
-```powershell
-# Skip compile step
-.\scripts\start-api.ps1 -Environment local -SkipBuild
-
-# Skip preflight (not recommended)
-.\scripts\start-api.ps1 -Environment local -SkipPreflight
-```
-
-Run environment preflight checks only:
-
-```powershell
-.\scripts\check-env.ps1 -Environment local
-.\scripts\check-env.ps1 -Environment staging
-.\scripts\check-env.ps1 -Environment production
-```
-
-Detailed deployment checklist: `docs/environment-checklist.md`.
-
-If placeholders are intentionally present in a template-derived file:
-
-```powershell
-.\scripts\check-env.ps1 -Environment staging -AllowPlaceholderValues
-```
-
-Manual run (if preferred):
+#### Local Development
+By default, the application runs using the `local` profile.
 
 ```bash
 # Build the project
-mvn clean install
+mvn clean install -DskipTests
 
 # Run the application
 mvn spring-boot:run
 ```
 
-The API will start on `http://localhost:8080` (or the port specified in `SERVER_PORT`).
+#### Production Deployment
+
+For deploying to a VPS (e.g., using `pm2` to keep it running):
+
+```bash
+# Set up the production profile and start the app via pm2
+SPRING_PROFILES_ACTIVE=production pm2 start "java -jar target/cust-api-0.0.1-SNAPSHOT.jar" --name "wd-customer-api"
+
+# Save the pm2 state so it restarts on server reboot
+pm2 save
+pm2 startup
+```
+
+The API will start on `http://localhost:8081` (or the port specified in `SERVER_PORT`).
 
 ## Configuration
 
 ### Production Settings
 
-For production deployment, set these environment variables:
-
-```bash
-DDL_AUTO=validate                # Never use 'update' in production
-SHOW_SQL=false                   # Disable SQL logging
-ERROR_INCLUDE_MESSAGE=never      # Hide internal error details
-LOGGING_LEVEL_SECURITY=INFO      # Use INFO level logging
-LOGGING_LEVEL_APP=INFO           # Use INFO level logging
-```
+The `application-production.yml` file is automatically optimized for production:
+- Disables SQL logging
+- Uses `validate` for DDL generation to prevent accidental database overwrites
+- Hides stack traces and explicit error messages
+- Logs only at `INFO` level
 
 ### Security Best Practices
 
-1. **Never commit real `.env.*` files** - They contain sensitive credentials
-2. **Rotate secrets regularly** - See `SECURITY.md` for instructions
-3. **Use strong passwords** - Minimum 12 characters with mixed case, numbers, and symbols
-4. **Generate JWT secrets properly** - Use `openssl rand -hex 32` or similar
-5. **Use environment-specific configs** - Different secrets for dev/staging/production
-6. **Pass preflight before deployment** - `check-env.ps1` must pass with no placeholders
+1. **Rotate secrets regularly** - See `SECURITY.md` for instructions
+2. **Use strong passwords** - Minimum 12 characters with mixed case, numbers, and symbols
+3. **Generate JWT secrets properly** - Use `openssl rand -hex 32` or similar
+4. **Pass configuration via Environment Variables** - Never hardcode production secrets in source control.
 
 ## API Documentation
 
 Once running, access the API at:
-- Base URL: `http://localhost:8080`
-- Health Check: `http://localhost:8080/actuator/health`
+- Base URL: `http://localhost:8081`
+- Health Check: `http://localhost:8081/actuator/health`
 
 ### Key Endpoints
 
@@ -151,16 +108,16 @@ Once running, access the API at:
 
 If you see connection errors:
 1. Verify database is running
-2. Check `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` in `.env`
+2. Check `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` variables
 3. Ensure database exists
 4. Check network connectivity to database server
 
 ### JWT Secret Issues
 
-If you see JWT validation errors:
-1. Ensure `JWT_SECRET` is at least 32 characters
+If you see JWT validation errors starting up in production:
+1. Ensure `JWT_SECRET` variable is provided
 2. Generate a new secret: `openssl rand -hex 32`
-3. Restart the application after changing the secret
+3. Restart the application
 
 ## Development
 

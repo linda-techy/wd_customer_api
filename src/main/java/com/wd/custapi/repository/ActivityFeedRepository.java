@@ -17,5 +17,13 @@ public interface ActivityFeedRepository extends JpaRepository<ActivityFeed, Long
     
     List<ActivityFeed> findByProjectIdAndActivityTypeIdOrderByCreatedAtDesc(
         Long projectId, Long activityTypeId);
+
+    // Bulk fetch across all projects in one query — eliminates N+1 loop
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT a FROM ActivityFeed a WHERE a.project.id IN :projectIds ORDER BY a.createdAt DESC")
+    List<ActivityFeed> findTop10ByProjectIdInOrderByCreatedAtDesc(
+        @org.springframework.data.repository.query.Param("projectIds") List<Long> projectIds,
+        org.springframework.data.domain.Pageable pageable);
 }
+
 
