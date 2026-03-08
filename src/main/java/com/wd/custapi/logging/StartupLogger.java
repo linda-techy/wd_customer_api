@@ -29,7 +29,7 @@ public class StartupLogger implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(StartupLogger.class);
 
-    private static final String LOG_DIR = "/home/backenduser/logs";
+    private static final String LOG_DIR = "/home/backenduser/logs/customer-api";
 
     private final Environment environment;
 

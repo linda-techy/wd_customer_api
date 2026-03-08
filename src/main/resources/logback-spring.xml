@@ -4,7 +4,7 @@
     <!-- ═══════════════════════════════════════════════════════════════════
          Log directory — must exist or be created by StartupLogger
          ═══════════════════════════════════════════════════════════════════ -->
-    <property name="LOG_DIR" value="/home/backenduser/logs"/>
+    <property name="LOG_DIR" value="/home/backenduser/logs/customer-api"/>
     <property name="APP_NAME" value="wd-customer-api"/>
     <property name="MAX_FILE_SIZE" value="50MB"/>
     <property name="MAX_HISTORY" value="30"/>
@@ -12,7 +12,8 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════
          CONSOLE — used by local profile only
-         ═══════════════════════════════════════════════════════════════════ -->
+         ════════════════════════════════════════
+         ═══════════════════════════ -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%cyan(%thread)] %yellow(%logger{36}) [traceId=%X{traceId}] [userId=%X{userId}] - %msg%n</pattern>
