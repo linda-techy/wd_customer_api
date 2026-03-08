@@ -51,14 +51,17 @@ public class DashboardService {
     public DashboardDto getCustomerDashboard(String email) {
         try {
             CustomerUser user = customerUserRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Customer user not found: " + email));
+                    .orElseThrow(() -> new RuntimeException("Customer user not found"));
 
             boolean isAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getName());
             List<Project> userProjects;
             try {
                 if (isAdmin) {
-                    userProjects = projectRepository.findAllForAdmin();
-                    logger.info("Admin user {}: found {} projects (all customer_projects)", email, userProjects.size());
+                    // Cap admin dashboard at 50 most recent projects.
+                    // findAllForAdmin() loads the ENTIRE table into heap — catastrophic at scale.
+                    // Admin can use a separate paginated admin endpoint if they need all projects.
+                    userProjects = projectRepository.findRecentForAdmin(50);
+                    logger.info("Admin user {}: loaded {} recent projects for dashboard", email, userProjects.size());
                 } else {
                     userProjects = projectRepository.findAllByCustomerEmail(email);
                     logger.info("Found {} projects for user: {}", userProjects.size(), email);
@@ -83,7 +86,9 @@ public class DashboardService {
 
             return new DashboardDto(userSummary, projectSummary, recentActivities, quickStats);
         } catch (Exception e) {
-            throw new RuntimeException("Error building dashboard for user: " + email + ", Error: " + e.getMessage(), e);
+            // Log full detail internally but do NOT expose it to the caller
+            logger.error("Error building dashboard for user: {}", email, e);
+            throw new RuntimeException("Error building dashboard. Please try again.", e);
         }
     }
 

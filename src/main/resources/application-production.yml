@@ -15,12 +15,38 @@ spring:
     username: postgres
     password: Staygether@2025
     hikari:
-      maximumPoolSize: 15
-      minimumIdle: 5
+      maximum-pool-size: 50          # Up from 15 — prevents connection starvation at load
+      minimum-idle: 10
+      connection-timeout: 30000      # 30s — gives thread time to wait for a free connection
+      idle-timeout: 600000           # 10 min
+      max-lifetime: 1800000          # 30 min — recycles connections before DB drops them
+      leak-detection-threshold: 60000 # Log if a connection is held > 60s
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 50
+        queue-capacity: 500
+      thread-name-prefix: async-cust-
+    scheduling:
+      pool:
+        size: 3
+  servlet:
+    encoding:
+      enabled: true
+server:
+  port: 8081
+  error:
+    include-message: never
+    include-stacktrace: never
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/plain
+    min-response-size: 1024
 
   mail:
     host: smtp.hostinger.com

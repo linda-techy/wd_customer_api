@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -27,8 +28,19 @@ public class JwtService {
     @Value("${jwt.refresh-token-expiration}")
     private Long refreshTokenExpiration;
 
+    /**
+     * Cached signing key — built once at startup, not on every request.
+     * Keys.hmacShaKeyFor() is not cheap; caching eliminates hot-path CPU waste.
+     */
+    private SecretKey signingKey;
+
+    @PostConstruct
+    private void initSigningKey() {
+        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        return signingKey; // Zero-allocation — cached at startup
     }
 
     public String extractUsername(String token) {
@@ -58,38 +70,53 @@ public class JwtService {
 
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("tokenType", "CUSTOMER"); // signed claim — not guessable via subject prefix
         return createToken(claims, userDetails.getUsername(), accessTokenExpiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("tokenType", "REFRESH");
         return createToken(claims, userDetails.getUsername(), refreshTokenExpiration);
     }
 
-    // Multi-tenant token generation
+    // Multi-tenant token generation — tokenType stored as a SIGNED claim, not subject prefix
     public String generateToken(String subject, String tokenType, Map<String, Object> claims, Long expiration) {
-        String prefixedSubject = tokenType + "_" + subject;
-        return createToken(claims, prefixedSubject, expiration);
+        claims = new HashMap<>(claims); // defensive copy
+        claims.put("tokenType", tokenType); // cryptographically signed in JWT payload
+        return createToken(claims, subject, expiration); // subject = just the email, no prefix
     }
 
     public String generateCustomerToken(String email, Map<String, Object> claims) {
         return generateToken(email, "CUSTOMER", claims, accessTokenExpiration);
     }
 
+    /**
+     * Extract token type from the signed "tokenType" claim.
+     * Previously read from subject prefix ("CUSTOMER_email") — easily guessable/forgeable.
+     * Now reads from a cryptographically-signed claim in the JWT payload.
+     * Backward-compatible: if claim is missing, returns "CUSTOMER" as safe default.
+     */
     public String extractTokenType(String token) {
-        String subject = extractUsername(token);
-        if (subject != null && subject.contains("_")) {
-            return subject.split("_")[0]; // PORTAL, PARTNER, CUSTOMER
+        Object tokenType = extractAllClaims(token).get("tokenType");
+        if (tokenType != null) {
+            return tokenType.toString();
         }
-        return "CUSTOMER"; // Default for customer API
+        return "CUSTOMER"; // safe default for legacy tokens issued before this fix
     }
 
+    /**
+     * Extract the actual email subject.
+     * Previously had to strip the "CUSTOMER_" prefix — subject is now just the email.
+     * Backward-compatible: strips legacy prefix for tokens issued before this fix.
+     */
     public String extractActualSubject(String token) {
         String subject = extractUsername(token);
         if (subject != null && subject.contains("_")) {
+            // Legacy token: subject had prefix e.g. "CUSTOMER_user@email.com"
             return subject.substring(subject.indexOf("_") + 1);
         }
-        return subject; // Return as-is for legacy tokens
+        return subject;
     }
 
     private String createToken(Map<String, Object> claims, String subject, Long expiration) {

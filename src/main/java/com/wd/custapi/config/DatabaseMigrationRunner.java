@@ -3,6 +3,7 @@ package com.wd.custapi.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -19,8 +20,20 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Value("${spring.profiles.active:local}")
+    private String activeProfile;
+
     @Override
     public void run(String... args) throws Exception {
+        // PRODUCTION GUARD: ALTER TABLE holds an ACCESS EXCLUSIVE lock.
+        // Running this on a live production database risks deadlocking active queries.
+        // This runner was only needed once to backfill project_uuid — the column already exists.
+        // Use Flyway migration scripts (V_*.sql) for any future schema changes instead.
+        if ("production".equalsIgnoreCase(activeProfile) || "staging".equalsIgnoreCase(activeProfile)) {
+            logger.info("DatabaseMigrationRunner: skipped in {} profile (use Flyway for schema changes)", activeProfile);
+            return;
+        }
+
         logger.info("Starting database migration check...");
 
         try {

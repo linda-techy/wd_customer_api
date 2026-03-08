@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -113,7 +114,7 @@ public class AuthService {
     public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
-        // Validate refresh token
+        // Validate refresh token signature and expiry
         if (!jwtService.validateToken(refreshToken)) {
             throw new RuntimeException("Invalid refresh token");
         }
@@ -130,6 +131,12 @@ public class AuthService {
         if (storedToken.isExpired() || storedToken.getRevoked()) {
             throw new RuntimeException("Refresh token expired or revoked");
         }
+
+        // TOKEN ROTATION — revoke the old token and issue a new one.
+        // Without this, a stolen refresh token can be used indefinitely for 7 days.
+        refreshTokenRepository.delete(storedToken);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+        saveRefreshToken(user, newRefreshToken);
 
         // Generate new access token
         String newAccessToken = jwtService.generateAccessToken(user);
@@ -161,6 +168,23 @@ public class AuthService {
         token.setRevoked(false);
 
         refreshTokenRepository.save(token);
+    }
+
+    /**
+     * Nightly cleanup: purge all expired or revoked refresh tokens.
+     * Without this, the refresh_tokens table grows forever — in a 10k user app it
+     * will contain millions of rows within weeks, making findByToken() very slow.
+     * Runs at 2:00 AM IST daily. Bulk deletion avoids OOM vs. an entity-by-entity approach.
+     */
+    @Transactional
+    @Scheduled(cron = "0 0 2 * * *", zone = "Asia/Kolkata")
+    public void cleanupExpiredRefreshTokens() {
+        try {
+            int deleted = refreshTokenRepository.deleteExpiredAndRevoked(LocalDateTime.now());
+            log.info("Nightly refresh token cleanup: deleted {} expired/revoked entries", deleted);
+        } catch (Exception e) {
+            log.error("Error during nightly refresh token cleanup", e);
+        }
     }
 
     private String determineRedirectUrl(long projectCount) {
