@@ -45,3 +45,10 @@ app:
   customer-portal-base-url: https://app.walldotbuilders.com
   cors:
     allowed-origins: https://app.walldotbuilders.com,https://www.walldotbuilders.com,https://walldotbuilders.com
+
+logging:
+  level:
+    root: INFO
+    com.wd.custapi: INFO
+    org.springframework: WARN
+    org.hibernate: WARN

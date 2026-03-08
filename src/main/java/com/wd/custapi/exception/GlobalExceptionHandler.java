@@ -1,6 +1,7 @@
 package com.wd.custapi.exception;
 
 import com.wd.custapi.dto.ApiError;
+import com.wd.custapi.logging.LoggingConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +9,8 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -23,17 +26,26 @@ import java.util.UUID;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger logger = log;
 
     /**
-     * Get or generate correlation ID for request tracing
+     * Get traceId from MDC (set by TraceIdFilter) or generate a fallback.
      */
     private String getCorrelationId() {
-        String correlationId = MDC.get("correlationId");
-        if (correlationId == null) {
-            correlationId = UUID.randomUUID().toString();
-        }
-        return correlationId;
+        String traceId = MDC.get(LoggingConstants.MDC_TRACE_ID);
+        return traceId != null ? traceId : ("FALLBACK-" + UUID.randomUUID().toString().substring(0, 8));
+    }
+
+    /** Safely resolve authenticated userId for log context */
+    private String resolveUserId() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                return auth.getName();
+            }
+        } catch (Exception ignored) {}
+        return "anonymous";
     }
 
     /**

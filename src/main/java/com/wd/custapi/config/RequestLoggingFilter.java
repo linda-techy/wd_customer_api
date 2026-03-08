@@ -1,105 +1,98 @@
 package com.wd.custapi.config;
 
-import jakarta.servlet.Filter;
+import com.wd.custapi.logging.LoggingConstants;
+import com.wd.custapi.logging.SensitiveDataMasker;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Enumeration;
+import java.util.Set;
 
 /**
- * Filter to log all incoming requests and responses
- * Especially useful for debugging 500 errors that don't reach controllers
+ * HTTP access logging filter — logs every request/response to access.log.
+ *
+ * Example output:
+ *   ACCESS | POST /api/auth/login | 200 | 142ms | userId=null | ip=1.2.3.4 | ua=Mozilla/5.0 | traceId=REQ-a1b2c3d4
+ *
+ * Excludes: actuator health checks and static asset noise.
+ * Masks: Authorization header (never logs tokens).
  */
 @Component
-public class RequestLoggingFilter implements Filter {
-    
-    private static final Logger logger = LoggerFactory.getLogger(RequestLoggingFilter.class);
+@Order(2)
+public class RequestLoggingFilter extends OncePerRequestFilter {
+
+    private static final Logger ACCESS_LOG = LoggerFactory.getLogger(LoggingConstants.ACCESS_LOGGER);
+
+    /** Paths that don't need access logging (health checks, favicon, etc.) */
+    private static final Set<String> EXCLUDED_PATHS = Set.of(
+            "/actuator/health", "/favicon.ico", "/actuator/info"
+    );
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return EXCLUDED_PATHS.contains(path);
+    }
 
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain) throws ServletException, IOException {
 
-        // Only log storage-related requests
-        String requestURI = httpRequest.getRequestURI();
-        if (requestURI != null && requestURI.contains("/api/storage")) {
-            logger.debug("\n################################################");
-            logger.debug("### FILTER: INCOMING REQUEST");
-            logger.debug("################################################");
-            logger.debug("Timestamp: {}", java.time.LocalDateTime.now());
-            logger.debug("Method: {}", httpRequest.getMethod());
-            logger.debug("URI: {}", requestURI);
-            logger.debug("Query String: {}", httpRequest.getQueryString());
-            logger.debug("Remote Address: {}", httpRequest.getRemoteAddr());
-            logger.debug("Auth Present: {}", (httpRequest.getHeader("Authorization") != null));
-
-            // Log headers
-            logger.debug("Headers:");
-            Enumeration<String> headerNames = httpRequest.getHeaderNames();
-            while (headerNames.hasMoreElements()) {
-                String headerName = headerNames.nextElement();
-                String headerValue = httpRequest.getHeader(headerName);
-                // Don't log full Authorization token for security
-                if (headerName.equalsIgnoreCase("Authorization")) {
-                    headerValue = headerValue != null && headerValue.length() > 20
-                            ? headerValue.substring(0, 20) + "..."
-                            : headerValue;
-                }
-                logger.debug("  {}: {}", headerName, headerValue);
-            }
-            logger.debug("################################################\n");
-        }
+        long startTime = System.currentTimeMillis();
 
         try {
-            // Continue with the request
             chain.doFilter(request, response);
+        } finally {
+            long duration = System.currentTimeMillis() - startTime;
 
-            // Log response status
-            if (requestURI != null && requestURI.contains("/api/storage")) {
-                logger.debug("\n################################################");
-                logger.debug("### FILTER: RESPONSE");
-                logger.debug("################################################");
-                logger.debug("Timestamp: {}", java.time.LocalDateTime.now());
-                logger.debug("URI: {}", requestURI);
-                logger.debug("Status: {}", httpResponse.getStatus());
-                logger.debug("Content Type: {}", httpResponse.getContentType());
-                logger.debug("################################################\n");
-            }
+            String traceId   = MDC.get(LoggingConstants.MDC_TRACE_ID);
+            String userId    = MDC.get(LoggingConstants.MDC_USER_ID);
+            String method    = request.getMethod();
+            String path      = request.getRequestURI();
+            int    status    = response.getStatus();
+            String clientIp  = resolveClientIp(request);
+            String userAgent = request.getHeader("User-Agent");
 
-        } catch (Exception e) {
-            logger.error("\n################################################");
-            logger.error("### FILTER: EXCEPTION CAUGHT");
-            logger.error("################################################");
-            logger.error("Timestamp: {}", java.time.LocalDateTime.now());
-            logger.error("URI: {}", requestURI);
-            logger.error("Exception Type: {}", e.getClass().getName());
-            logger.error("Exception Message: {}", e.getMessage());
-            logger.error("Stack Trace:", e);
-            logger.error("################################################\n");
+            // Mask user agent — never log it fully if it contains unusual chars
+            String safeUa = userAgent != null
+                    ? userAgent.substring(0, Math.min(userAgent.length(), 80))
+                    : "unknown";
 
-            // Re-throw to let Spring handle it
-            throw e;
+            ACCESS_LOG.info("{} | {} {} | {} | {}ms | userId={} | ip={} | ua={} | traceId={}",
+                    LoggingConstants.PREFIX_ACCESS,
+                    method, path,
+                    status,
+                    duration,
+                    userId != null ? userId : "-",
+                    clientIp,
+                    safeUa,
+                    traceId != null ? traceId : "-");
         }
     }
 
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        logger.info("RequestLoggingFilter initialized");
-    }
-
-    @Override
-    public void destroy() {
-        logger.info("RequestLoggingFilter destroyed");
+    /**
+     * Resolve real client IP, handling reverse proxy headers safely.
+     * Only trusts X-Forwarded-For if the request comes via Nginx.
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            // Take only the first IP (rest are proxy hops)
+            return SensitiveDataMasker.mask(forwarded.split(",")[0].trim());
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

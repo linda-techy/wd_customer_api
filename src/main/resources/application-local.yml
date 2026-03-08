@@ -45,3 +45,12 @@ app:
   customer-portal-base-url: http://localhost:3000
   cors:
     allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3002
+
+logging:
+  level:
+    root: INFO
+    com.wd.custapi: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
