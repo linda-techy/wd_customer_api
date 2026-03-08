@@ -1,13 +1,22 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Customer API — LOCAL Profile                                    ║
+# ║  🔑 SHARED STORAGE: same path as portal API for cross-app files ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
 server:
   port: 8081
   error:
     include-message: always
+    include-stacktrace: always
 
 spring:
   datasource:
     url: jdbc:postgresql://46.202.164.251:5432/wdTestDB
     username: postgres
     password: Staygether@2025
+    hikari:
+      maximumPoolSize: 5
+      minimumIdle: 2
   jpa:
     hibernate:
       ddl-auto: update
@@ -30,14 +39,10 @@ jwt:
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
 
+# ── Shared storage (SAME path as portal-api local) ──────────────────
 file:
-  upload-dir: N:\Projects\wd projects git\storage
-storageBasePath: N:\Projects\wd projects git\storage
-
-logging:
-  level:
-    org.springframework.security: DEBUG
-    com.wd.custapi: DEBUG
+  upload-dir: "N:\\Projects\\wd projects git\\storage"
+storageBasePath: "N:\\Projects\\wd projects git\\storage"
 
 app:
   email:

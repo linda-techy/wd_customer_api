@@ -1,13 +1,22 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Customer API — STAGING Profile                                  ║
+# ║  🔑 SHARED STORAGE: same path as portal API for cross-app files ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
 server:
   port: 8081
   error:
     include-message: never
+    include-stacktrace: never
 
 spring:
   datasource:
     url: jdbc:postgresql://46.202.164.251:5432/wdTestDB
     username: postgres
     password: Staygether@2025
+    hikari:
+      maximumPoolSize: 10
+      minimumIdle: 3
   jpa:
     hibernate:
       ddl-auto: validate
@@ -30,14 +39,10 @@ jwt:
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
 
+# ── Shared storage (SAME path as portal-api staging) ────────────────
 file:
   upload-dir: /home/ftpuser/var/www/app/walldotbuilders/storage
 storageBasePath: /home/ftpuser/var/www/app/walldotbuilders/storage
-
-logging:
-  level:
-    org.springframework.security: INFO
-    com.wd.custapi: INFO
 
 app:
   email:
