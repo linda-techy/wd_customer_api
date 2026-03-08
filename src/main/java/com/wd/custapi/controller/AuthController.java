@@ -44,7 +44,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Login failed for email {}: {}", loginRequest.getEmail(), e.getMessage(), e);
+            // Redact email to prevent PII accumulation in logs (GDPR/PDPA compliance)
+            String maskedEmail = loginRequest.getEmail().replaceAll("(.).+(@.+)", "$1***$2");
+            logger.error("Login failed for email {}: {}", maskedEmail, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Invalid email or password"));
         }

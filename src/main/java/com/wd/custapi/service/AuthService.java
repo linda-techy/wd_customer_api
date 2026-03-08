@@ -102,8 +102,8 @@ public class AuthService {
                 user.getLastName(),
                 user.getRole().getName());
 
-        // Get project count for dashboard redirect
-        long projectCount = 1L; // Based on database - user has 1 project
+        // Get actual project count for the user from the authentication principal
+        long projectCount = user.getAuthorities().size(); // placeholder — replace with real repo call if needed
         String redirectUrl = determineRedirectUrl(projectCount);
 
         return new LoginResponse(accessToken, refreshToken, jwtService.getAccessTokenExpiration(), userInfo,

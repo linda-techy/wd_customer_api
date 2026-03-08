@@ -80,6 +80,11 @@
         <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
+    <!-- Caffeine Cache — bounded in-memory caching with TTL and eviction -->
+    <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+    </dependency>
 
     <!-- Spring Mail -->
     <dependency>

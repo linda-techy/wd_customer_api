@@ -29,7 +29,7 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     
-    @Value("${cors.allowed-origins:https://app.walldotbuilders.com,https://www.walldotbuilders.com,http://localhost:*,http://127.0.0.1:*}")
+    @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
     
     @Bean
@@ -109,7 +109,8 @@ public class SecurityConfig {
     
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // Strength 12 per OWASP 2025 recommendation (default 10 is too weak for modern hardware)
+        return new BCryptPasswordEncoder(12);
     }
 }
 

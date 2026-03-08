@@ -11,8 +11,8 @@ spring:
     hikari:
       connectionTimeout: 10000
       validationTimeout: 5000
-      maximumPoolSize: 5
-      minimumIdle: 1
+      maximumPoolSize: 15   # Prevents DB thread queuing at moderate load
+      minimumIdle: 5
       initializationFailTimeout: 20000
       idleTimeout: 300000
       maxLifetime: 1200000

@@ -120,8 +120,8 @@ public class FileDownloadController {
                 headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"");
             }
 
-            // Add cache control for better performance
-            headers.setCacheControl("public, max-age=31536000");
+            // Private files — prevent caching in proxies, CDNs, and shared environments
+            headers.setCacheControl("private, no-store, max-age=0");
 
             // Handle range requests for video/audio streaming
             if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {

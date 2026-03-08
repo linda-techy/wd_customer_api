@@ -32,8 +32,6 @@ public class DashboardService {
     @Autowired
     private ProjectRepository projectRepository;
 
-    @Autowired
-    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Autowired
     private ProjectDocumentRepository projectDocumentRepository;
@@ -334,15 +332,6 @@ public class DashboardService {
             calculatedDesignProgress = 0.0;
         }
         details.setDesignProgress(calculatedDesignProgress);
-
-        try {
-            String sql = "SELECT sqfeet FROM customer_projects WHERE id = ?";
-            Double rawSqFeet = jdbcTemplate.queryForObject(sql, Double.class, project.getId());
-            logger.info("Project ID: {}, Entity SqFeet: {}, Raw DB SqFeet: {}", project.getId(), project.getSqFeet(),
-                    rawSqFeet);
-        } catch (Exception e) {
-            logger.error("Failed to query raw sqfeet", e);
-        }
 
         details.setSqFeet(project.getSqFeet());
         details.setState(null); // State not in Project entity yet
