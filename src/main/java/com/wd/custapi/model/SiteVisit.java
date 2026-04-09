@@ -64,7 +64,10 @@ public class SiteVisit {
 
     @Column(name = "distance_from_project_checkout")
     private Double distanceFromProjectCheckOut;
-    
+
+    @Column(name = "created_by_type", length = 10, nullable = false)
+    private String createdByType = "CUSTOMER"; // CUSTOMER | STAFF
+
     // Constructors
     public SiteVisit() {}
     
@@ -211,6 +214,14 @@ public class SiteVisit {
 
     public void setDistanceFromProjectCheckOut(Double distanceFromProjectCheckOut) {
         this.distanceFromProjectCheckOut = distanceFromProjectCheckOut;
+    }
+
+    public String getCreatedByType() {
+        return createdByType;
+    }
+
+    public void setCreatedByType(String createdByType) {
+        this.createdByType = createdByType;
     }
 }
 

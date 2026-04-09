@@ -1,8 +1,12 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
+@SQLDelete(sql = "UPDATE observations SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "observations")
 public class Observation {
@@ -56,9 +60,12 @@ public class Observation {
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     // Enums for status and priority
     public enum ObservationStatus {
-        OPEN, IN_PROGRESS, RESOLVED, ACTIVE
+        OPEN, IN_PROGRESS, RESOLVED
     }
 
     public enum Priority {

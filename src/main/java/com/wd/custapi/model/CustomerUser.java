@@ -32,6 +32,15 @@ public class CustomerUser implements UserDetails {
     @Column(name = "last_name")
     private String lastName;
 
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "whatsapp")
+    private String whatsapp;
+
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
@@ -185,5 +194,29 @@ public class CustomerUser implements UserDetails {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getWhatsapp() {
+        return whatsapp;
+    }
+
+    public void setWhatsapp(String whatsapp) {
+        this.whatsapp = whatsapp;
+    }
+
+    public String getFcmToken() {
+        return fcmToken;
+    }
+
+    public void setFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
     }
 }

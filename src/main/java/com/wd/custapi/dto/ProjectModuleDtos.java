@@ -1,5 +1,6 @@
 package com.wd.custapi.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,7 +11,24 @@ import java.util.Map;
  * Centralized DTOs for all project modules
  */
 public class ProjectModuleDtos {
-    
+
+    // ===== PROJECT PHASE MODULE DTOs =====
+
+    /**
+     * Customer-facing view of a construction phase.
+     * Status values: NOT_STARTED | IN_PROGRESS | COMPLETED | DELAYED
+     */
+    public record ProjectPhaseDto(
+        Long id,
+        String phaseName,
+        String status,
+        Integer displayOrder,
+        LocalDate plannedStart,
+        LocalDate plannedEnd,
+        LocalDate actualStart,
+        LocalDate actualEnd
+    ) {}
+
     // ===== DOCUMENT MODULE DTOs =====
     
     public record DocumentCategoryDto(
@@ -65,8 +83,8 @@ public class ProjectModuleDtos {
     ) {}
     
     public record QualityCheckRequest(
-        String title,
-        String description,
+        @NotBlank(message = "Title is required") String title,
+        @NotBlank(message = "Description is required") String description,
         String sopReference,
         String priority,
         Long assignedToId
@@ -186,10 +204,10 @@ public class ProjectModuleDtos {
     ) {}
     
     public record ProjectQueryRequest(
-        String title,
-        String description,
+        @NotBlank(message = "Title is required") String title,
+        @NotBlank(message = "Description is required") String description,
         Long raisedByRoleId,
-        String priority,
+        @NotBlank(message = "Priority is required") String priority,
         String category,
         Long assignedToId
     ) {}

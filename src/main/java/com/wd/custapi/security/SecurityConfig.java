@@ -46,6 +46,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/storage/**").authenticated()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                // Internal webhook endpoint — authenticated by HMAC signature, not JWT
+                .requestMatchers("/internal/**").permitAll()
+                // Swagger UI — only enabled when SWAGGER_ENABLED=true (disabled in production)
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()

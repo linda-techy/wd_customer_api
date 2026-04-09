@@ -2,10 +2,16 @@ package com.wd.custapi.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
+import jakarta.persistence.Version;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+@SQLDelete(sql = "UPDATE customer_projects SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "customer_projects")
 public class Project {
@@ -34,6 +40,9 @@ public class Project {
     @Column(name = "project_phase")
     private String projectPhase;
 
+    @Column(name = "project_type", length = 255)
+    private String projectType;
+
     @Column(name = "design_package")
     private String designPackage;
 
@@ -52,6 +61,13 @@ public class Project {
 
     @Column(name = "longitude")
     private Double longitude;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Version
+    @Column(nullable = false)
+    private Long version = 0L;
 
     // Many-to-many is owned by CustomerUser via project_members
     @ManyToMany(mappedBy = "projects")
@@ -138,6 +154,14 @@ public class Project {
         this.projectPhase = projectPhase;
     }
 
+    public String getProjectType() {
+        return projectType;
+    }
+
+    public void setProjectType(String projectType) {
+        this.projectType = projectType;
+    }
+
     public String getDesignPackage() {
         return designPackage;
     }
@@ -189,4 +213,6 @@ public class Project {
     public boolean hasLocation() {
         return latitude != null && longitude != null;
     }
+
+    public Long getVersion() { return version; }
 }

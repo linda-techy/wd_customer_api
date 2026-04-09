@@ -45,7 +45,20 @@ public class DashboardService {
     @Autowired
     private com.wd.custapi.repository.PaymentScheduleRepository paymentScheduleRepository;
 
+    @Autowired
+    private com.wd.custapi.repository.ProjectMilestoneRepository projectMilestoneRepository;
+
     // ... existing code ...
+
+    /**
+     * Returns the business role name for a customer user (e.g. "CUSTOMER", "ARCHITECT", "VIEWER").
+     * Falls back to "VIEWER" if the user or role is not found.
+     */
+    public String getUserRole(String email) {
+        return customerUserRepository.findByEmail(email)
+                .map(u -> u.getRole() != null ? u.getRole().getName() : "VIEWER")
+                .orElse("VIEWER");
+    }
 
     @Transactional(readOnly = true)
     public DashboardDto getCustomerDashboard(String email) {
@@ -57,10 +70,12 @@ public class DashboardService {
             List<Project> userProjects;
             try {
                 if (isAdmin) {
-                    // Cap admin dashboard at 50 most recent projects.
-                    // findAllForAdmin() loads the ENTIRE table into heap — catastrophic at scale.
-                    // Admin can use a separate paginated admin endpoint if they need all projects.
-                    userProjects = projectRepository.findRecentForAdmin(50);
+                    // Dashboard only shows 5 recent project cards — load 20 max.
+                    // Previously loaded 50 full entities; reduced to 20 to limit heap pressure.
+                    // Future improvement: replace with a ProjectSummaryProjection (id, name, code,
+                    // progress, projectPhase) once the projection interface is wired to the repo.
+                    // Admin browsing beyond 20 should use GET /api/dashboard/admin/projects (paginated).
+                    userProjects = projectRepository.findRecentForAdmin(20);
                     logger.info("Admin user {}: loaded {} recent projects for dashboard", email, userProjects.size());
                 } else {
                     userProjects = projectRepository.findAllByCustomerEmail(email);
@@ -81,8 +96,16 @@ public class DashboardService {
 
             DashboardDto.ProjectSummary projectSummary = buildProjectSummary(userProjects);
             List<DashboardDto.RecentActivity> recentActivities = buildRecentActivities(userProjects);
-            // Pass already-resolved user to avoid a second DB hit
-            DashboardDto.QuickStats quickStats = buildQuickStats(user, userProjects);
+
+            // Financial stats (payment totals) are only shown to primary CUSTOMER and ADMIN roles.
+            // ARCHITECT, INTERIOR_DESIGNER, SITE_ENGINEER, VIEWER see zeroed-out stats.
+            String userRole = user.getRole() != null ? user.getRole().getName() : "VIEWER";
+            DashboardDto.QuickStats quickStats;
+            if ("CUSTOMER".equalsIgnoreCase(userRole) || "ADMIN".equalsIgnoreCase(userRole)) {
+                quickStats = buildQuickStats(user, userProjects);
+            } else {
+                quickStats = new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
+            }
 
             return new DashboardDto(userSummary, projectSummary, recentActivities, quickStats);
         } catch (Exception e) {
@@ -127,6 +150,7 @@ public class DashboardService {
                 status,
                 project.getProgress(),
                 project.getProjectPhase(),
+                project.getProjectType(),
                 project.getDesignPackage(),
                 project.getIsDesignAgreementSigned() != null
                         ? project.getIsDesignAgreementSigned()
@@ -221,6 +245,37 @@ public class DashboardService {
             logger.warn("Error fetching payment statistics: {}", e.getMessage());
             return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
         }
+    }
+
+    /**
+     * Paginated project list for admin users. Supports optional full-text search.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getAdminProjectsPaged(int page, int size, String search) {
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        int offset = Math.max(page, 0) * safeSize;
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        String q = hasSearch ? search.trim() : null;
+
+        List<Project> projects = hasSearch
+                ? projectRepository.searchForAdminPaged(q, safeSize, offset)
+                : projectRepository.findAllForAdminPaged(safeSize, offset);
+        long total = hasSearch
+                ? projectRepository.countForAdminSearch(q)
+                : projectRepository.countAllForAdmin();
+
+        List<DashboardDto.ProjectCard> cards = projects.stream()
+                .map(this::toProjectCard)
+                .collect(Collectors.toList());
+
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("content", cards);
+        result.put("page", page);
+        result.put("size", safeSize);
+        result.put("totalElements", total);
+        result.put("totalPages", (int) Math.ceil((double) total / safeSize));
+        result.put("hasNext", offset + safeSize < total);
+        return result;
     }
 
     private boolean isAdminByEmail(String email) {
@@ -328,6 +383,7 @@ public class DashboardService {
         details.setProgress(project.getProgress());
         details.setStatus(determineProjectStatus(project));
         details.setPhase(project.getProjectPhase()); // Set project phase from database
+        details.setProjectType(project.getProjectType());
         details.setDesignPackage(project.getDesignPackage());
         details.setDesignAgreementSigned(
                 project.getIsDesignAgreementSigned() != null ? project.getIsDesignAgreementSigned() : false);
@@ -459,10 +515,25 @@ public class DashboardService {
             progressData.setProgressStatus("UNKNOWN");
         }
 
-        // Milestones feature is pending implementation.
-        // Real milestones should come from a project_milestones table or project_phases table
-        // For now, return empty list - never return fake/mock data in production
-        List<DashboardDto.ProgressMilestone> milestones = new ArrayList<>();
+        // Load real milestones from project_milestones table (written by portal API, shared DB).
+        // Sorted by due date ascending so the customer app's ScheduleScreen shows them in order.
+        List<com.wd.custapi.model.ProjectMilestone> dbMilestones =
+                projectMilestoneRepository.findByProjectIdOrderByDueDateAsc(project.getId());
+
+        List<DashboardDto.ProgressMilestone> milestones = dbMilestones.stream()
+                .map(m -> {
+                    DashboardDto.ProgressMilestone pm = new DashboardDto.ProgressMilestone();
+                    pm.setName(m.getName());
+                    pm.setProgressPercentage(
+                            m.getCompletionPercentage() != null
+                                    ? m.getCompletionPercentage().doubleValue()
+                                    : 0.0);
+                    pm.setTargetDate(m.getDueDate());
+                    pm.setCompletedDate(m.getCompletedDate());
+                    pm.setStatus(m.getStatus() != null ? m.getStatus() : "PENDING");
+                    return pm;
+                })
+                .collect(Collectors.toList());
         progressData.setMilestones(milestones);
 
         return progressData;

@@ -79,4 +79,24 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
         @Query(value = "SELECT p.* FROM customer_projects p WHERE p.project_uuid = :projectUuid", nativeQuery = true)
         Project findByProjectUuid(@Param("projectUuid") java.util.UUID projectUuid);
+
+        // --- Admin: paginated project list with optional search ---
+        @Query(value = "SELECT p.* FROM customer_projects p ORDER BY p.id DESC LIMIT :size OFFSET :offset", nativeQuery = true)
+        List<Project> findAllForAdminPaged(@Param("size") int size, @Param("offset") int offset);
+
+        @Query(value = "SELECT COUNT(*) FROM customer_projects p", nativeQuery = true)
+        long countAllForAdmin();
+
+        @Query(value = "SELECT p.* FROM customer_projects p WHERE " +
+                "(LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                "OR LOWER(p.code) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                "OR LOWER(p.location) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+                "ORDER BY p.id DESC LIMIT :size OFFSET :offset", nativeQuery = true)
+        List<Project> searchForAdminPaged(@Param("q") String q, @Param("size") int size, @Param("offset") int offset);
+
+        @Query(value = "SELECT COUNT(*) FROM customer_projects p WHERE " +
+                "(LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                "OR LOWER(p.code) LIKE LOWER(CONCAT('%', :q, '%')) " +
+                "OR LOWER(p.location) LIKE LOWER(CONCAT('%', :q, '%')))", nativeQuery = true)
+        long countForAdminSearch(@Param("q") String q);
 }

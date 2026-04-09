@@ -13,7 +13,8 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(unique = true, nullable = false)
+    // Stored as SHA-256 hex hash (64 chars) — never the raw JWT
+    @Column(unique = true, nullable = false, length = 64)
     private String token;
     
     @ManyToOne(fetch = FetchType.LAZY)

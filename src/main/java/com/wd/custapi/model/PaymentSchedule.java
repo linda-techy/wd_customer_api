@@ -2,6 +2,8 @@ package com.wd.custapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,6 +14,8 @@ import java.util.List;
  * Read-only entity mapping for payment_schedule table.
  * Customer API only reads payment data; portal API manages it.
  */
+@SQLDelete(sql = "UPDATE payment_schedule SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "payment_schedule")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -48,6 +52,9 @@ public class PaymentSchedule {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL)
     private List<PaymentTransaction> transactions = new ArrayList<>();

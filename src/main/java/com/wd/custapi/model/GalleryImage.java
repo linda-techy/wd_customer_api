@@ -1,9 +1,13 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@SQLDelete(sql = "UPDATE gallery_images SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "gallery_images")
 public class GalleryImage {
@@ -44,7 +48,13 @@ public class GalleryImage {
     
     @Column(columnDefinition = "varchar(255)[]")
     private String[] tags;
-    
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "uploaded_by_type", length = 10, nullable = false)
+    private String uploadedByType = "CUSTOMER"; // CUSTOMER | STAFF
+
     // Constructors
     public GalleryImage() {}
     
@@ -135,6 +145,14 @@ public class GalleryImage {
     
     public void setTags(String[] tags) {
         this.tags = tags;
+    }
+
+    public String getUploadedByType() {
+        return uploadedByType;
+    }
+
+    public void setUploadedByType(String uploadedByType) {
+        this.uploadedByType = uploadedByType;
     }
 }
 

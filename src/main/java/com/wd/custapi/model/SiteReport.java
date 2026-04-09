@@ -2,10 +2,14 @@ package com.wd.custapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@SQLDelete(sql = "UPDATE site_reports SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "site_reports")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -42,8 +46,7 @@ public class SiteReport {
     @Column(name = "submitted_by")
     private Long submittedById;
     
-    // Transient field to hold portal user name for display
-    @Transient
+    @Column(name = "submitted_by_name", length = 150)
     private String submittedByName;
     
     @Column(name = "created_at", nullable = false)
@@ -54,7 +57,10 @@ public class SiteReport {
     
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-    
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();

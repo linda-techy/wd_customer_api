@@ -2,6 +2,7 @@ package com.wd.custapi.service;
 
 import com.wd.custapi.dto.*;
 import com.wd.custapi.model.CustomerUser;
+import com.wd.custapi.util.TokenHashUtil;
 import com.wd.custapi.model.PasswordResetToken;
 import com.wd.custapi.model.RefreshToken;
 import com.wd.custapi.model.Role;
@@ -25,15 +26,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,15 +63,6 @@ public class AuthService {
 
     @Value("${app.customer-portal-base-url:https://cust.walldotbuilders.com}")
     private String customerPortalBaseUrl;
-
-    private static final int FORGOT_PASSWORD_MAX_ATTEMPTS = 5;
-    private static final int RESET_PASSWORD_MAX_ATTEMPTS = 10;
-    private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(15);
-    private static final int MAX_RATE_LIMIT_KEYS = 10_000;
-    private static final int MAX_CLIENT_KEY_LENGTH = 128;
-
-    private final ConcurrentHashMap<String, Deque<LocalDateTime>> forgotPasswordAttempts = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Deque<LocalDateTime>> resetPasswordAttempts = new ConcurrentHashMap<>();
 
     public LoginResponse login(LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -124,8 +111,8 @@ public class AuthService {
         CustomerUser user = customerUserRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Customer user not found"));
 
-        // Check if refresh token exists and is not revoked
-        RefreshToken storedToken = refreshTokenRepository.findByToken(refreshToken)
+        // Check if refresh token exists and is not revoked (compare against stored hash)
+        RefreshToken storedToken = refreshTokenRepository.findByToken(TokenHashUtil.hash(refreshToken))
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
 
         if (storedToken.isExpired() || storedToken.getRevoked()) {
@@ -145,7 +132,7 @@ public class AuthService {
     }
 
     public void logout(String refreshToken) {
-        refreshTokenRepository.deleteByToken(refreshToken);
+        refreshTokenRepository.deleteByToken(TokenHashUtil.hash(refreshToken));
     }
 
     public LoginResponse.UserInfo getCurrentUser(String email) {
@@ -160,10 +147,59 @@ public class AuthService {
                 user.getRole().getName());
     }
 
+    /**
+     * Update a customer's own profile (first name, last name, phone, whatsapp).
+     * Email and role are not changeable by the customer.
+     */
+    @Transactional
+    public LoginResponse.UserInfo updateProfile(String email, Map<String, String> updates) {
+        CustomerUser user = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Customer user not found"));
+
+        if (updates.containsKey("firstName") && updates.get("firstName") != null) {
+            user.setFirstName(updates.get("firstName").trim());
+        }
+        if (updates.containsKey("lastName") && updates.get("lastName") != null) {
+            user.setLastName(updates.get("lastName").trim());
+        }
+        if (updates.containsKey("phone")) {
+            user.setPhone(updates.get("phone"));
+        }
+        if (updates.containsKey("whatsapp")) {
+            user.setWhatsapp(updates.get("whatsapp"));
+        }
+
+        customerUserRepository.save(user);
+        log.info("Profile updated for user: {}", email);
+
+        return new LoginResponse.UserInfo(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getRole() != null ? user.getRole().getName() : "VIEWER");
+    }
+
+    /**
+     * Register or update a device FCM token for push notifications.
+     * One token per user — overwrites previous token on new device login.
+     */
+    @Transactional
+    public void registerFcmToken(String email, String fcmToken) {
+        if (fcmToken == null || fcmToken.isBlank()) {
+            throw new IllegalArgumentException("FCM token cannot be empty");
+        }
+        CustomerUser user = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Customer user not found"));
+        user.setFcmToken(fcmToken);
+        customerUserRepository.save(user);
+        log.info("FCM token registered for user: {}", email);
+    }
+
     private void saveRefreshToken(CustomerUser user, String refreshToken) {
         RefreshToken token = new RefreshToken();
         token.setUser(user);
-        token.setToken(refreshToken);
+        token.setToken(TokenHashUtil.hash(refreshToken)); // Store SHA-256 hash — never the raw JWT
         token.setExpiryDate(LocalDateTime.now().plusDays(7)); // 7 days
         token.setRevoked(false);
 
@@ -253,12 +289,6 @@ public class AuthService {
     public void forgotPassword(ForgotPasswordRequest request, String clientKey) {
         long startedAtMs = System.currentTimeMillis();
         String email = request.getEmail().toLowerCase().trim();
-        String normalizedClientKey = normalizeClientKey(clientKey);
-        enforceRateLimit(
-                forgotPasswordAttempts,
-                "forgot:" + normalizedClientKey + ":" + email,
-                FORGOT_PASSWORD_MAX_ATTEMPTS,
-                RATE_LIMIT_WINDOW);
 
         // Check if user exists — silently succeed if not found to prevent email enumeration
         CustomerUser user = customerUserRepository.findByEmail(email).orElse(null);
@@ -304,12 +334,6 @@ public class AuthService {
     @Transactional
     public void resetPassword(ResetPasswordRequest request, String clientKey) {
         String normalizedEmail = request.getEmail().toLowerCase().trim();
-        String normalizedClientKey = normalizeClientKey(clientKey);
-        enforceRateLimit(
-                resetPasswordAttempts,
-                "reset:" + normalizedClientKey + ":" + normalizedEmail,
-                RESET_PASSWORD_MAX_ATTEMPTS,
-                RATE_LIMIT_WINDOW);
 
         String resetCode = request.getResetCode().trim();
         if (resetCode.isEmpty()) {
@@ -376,65 +400,4 @@ public class AuthService {
                 + "&email=" + encodedEmail;
     }
 
-    private String normalizeClientKey(String rawClientKey) {
-        if (rawClientKey == null) {
-            return "unknown-client";
-        }
-        String trimmed = rawClientKey.trim();
-        if (trimmed.isEmpty()) {
-            return "unknown-client";
-        }
-        String sanitized = trimmed.replaceAll("[^A-Za-z0-9:._\\-]", "_");
-        if (sanitized.length() > MAX_CLIENT_KEY_LENGTH) {
-            sanitized = sanitized.substring(0, MAX_CLIENT_KEY_LENGTH);
-        }
-        return sanitized;
-    }
-
-    private void enforceRateLimit(
-            ConcurrentHashMap<String, Deque<LocalDateTime>> store,
-            String key,
-            int maxAttempts,
-            Duration window) {
-        LocalDateTime now = LocalDateTime.now();
-        cleanupRateLimitStore(store, now, window);
-        Deque<LocalDateTime> attempts = store.computeIfAbsent(key, k -> new ArrayDeque<>());
-
-        synchronized (attempts) {
-            LocalDateTime cutoff = now.minus(window);
-            while (!attempts.isEmpty() && attempts.peekFirst().isBefore(cutoff)) {
-                attempts.pollFirst();
-            }
-
-            if (attempts.size() >= maxAttempts) {
-                throw new IllegalArgumentException("Too many requests. Please try again later.");
-            }
-
-            attempts.addLast(now);
-        }
-    }
-
-    private void cleanupRateLimitStore(
-            ConcurrentHashMap<String, Deque<LocalDateTime>> store,
-            LocalDateTime now,
-            Duration window) {
-        if (store.size() <= MAX_RATE_LIMIT_KEYS) {
-            return;
-        }
-
-        LocalDateTime cutoff = now.minus(window);
-        Iterator<Map.Entry<String, Deque<LocalDateTime>>> iterator = store.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, Deque<LocalDateTime>> entry = iterator.next();
-            Deque<LocalDateTime> attempts = entry.getValue();
-            synchronized (attempts) {
-                while (!attempts.isEmpty() && attempts.peekFirst().isBefore(cutoff)) {
-                    attempts.pollFirst();
-                }
-                if (attempts.isEmpty()) {
-                    iterator.remove();
-                }
-            }
-        }
-    }
 }

@@ -21,19 +21,22 @@ public class ObservationService {
         private final StaffRoleRepository staffRoleRepository;
         private final FileStorageService fileStorageService;
         private final ActivityFeedService activityFeedService;
+        private final NotificationTriggerService notificationTriggerService;
 
         public ObservationService(ObservationRepository observationRepository,
                         ProjectRepository projectRepository,
                         CustomerUserRepository userRepository,
                         StaffRoleRepository staffRoleRepository,
                         FileStorageService fileStorageService,
-                        ActivityFeedService activityFeedService) {
+                        ActivityFeedService activityFeedService,
+                        NotificationTriggerService notificationTriggerService) {
                 this.observationRepository = observationRepository;
                 this.projectRepository = projectRepository;
                 this.userRepository = userRepository;
                 this.staffRoleRepository = staffRoleRepository;
                 this.fileStorageService = fileStorageService;
                 this.activityFeedService = activityFeedService;
+                this.notificationTriggerService = notificationTriggerService;
         }
 
         @Transactional
@@ -92,6 +95,13 @@ public class ObservationService {
                 // Create activity feed
                 activityFeedService.createActivity(observation.getProject().getId(), "OBSERVATION_RESOLVED",
                                 "Observation resolved: " + observation.getTitle(), observation.getId(), userId);
+
+                // Notify the customer who reported the observation (fire-and-forget — never throws)
+                notificationTriggerService.notifyObservationResolved(
+                                observation.getReportedBy().getId(),
+                                observation.getProject().getId(),
+                                observation.getId(),
+                                observation.getTitle());
 
                 return toDto(observation);
         }

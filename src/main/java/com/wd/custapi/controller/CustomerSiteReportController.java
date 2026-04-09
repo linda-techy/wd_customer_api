@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/customer/site-reports")
-@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER', 'CUSTOMER_ADMIN', 'CONTRACTOR', 'BUILDER')")
 public class CustomerSiteReportController {
 
         private static final Logger logger = LoggerFactory.getLogger(CustomerSiteReportController.class);

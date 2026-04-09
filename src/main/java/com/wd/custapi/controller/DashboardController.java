@@ -1,7 +1,10 @@
 package com.wd.custapi.controller;
 
 import com.wd.custapi.dto.DashboardDto;
+import com.wd.custapi.dto.ProjectModuleDtos.ProjectPhaseDto;
+import com.wd.custapi.model.Project;
 import com.wd.custapi.service.DashboardService;
+import com.wd.custapi.service.ProjectPhaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +14,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Map;
 
@@ -23,13 +28,16 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/dashboard")
-@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER', 'CUSTOMER_ADMIN', 'CONTRACTOR', 'BUILDER')")
 public class DashboardController {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
 
     @Autowired
     private DashboardService dashboardService;
+
+    @Autowired
+    private ProjectPhaseService projectPhaseService;
 
     /**
      * Get full dashboard with summary, stats, and recent activities
@@ -118,6 +126,37 @@ public class DashboardController {
     }
 
     /**
+     * Get construction phase timeline for a project.
+     * Returns phases in display order so the customer can see:
+     * Foundation ✅ → Framing 🔄 → Roofing ⏳
+     * GET /api/dashboard/projects/{projectUuid}/phases
+     */
+    @GetMapping("/projects/{projectUuid}/phases")
+    public ResponseEntity<?> getProjectPhases(
+            @PathVariable String projectUuid,
+            Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            java.util.List<ProjectPhaseDto> phases = projectPhaseService.getProjectPhases(project.getId());
+            return ResponseEntity.ok(phases);
+        } catch (RuntimeException e) {
+            return handleRuntimeException(e, "fetch project phases", projectUuid, authentication);
+        } catch (Exception e) {
+            logger.error("Failed to fetch phases for project {}: {}", projectUuid, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch project phases"));
+        }
+    }
+
+    /**
+     * Typed request body for design-package update — replaces raw Map&lt;String,String&gt;.
+     * Validated by Bean Validation before the method body executes.
+     */
+    public record DesignPackageUpdateRequest(
+            @NotBlank(message = "designPackage is required") String designPackage) {}
+
+    /**
      * Update design package for a project
      * PUT /api/dashboard/projects/{projectUuid}/design-package
      * Request body: { "designPackage": "custom|premium|bespoke" }
@@ -125,19 +164,12 @@ public class DashboardController {
     @PutMapping("/projects/{projectUuid}/design-package")
     public ResponseEntity<?> updateDesignPackage(
             @PathVariable String projectUuid,
-            @RequestBody java.util.Map<String, String> payload,
+            @Valid @RequestBody DesignPackageUpdateRequest payload,
             Authentication authentication) {
         try {
             String email = authentication.getName();
-            String designPackage = payload.get("designPackage");
-
-            if (designPackage == null || designPackage.trim().isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Design package cannot be empty"));
-            }
-
-            DashboardDto.ProjectDetails details = dashboardService.updateDesignPackage(projectUuid, designPackage,
-                    email);
+            DashboardDto.ProjectDetails details = dashboardService.updateDesignPackage(projectUuid,
+                    payload.designPackage(), email);
             return ResponseEntity.ok(details);
         } catch (RuntimeException e) {
             return handleRuntimeException(e, "update design package", projectUuid, authentication);
@@ -146,6 +178,28 @@ public class DashboardController {
                     projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to update design package"));
+        }
+    }
+
+    /**
+     * Paginated project list for admin — not subject to customer email filter.
+     * GET /api/dashboard/admin/projects?page=0&size=20&q=searchTerm
+     */
+    @GetMapping("/admin/projects")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminProjects(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String q,
+            Authentication authentication) {
+        try {
+            java.util.Map<String, Object> result = dashboardService.getAdminProjectsPaged(page, size, q);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Failed to fetch admin projects for user {}: {}",
+                    authentication.getName(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch admin projects"));
         }
     }
 

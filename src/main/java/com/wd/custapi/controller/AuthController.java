@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -156,6 +157,60 @@ public class AuthController {
             logger.error("Failed to get current user: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Authentication failed"));
+        }
+    }
+
+    /**
+     * Update the authenticated customer's own profile.
+     * Updatable fields: firstName, lastName, phone, whatsapp.
+     * Email and role are immutable by the customer.
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(
+            @RequestBody Map<String, String> updates,
+            Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Not authenticated"));
+            }
+            LoginResponse.UserInfo updated = authService.updateProfile(authentication.getName(), updates);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Profile update validation failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Profile update failed for {}: {}", authentication != null ? authentication.getName() : "unknown", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to update profile"));
+        }
+    }
+
+    /**
+     * Register or update a device FCM token for push notifications.
+     * Should be called after login and after Firebase assigns a new token.
+     */
+    @PostMapping("/fcm-token")
+    public ResponseEntity<?> registerFcmToken(
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Not authenticated"));
+            }
+            String fcmToken = body.get("fcmToken");
+            if (fcmToken == null || fcmToken.isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "fcmToken is required"));
+            }
+            authService.registerFcmToken(authentication.getName(), fcmToken);
+            return ResponseEntity.ok(Map.of("message", "FCM token registered successfully"));
+        } catch (Exception e) {
+            logger.error("FCM token registration failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to register FCM token"));
         }
     }
 

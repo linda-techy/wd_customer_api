@@ -190,6 +190,7 @@ public class DashboardDto {
         private String status;
         private Double progress;
         private String projectPhase;
+        private String projectType;
         private String designPackage;
         private boolean isDesignAgreementSigned;
         private Double designProgress;
@@ -199,7 +200,7 @@ public class DashboardDto {
 
         public ProjectCard(Long id, String projectUuid, String name, String code, String location, LocalDate startDate,
                 LocalDate endDate,
-                String status, Double progress, String projectPhase, String designPackage,
+                String status, Double progress, String projectPhase, String projectType, String designPackage,
                 boolean isDesignAgreementSigned, Double designProgress) {
             this.id = id;
             this.projectUuid = projectUuid;
@@ -211,6 +212,7 @@ public class DashboardDto {
             this.status = status;
             this.progress = progress;
             this.projectPhase = projectPhase;
+            this.projectType = projectType;
             this.designPackage = designPackage;
             this.isDesignAgreementSigned = isDesignAgreementSigned;
             this.designProgress = designProgress;
@@ -295,6 +297,14 @@ public class DashboardDto {
 
         public void setProjectPhase(String projectPhase) {
             this.projectPhase = projectPhase;
+        }
+
+        public String getProjectType() {
+            return projectType;
+        }
+
+        public void setProjectType(String projectType) {
+            this.projectType = projectType;
         }
 
         public String getDesignPackage() {
@@ -455,6 +465,7 @@ public class DashboardDto {
         private String status;
         private Double progress;
         private String phase;
+        private String projectType;
         private String designPackage;
         private boolean isDesignAgreementSigned;
         private Double sqFeet;
@@ -549,6 +560,14 @@ public class DashboardDto {
 
         public void setPhase(String phase) {
             this.phase = phase;
+        }
+
+        public String getProjectType() {
+            return projectType;
+        }
+
+        public void setProjectType(String projectType) {
+            this.projectType = projectType;
         }
 
         public String getDesignPackage() {

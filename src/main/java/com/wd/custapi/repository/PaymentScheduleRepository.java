@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -24,6 +25,22 @@ public interface PaymentScheduleRepository extends JpaRepository<PaymentSchedule
      * Aggregate query that avoids loading all rows into memory.
      * Returns counts and sums directly from the database.
      */
+    /**
+     * Returns payment schedules due on a specific date with status PENDING or UPCOMING.
+     * Result columns: [customerUserId, scheduleId, description, amount, projectId]
+     * Used by NotificationTriggerService to send 3-day payment-due reminders.
+     */
+    @Query(value =
+            "SELECT pm.customer_user_id, ps.id, ps.description, ps.amount, p.id AS project_id " +
+            "FROM payment_schedule ps " +
+            "JOIN design_package_payments dpp ON ps.design_payment_id = dpp.id " +
+            "JOIN customer_projects p ON dpp.project_id = p.id " +
+            "JOIN project_members pm ON pm.project_id = p.id " +
+            "WHERE ps.due_date = :dueDate " +
+            "AND UPPER(ps.status) IN ('PENDING','UPCOMING') " +
+            "AND p.deleted_at IS NULL", nativeQuery = true)
+    List<Object[]> findDueOn(@Param("dueDate") LocalDate dueDate);
+
     @Query("""
         SELECT
             COUNT(ps)                                                          AS totalBills,

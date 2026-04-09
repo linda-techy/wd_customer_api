@@ -11,9 +11,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://46.202.164.251:5432/wdTestDB
-    username: postgres
-    password: Staygether@2025
+    url: ${DB_URL}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
     hikari:
       maximum-pool-size: 50          # Up from 15 — prevents connection starvation at load
       minimum-idle: 10
@@ -51,8 +51,8 @@ server:
   mail:
     host: smtp.hostinger.com
     port: 465
-    username: info@walldotbuilders.com
-    password: Staygether@2025
+    username: ${MAIL_USERNAME:info@walldotbuilders.com}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -61,7 +61,7 @@ server:
             enable: true
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  secret: ${JWT_SECRET}
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
 
@@ -75,7 +75,7 @@ app:
     enabled: true
   customer-portal-base-url: https://app.walldotbuilders.com
   cors:
-    allowed-origins: https://app.walldotbuilders.com,https://www.walldotbuilders.com,https://walldotbuilders.com
+    allowed-origins: https://app.walldotbuilders.com
 
 logging:
   level:

@@ -18,17 +18,20 @@ public class ProjectQueryService {
     private final CustomerUserRepository userRepository;
     private final StaffRoleRepository staffRoleRepository;
     private final ActivityFeedService activityFeedService;
-    
+    private final NotificationTriggerService notificationTriggerService;
+
     public ProjectQueryService(ProjectQueryRepository queryRepository,
                                ProjectRepository projectRepository,
                                CustomerUserRepository userRepository,
                                StaffRoleRepository staffRoleRepository,
-                               ActivityFeedService activityFeedService) {
+                               ActivityFeedService activityFeedService,
+                               NotificationTriggerService notificationTriggerService) {
         this.queryRepository = queryRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.staffRoleRepository = staffRoleRepository;
         this.activityFeedService = activityFeedService;
+        this.notificationTriggerService = notificationTriggerService;
     }
     
     @Transactional
@@ -82,11 +85,18 @@ public class ProjectQueryService {
         query.setResolution(request.resolution());
         
         query = queryRepository.save(query);
-        
+
         // Create activity feed
-        activityFeedService.createActivity(query.getProject().getId(), "QUERY_RESOLVED", 
+        activityFeedService.createActivity(query.getProject().getId(), "QUERY_RESOLVED",
             "Query resolved: " + query.getTitle(), query.getId(), userId);
-        
+
+        // Notify the customer who raised the query (fire-and-forget — never throws)
+        notificationTriggerService.notifyQueryReplied(
+                query.getRaisedBy().getId(),
+                query.getProject().getId(),
+                query.getId(),
+                query.getTitle());
+
         return toDto(query);
     }
     

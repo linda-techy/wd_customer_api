@@ -11,12 +11,18 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://46.202.164.251:5432/wdTestDB
-    username: postgres
-    password: Staygether@2025
+    url: ${DB_URL:jdbc:postgresql://46.202.164.251:5432/wdTestDB}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Staygether@2025}
     hikari:
       maximumPoolSize: 5
       minimumIdle: 2
+  flyway:
+    enabled: true
+    # Local dev: use the shared history table so customer migrations (V999+) don't replay on populated DB.
+    # Production uses customer_flyway_schema_history (set in application.yml).
+    table: flyway_schema_history
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -25,8 +31,8 @@ spring:
   mail:
     host: smtp.hostinger.com
     port: 465
-    username: info@walldotbuilders.com
-    password: Staygether@2025
+    username: ${MAIL_USERNAME:info@walldotbuilders.com}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -35,7 +41,7 @@ spring:
             enable: true
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  secret: ${JWT_SECRET:6c6f63616c2d637573742d6170692d6a77742d7365637265742d6b65792d6e6f74-for-production-000000000}
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
 
@@ -47,9 +53,9 @@ storageBasePath: "N:\\Projects\\wd projects git\\storage"
 app:
   email:
     enabled: true
-  customer-portal-base-url: http://localhost:3000
+  customer-portal-base-url: http://localhost:3002
   cors:
-    allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3002
+    allowed-origins: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002
 
 logging:
   level:

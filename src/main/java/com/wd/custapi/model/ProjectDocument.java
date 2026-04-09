@@ -1,8 +1,12 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
+@SQLDelete(sql = "UPDATE project_documents SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "project_documents")
 public class ProjectDocument {
@@ -48,6 +52,12 @@ public class ProjectDocument {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
+
+    @Column(name = "uploaded_by_type", length = 10, nullable = false)
+    private String uploadedByType = "PORTAL"; // PORTAL | CUSTOMER
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     public ProjectDocument() {}
 
@@ -153,5 +163,13 @@ public class ProjectDocument {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public String getUploadedByType() {
+        return uploadedByType;
+    }
+
+    public void setUploadedByType(String uploadedByType) {
+        this.uploadedByType = uploadedByType;
     }
 }

@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}")
-@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER', 'CUSTOMER_ADMIN', 'CONTRACTOR', 'BUILDER')")
 public class ProjectModuleController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectModuleController.class);
@@ -134,33 +134,25 @@ public class ProjectModuleController {
     }
 
     // ===== QUALITY CHECK ENDPOINTS =====
-
-    @PostMapping("/quality-check")
-    public ResponseEntity<ApiResponse<QualityCheckDto>> createQualityCheck(
-            @PathVariable Long projectId,
-            @RequestBody QualityCheckRequest request,
-            Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            QualityCheckDto qc = qualityCheckService.createQualityCheck(projectId, request, userId);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Quality check created successfully", qc));
-        } catch (Exception e) {
-            logger.error("Failed to create quality check for project {}: {}", projectId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to create quality check", null));
-        }
-    }
+    // Allowed roles: CUSTOMER, ADMIN, ARCHITECT, SITE_ENGINEER
+    // INTERIOR_DESIGNER and VIEWER receive an empty list for graceful UX.
 
     @GetMapping("/quality-check")
     public ResponseEntity<ApiResponse<List<QualityCheckDto>>> getQualityChecks(
-            @PathVariable Long projectId,
-            @RequestParam(required = false) String status) {
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) String status,
+            Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Quality checks retrieved successfully", java.util.List.of()));
+            }
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             List<QualityCheckDto> checks = qualityCheckService.getQualityChecks(projectId, status);
             return ResponseEntity.ok(new ApiResponse<>(true, "Quality checks retrieved successfully", checks));
         } catch (Exception e) {
-            logger.error("Failed to get quality checks for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to get quality checks for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve quality checks", null));
         }
@@ -168,16 +160,20 @@ public class ProjectModuleController {
 
     @PutMapping("/quality-check/{qcId}")
     public ResponseEntity<ApiResponse<QualityCheckDto>> resolveQualityCheck(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @PathVariable Long qcId,
-            @RequestBody QualityCheckUpdateRequest request,
+            @RequestBody @jakarta.validation.Valid QualityCheckUpdateRequest request,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "Quality checks are not available for your role", null));
+            }
             Long userId = getUserIdFromAuth(auth);
             QualityCheckDto qc = qualityCheckService.resolveQualityCheck(qcId, request, userId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Quality check resolved successfully", qc));
         } catch (Exception e) {
-            logger.error("Failed to resolve quality check {} for project {}: {}", qcId, projectId, e.getMessage(), e);
+            logger.error("Failed to resolve quality check {} for project {}: {}", qcId, projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to resolve quality check", null));
         }
@@ -353,6 +349,8 @@ public class ProjectModuleController {
     }
 
     // ===== OBSERVATION (SNAGS) ENDPOINTS =====
+    // Allowed roles: CUSTOMER, ADMIN, ARCHITECT, SITE_ENGINEER
+    // INTERIOR_DESIGNER and VIEWER receive empty list / 403 for graceful UX.
 
     @PostMapping(value = "/observations", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ObservationDto>> createObservation(
@@ -378,6 +376,10 @@ public class ProjectModuleController {
                     .body(new ApiResponse<>(false, "Priority is required", null));
             }
             String email = auth.getName();
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "Observations are not available for your role", null));
+            }
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             Long userId = resolveUserId(email);
             ObservationRequest request = new ObservationRequest(title, description, reportedByRoleId, priority, location);
@@ -399,6 +401,9 @@ public class ProjectModuleController {
             @RequestParam(required = false) String status,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Observations retrieved successfully", java.util.List.of()));
+            }
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             List<ObservationDto> observations = observationService.getObservations(project.getId(), status);
@@ -417,6 +422,9 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Active observations retrieved", java.util.List.of()));
+            }
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             List<ObservationDto> observations = observationService.getActiveObservations(project.getId());
@@ -435,6 +443,9 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Resolved observations retrieved", java.util.List.of()));
+            }
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             List<ObservationDto> observations = observationService.getResolvedObservations(project.getId());
@@ -453,6 +464,9 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Observation counts retrieved", java.util.Map.of()));
+            }
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             java.util.Map<String, Long> counts = observationService.getObservationCounts(project.getId());
@@ -488,19 +502,28 @@ public class ProjectModuleController {
     }
 
     // ===== QUERY ENDPOINTS =====
+    // Allowed roles: CUSTOMER, ADMIN, ARCHITECT, INTERIOR_DESIGNER, SITE_ENGINEER
+    // VIEWER gets empty list for graceful UX.
 
     @PostMapping("/queries")
     public ResponseEntity<ApiResponse<ProjectQueryDto>> createQuery(
-            @PathVariable Long projectId,
-            @RequestBody ProjectQueryRequest request,
+            @PathVariable("projectId") String projectUuid,
+            @RequestBody @jakarta.validation.Valid ProjectQueryRequest request,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "INTERIOR_DESIGNER", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "Queries are not available for your role", null));
+            }
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             Long userId = getUserIdFromAuth(auth);
             ProjectQueryDto query = queryService.createQuery(projectId, request, userId);
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, "Query created successfully", query));
         } catch (Exception e) {
-            logger.error("Failed to create query for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to create query for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to create query", null));
         }
@@ -508,13 +531,20 @@ public class ProjectModuleController {
 
     @GetMapping("/queries")
     public ResponseEntity<ApiResponse<List<ProjectQueryDto>>> getQueries(
-            @PathVariable Long projectId,
-            @RequestParam(required = false) String status) {
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) String status,
+            Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "INTERIOR_DESIGNER", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Queries retrieved successfully", java.util.List.of()));
+            }
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             List<ProjectQueryDto> queries = queryService.getQueries(projectId, status);
             return ResponseEntity.ok(new ApiResponse<>(true, "Queries retrieved successfully", queries));
         } catch (Exception e) {
-            logger.error("Failed to get queries for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to get queries for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve queries", null));
         }
@@ -522,33 +552,45 @@ public class ProjectModuleController {
 
     @PutMapping("/queries/{queryId}")
     public ResponseEntity<ApiResponse<ProjectQueryDto>> resolveQuery(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @PathVariable Long queryId,
             @RequestBody ProjectQueryResolveRequest request,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "INTERIOR_DESIGNER", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "Queries are not available for your role", null));
+            }
             Long userId = getUserIdFromAuth(auth);
             ProjectQueryDto query = queryService.resolveQuery(queryId, request, userId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Query resolved successfully", query));
         } catch (Exception e) {
-            logger.error("Failed to resolve query {} for project {}: {}", queryId, projectId, e.getMessage(), e);
+            logger.error("Failed to resolve query {} for project {}: {}", queryId, projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to resolve query", null));
         }
     }
 
     // ===== CCTV ENDPOINTS =====
+    // CCTV cameras are installed and managed by portal staff; customer API is primarily read-only.
+    // GET allowed: CUSTOMER, ADMIN, ARCHITECT (3rd-party professionals who need live monitoring)
+    // POST/PUT restricted to ADMIN only in customer API (portal manages camera setup)
 
     @PostMapping("/cctv")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CctvCameraDto>> addCamera(
-            @PathVariable Long projectId,
-            @RequestBody CctvCameraRequest request) {
+            @PathVariable("projectId") String projectUuid,
+            @RequestBody CctvCameraRequest request,
+            Authentication auth) {
         try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             CctvCameraDto camera = cctvService.addCamera(projectId, request);
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, "Camera added successfully", camera));
         } catch (Exception e) {
-            logger.error("Failed to add camera for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to add camera for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to add camera", null));
         }
@@ -556,9 +598,16 @@ public class ProjectModuleController {
 
     @GetMapping("/cctv")
     public ResponseEntity<ApiResponse<List<CctvCameraDto>>> getCameras(
-            @PathVariable Long projectId,
-            @RequestParam(required = false, defaultValue = "false") boolean installedOnly) {
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false, defaultValue = "false") boolean installedOnly,
+            Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "CUSTOMER_ADMIN")) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Cameras retrieved successfully", java.util.List.of()));
+            }
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             List<CctvCameraDto> cameras;
             if (installedOnly) {
                 cameras = cctvService.getInstalledCameras(projectId);
@@ -567,22 +616,23 @@ public class ProjectModuleController {
             }
             return ResponseEntity.ok(new ApiResponse<>(true, "Cameras retrieved successfully", cameras));
         } catch (Exception e) {
-            logger.error("Failed to get cameras for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to get cameras for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve cameras", null));
         }
     }
 
     @PutMapping("/cctv/{cameraId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CctvCameraDto>> updateCamera(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @PathVariable Long cameraId,
             @RequestBody CctvCameraRequest request) {
         try {
             CctvCameraDto camera = cctvService.updateCamera(cameraId, request);
             return ResponseEntity.ok(new ApiResponse<>(true, "Camera updated successfully", camera));
         } catch (Exception e) {
-            logger.error("Failed to update camera {} for project {}: {}", cameraId, projectId, e.getMessage(), e);
+            logger.error("Failed to update camera {} for project {}: {}", cameraId, projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to update camera", null));
         }
@@ -592,16 +642,19 @@ public class ProjectModuleController {
 
     @PostMapping("/360-views")
     public ResponseEntity<ApiResponse<View360Dto>> add360View(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @RequestBody View360Request request,
             Authentication auth) {
         try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             Long userId = getUserIdFromAuth(auth);
             View360Dto view = view360Service.addView360(projectId, request, userId);
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, "360 view added successfully", view));
         } catch (Exception e) {
-            logger.error("Failed to add 360 view for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to add 360 view for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to add 360 view", null));
         }
@@ -609,12 +662,16 @@ public class ProjectModuleController {
 
     @GetMapping("/360-views")
     public ResponseEntity<ApiResponse<List<View360Dto>>> get360Views(
-            @PathVariable Long projectId) {
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
         try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             List<View360Dto> views = view360Service.getProjectViews(projectId);
             return ResponseEntity.ok(new ApiResponse<>(true, "360 views retrieved successfully", views));
         } catch (Exception e) {
-            logger.error("Failed to get 360 views for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to get 360 views for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve 360 views", null));
         }
@@ -622,13 +679,15 @@ public class ProjectModuleController {
 
     @PostMapping("/360-views/{viewId}/increment-count")
     public ResponseEntity<ApiResponse<View360Dto>> incrementViewCount(
-            @PathVariable Long projectId,
-            @PathVariable Long viewId) {
+            @PathVariable("projectId") String projectUuid,
+            @PathVariable Long viewId,
+            Authentication auth) {
         try {
+            dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
             View360Dto view = view360Service.incrementViewCount(viewId);
             return ResponseEntity.ok(new ApiResponse<>(true, "View count incremented", view));
         } catch (Exception e) {
-            logger.error("Failed to increment view count for view {} in project {}: {}", viewId, projectId, e.getMessage(), e);
+            logger.error("Failed to increment view count for view {} in project {}: {}", viewId, projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to increment view count", null));
         }
@@ -735,16 +794,19 @@ public class ProjectModuleController {
 
     @PostMapping("/feedback/forms")
     public ResponseEntity<ApiResponse<FeedbackFormDto>> createFeedbackForm(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @RequestBody FeedbackFormRequest request,
             Authentication auth) {
         try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             Long userId = getUserIdFromAuth(auth);
             FeedbackFormDto form = feedbackService.createForm(projectId, request, userId);
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, "Feedback form created successfully", form));
         } catch (Exception e) {
-            logger.error("Failed to create feedback form for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to create feedback form for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to create feedback form", null));
         }
@@ -752,14 +814,17 @@ public class ProjectModuleController {
 
     @GetMapping("/feedback")
     public ResponseEntity<ApiResponse<List<FeedbackFormDto>>> getFeedbackForms(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             Long userId = getUserIdFromAuth(auth);
             List<FeedbackFormDto> forms = feedbackService.getProjectForms(projectId, userId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Feedback forms retrieved successfully", forms));
         } catch (Exception e) {
-            logger.error("Failed to get feedback forms for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to get feedback forms for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve feedback forms", null));
         }
@@ -767,17 +832,18 @@ public class ProjectModuleController {
 
     @PostMapping("/feedback/{formId}/responses")
     public ResponseEntity<ApiResponse<FeedbackResponseDto>> submitFeedback(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") String projectUuid,
             @PathVariable Long formId,
             @RequestBody FeedbackResponseRequest request,
             Authentication auth) {
         try {
+            dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
             Long userId = getUserIdFromAuth(auth);
             FeedbackResponseDto response = feedbackService.submitResponse(formId, request, userId);
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, "Feedback submitted successfully", response));
         } catch (Exception e) {
-            logger.error("Failed to submit feedback for form {} in project {}: {}", formId, projectId, e.getMessage(), e);
+            logger.error("Failed to submit feedback for form {} in project {}: {}", formId, projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to submit feedback", null));
         }
@@ -785,13 +851,15 @@ public class ProjectModuleController {
 
     @GetMapping("/feedback/{formId}/responses")
     public ResponseEntity<ApiResponse<List<FeedbackResponseDto>>> getFeedbackResponses(
-            @PathVariable Long projectId,
-            @PathVariable Long formId) {
+            @PathVariable("projectId") String projectUuid,
+            @PathVariable Long formId,
+            Authentication auth) {
         try {
+            dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
             List<FeedbackResponseDto> responses = feedbackService.getFormResponses(formId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Responses retrieved successfully", responses));
         } catch (Exception e) {
-            logger.error("Failed to get feedback responses for form {} in project {}: {}", formId, projectId, e.getMessage(), e);
+            logger.error("Failed to get feedback responses for form {} in project {}: {}", formId, projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve feedback responses", null));
         }
@@ -799,67 +867,82 @@ public class ProjectModuleController {
 
     // ===== BOQ ENDPOINTS =====
 
-    @PostMapping("/boq")
-    public ResponseEntity<ApiResponse<BoqItemDto>> addBoqItem(
-            @PathVariable Long projectId,
-            @RequestBody BoqItemRequest request,
-            Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            BoqItemDto item = boqService.addBoqItem(projectId, request, userId);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "BoQ item added successfully", item));
-        } catch (Exception e) {
-            logger.error("Failed to add BOQ item for project {}: {}", projectId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to add BoQ item", null));
-        }
-    }
-
-    @PutMapping("/boq/{itemId}")
-    public ResponseEntity<ApiResponse<BoqItemDto>> updateBoqItem(
-            @PathVariable Long projectId,
-            @PathVariable Long itemId,
-            @RequestBody BoqItemRequest request,
-            Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            BoqItemDto item = boqService.updateBoqItem(itemId, request, userId);
-            return ResponseEntity.ok(new ApiResponse<>(true, "BoQ item updated successfully", item));
-        } catch (Exception e) {
-            logger.error("Failed to update BOQ item {} for project {}: {}", itemId, projectId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to update BoQ item", null));
-        }
-    }
-
+    /**
+     * Role-based BOQ item visibility:
+     * - CUSTOMER / ADMIN    : full list including rate, amount, billed quantities (no DRAFT items)
+     * - ARCHITECT / INTERIOR_DESIGNER : item names, quantities and units visible; rate/amount/billedQty nulled (no DRAFT)
+     * - SITE_ENGINEER / VIEWER : empty list (BOQ is not relevant to their scope)
+     */
     @GetMapping("/boq")
     public ResponseEntity<ApiResponse<List<BoqItemDto>>> getBoqItems(
-            @PathVariable Long projectId,
-            @RequestParam(required = false) Long workTypeId) {
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) Long workTypeId,
+            Authentication auth) {
         try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
+            String role = dashboardService.getUserRole(email);
+            // Roles that see no BOQ at all
+            if ("SITE_ENGINEER".equalsIgnoreCase(role) || "VIEWER".equalsIgnoreCase(role)
+                    || "CONTRACTOR".equalsIgnoreCase(role) || "BUILDER".equalsIgnoreCase(role)) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "BoQ items retrieved successfully", java.util.List.of()));
+            }
             List<BoqItemDto> items;
             if (workTypeId != null) {
                 items = boqService.getBoqItemsByWorkType(projectId, workTypeId);
             } else {
                 items = boqService.getProjectBoqItems(projectId);
             }
+            // Filter out DRAFT items — customers should only see APPROVED / LOCKED / COMPLETED BOQ
+            if (!"ADMIN".equalsIgnoreCase(role)) {
+                items = items.stream()
+                        .filter(i -> i.status() == null || !"DRAFT".equalsIgnoreCase(i.status()))
+                        .collect(java.util.stream.Collectors.toList());
+            }
+            // ARCHITECT / INTERIOR_DESIGNER see items but NOT financial amounts
+            if (!"CUSTOMER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role)) {
+                items = items.stream().map(i -> new BoqItemDto(
+                        i.id(), i.projectId(), i.workTypeId(), i.workTypeName(),
+                        i.categoryId(), i.categoryName(), i.itemCode(), i.description(),
+                        i.quantity(), i.unit(),
+                        null,  // rate — hidden
+                        null,  // amount — hidden
+                        i.executedQuantity(), null, // billedQuantity — hidden
+                        i.remainingQuantity(),
+                        null, null, // totalExecutedAmount, totalBilledAmount — hidden
+                        i.executionPercentage(), null, // billingPercentage — hidden
+                        i.status(), i.specifications(), i.notes(),
+                        i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive()
+                )).collect(java.util.stream.Collectors.toList());
+            }
             return ResponseEntity.ok(new ApiResponse<>(true, "BoQ items retrieved successfully", items));
         } catch (Exception e) {
-            logger.error("Failed to get BOQ items for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to get BOQ items for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve BoQ items", null));
         }
     }
 
+    /**
+     * BOQ financial summary (totals, amounts) is restricted to CUSTOMER and ADMIN roles only.
+     */
     @GetMapping("/boq/summary")
     public ResponseEntity<ApiResponse<BoqSummaryDto>> getBoqSummary(
-            @PathVariable Long projectId) {
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
         try {
+            if (!canSeeFinancials(auth)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "BOQ summary is not available for your role", null));
+            }
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Long projectId = project.getId();
             BoqSummaryDto summary = boqService.getBoqSummary(projectId);
             return ResponseEntity.ok(new ApiResponse<>(true, "BoQ summary retrieved successfully", summary));
         } catch (Exception e) {
-            logger.error("Failed to get BOQ summary for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Failed to get BOQ summary for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve BoQ summary", null));
         }
@@ -900,6 +983,24 @@ public class ProjectModuleController {
         return customerUserRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found for email: " + email))
                 .getId();
+    }
+
+    /**
+     * Returns true if the authenticated user's business role allows viewing financial data (BOQ, payments).
+     * Only primary customers (role=CUSTOMER) and admins are permitted.
+     */
+    private boolean canSeeFinancials(Authentication auth) {
+        String role = dashboardService.getUserRole(auth.getName());
+        return "CUSTOMER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
+    }
+
+    /**
+     * Returns true if the authenticated user's role is in the provided allowedRoles list.
+     * Returns empty list responses (not 403) for graceful UX when role is not allowed.
+     */
+    private boolean canAccessFeature(Authentication auth, String... allowedRoles) {
+        String role = dashboardService.getUserRole(auth.getName()).toUpperCase();
+        return java.util.Arrays.asList(allowedRoles).contains(role);
     }
 
     /**

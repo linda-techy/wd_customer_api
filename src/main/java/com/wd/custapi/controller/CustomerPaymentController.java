@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/customer/payments")
-@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'CUSTOMER_ADMIN')")
 public class CustomerPaymentController {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerPaymentController.class);
@@ -42,6 +42,15 @@ public class CustomerPaymentController {
     }
 
     /**
+     * Returns true if the user's business role allows viewing financial data.
+     * Only primary customers (role=CUSTOMER) and admins can view payments/BOQ.
+     */
+    private boolean canSeeFinancials(String email) {
+        String role = dashboardService.getUserRole(email);
+        return "CUSTOMER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
+    }
+
+    /**
      * Get all payment schedules for the current customer's projects.
      */
     @GetMapping
@@ -52,6 +61,10 @@ public class CustomerPaymentController {
             Authentication auth) {
         try {
             String email = auth.getName();
+            if (!canSeeFinancials(email)) {
+                return ResponseEntity.status(403)
+                        .body(new ApiResponse<>(false, "Financial data is not available for your role", null));
+            }
             List<Project> userProjects = dashboardService.getProjectsForUser(email);
             List<Long> projectIds = userProjects.stream()
                     .map(Project::getId)
@@ -97,6 +110,10 @@ public class CustomerPaymentController {
             Authentication auth) {
         try {
             String email = auth.getName();
+            if (!canSeeFinancials(email)) {
+                return ResponseEntity.status(403)
+                        .body(new ApiResponse<>(false, "Financial data is not available for your role", null));
+            }
 
             PaymentSchedule schedule = paymentScheduleRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Payment schedule not found"));
