@@ -2,6 +2,7 @@ package com.wd.custapi.service;
 
 import com.wd.custapi.model.CustomerNotification;
 import com.wd.custapi.model.CustomerUser;
+import com.wd.custapi.model.Project;
 import com.wd.custapi.repository.CustomerNotificationRepository;
 import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.repository.PaymentScheduleRepository;
@@ -113,6 +114,31 @@ public class NotificationTriggerService {
             });
         } catch (Exception e) {
             logger.warn("notifyObservationResolved failed (non-critical): {}", e.getMessage());
+        }
+    }
+
+    // ─── Triggered: BOQ Approval / Change Request ─────────────────────────────────
+
+    /**
+     * Call this when a customer submits a BOQ approval or requests changes.
+     * Sends an in-app notification to the customer themselves confirming the action.
+     * Never throws — catches all exceptions internally.
+     */
+    public void notifyBoqApprovalAction(CustomerUser customer, Project project,
+                                        String status, String message) {
+        try {
+            boolean isApproved = "APPROVED".equalsIgnoreCase(status);
+            String title = isApproved ? "BOQ Approval Confirmed" : "Change Request Submitted";
+            String body = isApproved
+                    ? "You have approved the BOQ for project: " + project.getName()
+                    : "Your change request has been submitted for project: " + project.getName();
+            if (!isApproved && message != null && !message.isBlank()) {
+                body += ". Note: " + message;
+            }
+            saveAndPush(customer, project.getId(), project.getId(),
+                    isApproved ? "BOQ_APPROVED" : "BOQ_CHANGE_REQUESTED", title, body);
+        } catch (Exception e) {
+            logger.warn("notifyBoqApprovalAction failed (non-critical): {}", e.getMessage());
         }
     }
 

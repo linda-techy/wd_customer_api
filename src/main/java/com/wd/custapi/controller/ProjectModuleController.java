@@ -1,7 +1,10 @@
 package com.wd.custapi.controller;
 
 import com.wd.custapi.dto.ProjectModuleDtos.*;
+import com.wd.custapi.model.BoqApproval;
+import com.wd.custapi.model.CustomerUser;
 import com.wd.custapi.model.Project;
+import com.wd.custapi.repository.BoqApprovalRepository;
 import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.service.*;
 import org.slf4j.Logger;
@@ -17,6 +20,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}")
@@ -38,6 +43,8 @@ public class ProjectModuleController {
     private final SiteVisitService siteVisitService;
     private final FeedbackService feedbackService;
     private final BoqService boqService;
+    private final BoqApprovalRepository boqApprovalRepository;
+    private final NotificationTriggerService notificationTriggerService;
 
     public ProjectModuleController(ProjectDocumentService documentService,
                                    DashboardService dashboardService,
@@ -51,7 +58,9 @@ public class ProjectModuleController {
                                    View360Service view360Service,
                                    SiteVisitService siteVisitService,
                                    FeedbackService feedbackService,
-                                   BoqService boqService) {
+                                   BoqService boqService,
+                                   BoqApprovalRepository boqApprovalRepository,
+                                   NotificationTriggerService notificationTriggerService) {
         this.documentService = documentService;
         this.dashboardService = dashboardService;
         this.customerUserRepository = customerUserRepository;
@@ -65,6 +74,8 @@ public class ProjectModuleController {
         this.siteVisitService = siteVisitService;
         this.feedbackService = feedbackService;
         this.boqService = boqService;
+        this.boqApprovalRepository = boqApprovalRepository;
+        this.notificationTriggerService = notificationTriggerService;
     }
 
     // ===== DOCUMENT ENDPOINTS =====
@@ -897,11 +908,25 @@ public class ProjectModuleController {
             // Filter out DRAFT items — customers should only see APPROVED / LOCKED / COMPLETED BOQ
             if (!"ADMIN".equalsIgnoreCase(role)) {
                 items = items.stream()
-                        .filter(i -> i.status() == null || !"DRAFT".equalsIgnoreCase(i.status()))
+                        .filter(i -> i.status() != null && !"DRAFT".equalsIgnoreCase(i.status()))
                         .collect(java.util.stream.Collectors.toList());
             }
+            // CUSTOMER / CUSTOMER_ADMIN see total amounts but NOT unit rates (margin protection)
+            if ("CUSTOMER".equalsIgnoreCase(role) || "CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
+                items = items.stream().map(i -> new BoqItemDto(
+                        i.id(), i.projectId(), i.workTypeId(), i.workTypeName(),
+                        i.categoryId(), i.categoryName(), i.itemCode(), i.description(),
+                        i.quantity(), i.unit(),
+                        null,  // rate — hidden from customers
+                        i.amount(), i.executedQuantity(), i.billedQuantity(),
+                        i.remainingQuantity(), i.totalExecutedAmount(), i.totalBilledAmount(),
+                        i.executionPercentage(), i.billingPercentage(),
+                        i.status(), i.specifications(), i.notes(),
+                        i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive()
+                )).collect(java.util.stream.Collectors.toList());
+            }
             // ARCHITECT / INTERIOR_DESIGNER see items but NOT financial amounts
-            if (!"CUSTOMER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role)) {
+            if (!"CUSTOMER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role) && !"CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
                 items = items.stream().map(i -> new BoqItemDto(
                         i.id(), i.projectId(), i.workTypeId(), i.workTypeName(),
                         i.categoryId(), i.categoryName(), i.itemCode(), i.description(),
@@ -960,6 +985,77 @@ public class ProjectModuleController {
         }
     }
 
+    /**
+     * POST /boq/approval — Customer submits BOQ approval or change request.
+     * Only CUSTOMER and CUSTOMER_ADMIN roles are permitted.
+     * Body: { "status": "APPROVED" | "CHANGE_REQUESTED", "message": "optional text" }
+     */
+    @PostMapping("/boq/approval")
+    public ResponseEntity<ApiResponse<Map<String, String>>> submitBoqApproval(
+            @PathVariable("projectId") String projectUuid,
+            @RequestBody Map<String, String> request,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            String role = dashboardService.getUserRole(email);
+            if (!"CUSTOMER".equalsIgnoreCase(role) && !"CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "BOQ approval is not available for your role", null));
+            }
+            String status = request.getOrDefault("status", "").toUpperCase().trim();
+            if (!status.equals("APPROVED") && !status.equals("CHANGE_REQUESTED")) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>(false, "status must be APPROVED or CHANGE_REQUESTED", null));
+            }
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            CustomerUser user = customerUserRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + email));
+
+            BoqApproval approval = new BoqApproval(project.getId(), user.getId(), status,
+                    request.get("message"));
+            boqApprovalRepository.save(approval);
+
+            notificationTriggerService.notifyBoqApprovalAction(
+                    user, project, status, request.get("message"));
+
+            logger.info("BOQ approval [{}] submitted by user {} for project {}", status, email, projectUuid);
+            return ResponseEntity.ok(new ApiResponse<>(true, "BOQ response submitted successfully",
+                    Map.of("status", status)));
+        } catch (Exception e) {
+            logger.error("Failed to submit BOQ approval for project {}: {}", projectUuid, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to submit BOQ response", null));
+        }
+    }
+
+    /**
+     * GET /boq/approval — Returns the latest customer approval status for this project.
+     * Returns { "status": "PENDING" } if no approval record exists yet.
+     */
+    @GetMapping("/boq/approval")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getBoqApprovalStatus(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Optional<BoqApproval> latest =
+                    boqApprovalRepository.findTopByProjectIdOrderByCreatedAtDesc(project.getId());
+            if (latest.isEmpty()) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "No response submitted yet",
+                        Map.of("status", "PENDING", "message", "")));
+            }
+            BoqApproval a = latest.get();
+            return ResponseEntity.ok(new ApiResponse<>(true, "Approval status fetched",
+                    Map.of("status", a.getStatus(),
+                           "message", a.getMessage() != null ? a.getMessage() : "")));
+        } catch (Exception e) {
+            logger.error("Failed to fetch BOQ approval status for project {}: {}", projectUuid, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to fetch BOQ approval status", null));
+        }
+    }
+
     // ===== HELPER METHODS =====
 
     /**
@@ -991,7 +1087,9 @@ public class ProjectModuleController {
      */
     private boolean canSeeFinancials(Authentication auth) {
         String role = dashboardService.getUserRole(auth.getName());
-        return "CUSTOMER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
+        return "CUSTOMER".equalsIgnoreCase(role)
+            || "ADMIN".equalsIgnoreCase(role)
+            || "CUSTOMER_ADMIN".equalsIgnoreCase(role);
     }
 
     /**

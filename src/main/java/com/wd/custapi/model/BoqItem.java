@@ -1,11 +1,13 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "boq_items")
+@Where(clause = "deleted_at IS NULL")
 public class BoqItem {
     
     @Id
@@ -26,17 +28,17 @@ public class BoqItem {
     @Column(nullable = false, length = 255)
     private String description;
     
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 6)
     private BigDecimal quantity;
-    
+
     @Column(nullable = false, length = 50)
     private String unit;
-    
-    @Column(nullable = false, precision = 15, scale = 2)
+
+    @Column(name = "unit_rate", nullable = false, precision = 18, scale = 6)
     private BigDecimal rate;
-    
-    // Amount is computed: quantity * rate
-    @Column(precision = 15, scale = 2, insertable = false, updatable = false)
+
+    // Amount is stored as total_amount (quantity * unit_rate), managed by Portal API
+    @Column(name = "total_amount", precision = 18, scale = 6, insertable = false, updatable = false)
     private BigDecimal amount;
     
     @Column(columnDefinition = "TEXT")
@@ -47,27 +49,31 @@ public class BoqItem {
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
-    
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
-    private CustomerUser createdBy;
+
+    // created_by_user_id is written by Portal API's BaseEntity @CreatedBy (PortalUser ID).
+    // We expose it as a plain Long — no FK join since it references portal_users, not customer_users.
+    @Column(name = "created_by_user_id", insertable = false, updatable = false)
+    private Long createdByUserId;
     
     @Column(name = "is_active")
     private Boolean isActive = true;
     
-    // Financial tracking fields (READ-ONLY for customers)
-    @Column(name = "executed_quantity", precision = 15, scale = 4, insertable = false, updatable = false)
+    // Financial tracking fields (READ-ONLY for customers, managed by Portal API)
+    @Column(name = "executed_quantity", precision = 18, scale = 6, insertable = false, updatable = false)
     private BigDecimal executedQuantity = BigDecimal.ZERO;
-    
-    @Column(name = "billed_quantity", precision = 15, scale = 4, insertable = false, updatable = false)
+
+    @Column(name = "billed_quantity", precision = 18, scale = 6, insertable = false, updatable = false)
     private BigDecimal billedQuantity = BigDecimal.ZERO;
     
     @Column(name = "status", length = 20, insertable = false, updatable = false)
     private String status = "DRAFT";
     
+    @Column(name = "deleted_at", insertable = false, updatable = false)
+    private LocalDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", insertable = false, updatable = false)
     private BoqCategory category;
@@ -184,12 +190,8 @@ public class BoqItem {
         this.updatedAt = updatedAt;
     }
     
-    public CustomerUser getCreatedBy() {
-        return createdBy;
-    }
-    
-    public void setCreatedBy(CustomerUser createdBy) {
-        this.createdBy = createdBy;
+    public Long getCreatedByUserId() {
+        return createdByUserId;
     }
     
     public Boolean getIsActive() {
@@ -231,7 +233,11 @@ public class BoqItem {
     public void setCategory(BoqCategory category) {
         this.category = category;
     }
-    
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
     // Computed getters for customer view
     @Transient
     public BigDecimal getRemainingQuantity() {

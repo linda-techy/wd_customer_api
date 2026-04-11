@@ -408,7 +408,12 @@ public class ProjectModuleDtos {
     
     public record BoqSummaryDto(
         Long projectId,
-        BigDecimal totalAmount,
+        BigDecimal totalPlannedAmount,
+        BigDecimal totalExecutedAmount,
+        BigDecimal totalBilledAmount,
+        BigDecimal executionPercentage,
+        BigDecimal billingPercentage,
+        int totalItems,
         List<BoqWorkTypeSummary> workTypeSummaries
     ) {}
     
