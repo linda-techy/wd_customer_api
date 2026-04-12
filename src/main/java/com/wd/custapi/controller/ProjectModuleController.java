@@ -499,9 +499,9 @@ public class ProjectModuleController {
             Authentication auth) {
         try {
             String email = auth.getName();
-            dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             Long userId = resolveUserId(email);
-            ObservationDto obs = observationService.resolveObservation(obsId, request, userId);
+            ObservationDto obs = observationService.resolveObservation(project.getId(), obsId, request, userId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Observation resolved successfully", obs));
         } catch (RuntimeException e) {
             return handleRuntimeException(e, "resolve observation", projectUuid, auth);
@@ -880,9 +880,10 @@ public class ProjectModuleController {
 
     /**
      * Role-based BOQ item visibility:
-     * - CUSTOMER / ADMIN    : full list including rate, amount, billed quantities (no DRAFT items)
-     * - ARCHITECT / INTERIOR_DESIGNER : item names, quantities and units visible; rate/amount/billedQty nulled (no DRAFT)
-     * - SITE_ENGINEER / VIEWER : empty list (BOQ is not relevant to their scope)
+     * - ADMIN              : full list, all statuses, all financial fields
+     * - CUSTOMER / CUSTOMER_ADMIN : full list including DRAFT (needed for review/approval), total amounts visible, unit rate hidden
+     * - ARCHITECT / INTERIOR_DESIGNER : non-DRAFT items only; item names/quantities visible, no financial amounts
+     * - SITE_ENGINEER / VIEWER / CONTRACTOR / BUILDER : empty list
      */
     @GetMapping("/boq")
     public ResponseEntity<ApiResponse<List<BoqItemDto>>> getBoqItems(
@@ -905,8 +906,10 @@ public class ProjectModuleController {
             } else {
                 items = boqService.getProjectBoqItems(projectId);
             }
-            // Filter out DRAFT items — customers should only see APPROVED / LOCKED / COMPLETED BOQ
-            if (!"ADMIN".equalsIgnoreCase(role)) {
+            // ARCHITECT / INTERIOR_DESIGNER do not see DRAFT items.
+            // CUSTOMER and CUSTOMER_ADMIN must see all items (including DRAFT) so they can review and approve the BOQ.
+            boolean isCustomerRole = "CUSTOMER".equalsIgnoreCase(role) || "CUSTOMER_ADMIN".equalsIgnoreCase(role);
+            if (!"ADMIN".equalsIgnoreCase(role) && !isCustomerRole) {
                 items = items.stream()
                         .filter(i -> i.status() != null && !"DRAFT".equalsIgnoreCase(i.status()))
                         .collect(java.util.stream.Collectors.toList());
@@ -922,7 +925,8 @@ public class ProjectModuleController {
                         i.remainingQuantity(), i.totalExecutedAmount(), i.totalBilledAmount(),
                         i.executionPercentage(), i.billingPercentage(),
                         i.status(), i.specifications(), i.notes(),
-                        i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive()
+                        i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive(),
+                        i.itemKind()
                 )).collect(java.util.stream.Collectors.toList());
             }
             // ARCHITECT / INTERIOR_DESIGNER see items but NOT financial amounts
@@ -938,7 +942,8 @@ public class ProjectModuleController {
                         null, null, // totalExecutedAmount, totalBilledAmount — hidden
                         i.executionPercentage(), null, // billingPercentage — hidden
                         i.status(), i.specifications(), i.notes(),
-                        i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive()
+                        i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive(),
+                        i.itemKind()
                 )).collect(java.util.stream.Collectors.toList());
             }
             return ResponseEntity.ok(new ApiResponse<>(true, "BoQ items retrieved successfully", items));
@@ -993,7 +998,7 @@ public class ProjectModuleController {
     @PostMapping("/boq/approval")
     public ResponseEntity<ApiResponse<Map<String, String>>> submitBoqApproval(
             @PathVariable("projectId") String projectUuid,
-            @RequestBody Map<String, String> request,
+            @jakarta.validation.Valid @RequestBody BoqApprovalRequest request,
             Authentication auth) {
         try {
             String email = auth.getName();
@@ -1002,7 +1007,7 @@ public class ProjectModuleController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new ApiResponse<>(false, "BOQ approval is not available for your role", null));
             }
-            String status = request.getOrDefault("status", "").toUpperCase().trim();
+            String status = request.status().toUpperCase().trim();
             if (!status.equals("APPROVED") && !status.equals("CHANGE_REQUESTED")) {
                 return ResponseEntity.badRequest()
                         .body(new ApiResponse<>(false, "status must be APPROVED or CHANGE_REQUESTED", null));
@@ -1012,11 +1017,11 @@ public class ProjectModuleController {
                     .orElseThrow(() -> new RuntimeException("User not found: " + email));
 
             BoqApproval approval = new BoqApproval(project.getId(), user.getId(), status,
-                    request.get("message"));
+                    request.message());
             boqApprovalRepository.save(approval);
 
             notificationTriggerService.notifyBoqApprovalAction(
-                    user, project, status, request.get("message"));
+                    user, project, status, request.message());
 
             logger.info("BOQ approval [{}] submitted by user {} for project {}", status, email, projectUuid);
             return ResponseEntity.ok(new ApiResponse<>(true, "BOQ response submitted successfully",

@@ -3,6 +3,7 @@ package com.wd.custapi.model;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Entity
@@ -73,6 +74,15 @@ public class BoqItem {
     
     @Column(name = "deleted_at", insertable = false, updatable = false)
     private LocalDateTime deletedAt;
+
+    // Written by Portal API V19; read-only here.
+    @Column(name = "boq_document_id", insertable = false, updatable = false)
+    private Long boqDocumentId;
+
+    // Written by Portal API V24; read-only here.
+    // Values: BASE | ADDON | OPTIONAL | EXCLUSION
+    @Column(name = "item_kind", insertable = false, updatable = false, length = 20)
+    private String itemKind = "BASE";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", insertable = false, updatable = false)
@@ -149,7 +159,7 @@ public class BoqItem {
     public BigDecimal getAmount() {
         // Compute on the fly if not set
         if (amount == null && quantity != null && rate != null) {
-            return quantity.multiply(rate);
+            return quantity.multiply(rate).setScale(6, RoundingMode.HALF_UP);
         }
         return amount;
     }
@@ -238,6 +248,10 @@ public class BoqItem {
         return deletedAt;
     }
 
+    public Long getBoqDocumentId() { return boqDocumentId; }
+
+    public String getItemKind() { return itemKind != null ? itemKind : "BASE"; }
+
     // Computed getters for customer view
     @Transient
     public BigDecimal getRemainingQuantity() {
@@ -248,33 +262,33 @@ public class BoqItem {
     @Transient
     public BigDecimal getTotalExecutedAmount() {
         if (getExecutedQuantity() != null && rate != null) {
-            return getExecutedQuantity().multiply(rate);
+            return getExecutedQuantity().multiply(rate).setScale(6, RoundingMode.HALF_UP);
         }
         return BigDecimal.ZERO;
     }
-    
+
     @Transient
     public BigDecimal getTotalBilledAmount() {
         if (getBilledQuantity() != null && rate != null) {
-            return getBilledQuantity().multiply(rate);
+            return getBilledQuantity().multiply(rate).setScale(6, RoundingMode.HALF_UP);
         }
         return BigDecimal.ZERO;
     }
-    
+
     @Transient
     public BigDecimal getExecutionPercentage() {
         if (quantity != null && quantity.compareTo(BigDecimal.ZERO) > 0) {
-            return getExecutedQuantity().divide(quantity, 4, java.math.RoundingMode.HALF_UP)
-                    .multiply(new BigDecimal("100"));
+            return getExecutedQuantity().divide(quantity, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP);
         }
         return BigDecimal.ZERO;
     }
-    
+
     @Transient
     public BigDecimal getBillingPercentage() {
         if (getExecutedQuantity().compareTo(BigDecimal.ZERO) > 0) {
-            return getBilledQuantity().divide(getExecutedQuantity(), 4, java.math.RoundingMode.HALF_UP)
-                    .multiply(new BigDecimal("100"));
+            return getBilledQuantity().divide(getExecutedQuantity(), 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP);
         }
         return BigDecimal.ZERO;
     }

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /tmp)",
+      "Bash(\"C:/Program Files/Java/jdk-21/bin/javac\" RunMigration.java)",
+      "Bash(\"C:/Program Files/Java/jdk-21/bin/java\" -cp \".;C:/Users/linda/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar\" RunMigration)"
+    ]
+  }
+}

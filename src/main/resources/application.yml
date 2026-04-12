@@ -8,6 +8,11 @@ spring:
   main:
     banner-mode: off
 
+  # ── Jackson (global serialization) ─────────────────────────────
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
   datasource:
     driver-class-name: org.postgresql.Driver
     hikari:

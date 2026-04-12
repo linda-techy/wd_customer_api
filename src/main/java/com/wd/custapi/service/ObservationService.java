@@ -78,9 +78,12 @@ public class ObservationService {
         }
 
         @Transactional
-        public ObservationDto resolveObservation(Long observationId, ObservationResolveRequest request, Long userId) {
+        public ObservationDto resolveObservation(Long projectId, Long observationId, ObservationResolveRequest request, Long userId) {
                 Observation observation = observationRepository.findById(observationId)
                                 .orElseThrow(() -> new RuntimeException("Observation not found"));
+                if (!observation.getProject().getId().equals(projectId)) {
+                        throw new RuntimeException("Observation not found");
+                }
 
                 CustomerUser resolvedBy = userRepository.findById(userId)
                                 .orElseThrow(() -> new RuntimeException("User not found"));

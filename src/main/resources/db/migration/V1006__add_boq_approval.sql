@@ -10,7 +10,7 @@
 
 CREATE TABLE boq_approvals (
     id                 BIGSERIAL    PRIMARY KEY,
-    project_id         BIGINT       NOT NULL REFERENCES projects(id),
+    project_id         BIGINT       NOT NULL REFERENCES customer_projects(id),
     customer_user_id   BIGINT       NOT NULL REFERENCES customer_users(id),
     status             VARCHAR(30)  NOT NULL,   -- 'APPROVED' | 'CHANGE_REQUESTED'
     message            TEXT,

@@ -6,6 +6,7 @@ import com.wd.custapi.repository.*;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,16 +23,21 @@ public class BoqService {
         this.boqWorkTypeRepository = boqWorkTypeRepository;
     }
     
+    /**
+     * Customer-visible BOQ items — only items linked to an APPROVED boq_document
+     * are returned (visibility gate). See BoqItemRepository.findApprovedByProjectId.
+     */
     public List<BoqItemDto> getProjectBoqItems(Long projectId) {
-        return boqItemRepository.findByProjectIdWithAssociations(projectId)
+        return boqItemRepository.findApprovedByProjectId(projectId)
             .stream()
             .map(this::toDto)
             .collect(Collectors.toList());
     }
-    
+
     public List<BoqItemDto> getBoqItemsByWorkType(Long projectId, Long workTypeId) {
-        return boqItemRepository.findByProjectIdAndWorkTypeIdAndIsActiveTrue(projectId, workTypeId)
+        return boqItemRepository.findApprovedByProjectId(projectId)
             .stream()
+            .filter(b -> b.getWorkType() != null && workTypeId.equals(b.getWorkType().getId()))
             .map(this::toDto)
             .collect(Collectors.toList());
     }
@@ -53,11 +59,13 @@ public class BoqService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal executionPct = totalPlanned.compareTo(BigDecimal.ZERO) > 0
-            ? totalExecuted.divide(totalPlanned, 4, java.math.RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
+            ? totalExecuted.divide(totalPlanned, 4, RoundingMode.HALF_UP)
+                           .multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
         BigDecimal billingPct = totalExecuted.compareTo(BigDecimal.ZERO) > 0
-            ? totalBilled.divide(totalExecuted, 4, java.math.RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
+            ? totalBilled.divide(totalExecuted, 4, RoundingMode.HALF_UP)
+                         .multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
         // Guard against null workType (Portal API allows items without a work type)
@@ -81,6 +89,18 @@ public class BoqService {
             })
             .collect(Collectors.toList());
 
+        BigDecimal baseScopeAmount = items.stream()
+            .filter(i -> !"ADDON".equals(i.getItemKind()) && !"OPTIONAL".equals(i.getItemKind()) && !"EXCLUSION".equals(i.getItemKind()))
+            .map(BoqItem::getAmount)
+            .filter(a -> a != null)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal addonAmount = items.stream()
+            .filter(i -> "ADDON".equals(i.getItemKind()) || "OPTIONAL".equals(i.getItemKind()))
+            .map(BoqItem::getAmount)
+            .filter(a -> a != null)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return new BoqSummaryDto(
             projectId,
             totalPlanned,
@@ -89,7 +109,9 @@ public class BoqService {
             executionPct,
             billingPct,
             items.size(),
-            workTypeSummaries
+            workTypeSummaries,
+            baseScopeAmount,
+            addonAmount
         );
     }
     
@@ -133,7 +155,8 @@ public class BoqService {
             item.getUpdatedAt(),
             item.getCreatedByUserId(),
             null,  // createdByName not available in customer API (Portal user)
-            item.getIsActive()
+            item.getIsActive(),
+            item.getItemKind()
         );
     }
 }

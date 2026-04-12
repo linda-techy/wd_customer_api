@@ -1,6 +1,7 @@
 package com.wd.custapi.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -392,7 +393,9 @@ public class ProjectModuleDtos {
         LocalDateTime updatedAt,
         Long createdById,
         String createdByName,
-        Boolean isActive
+        Boolean isActive,
+        // Scope classification: BASE | ADDON | OPTIONAL | EXCLUSION
+        String itemKind
     ) {}
     
     public record BoqItemRequest(
@@ -414,7 +417,10 @@ public class ProjectModuleDtos {
         BigDecimal executionPercentage,
         BigDecimal billingPercentage,
         int totalItems,
-        List<BoqWorkTypeSummary> workTypeSummaries
+        List<BoqWorkTypeSummary> workTypeSummaries,
+        // Add-on breakdown — null when no add-on items exist
+        BigDecimal baseScopeAmount,
+        BigDecimal addonAmount
     ) {}
     
     public record BoqWorkTypeSummary(
@@ -424,6 +430,11 @@ public class ProjectModuleDtos {
         Integer itemCount
     ) {}
     
+    public record BoqApprovalRequest(
+        @NotBlank(message = "status is required") String status,
+        @Size(max = 2000, message = "message must not exceed 2000 characters") String message
+    ) {}
+
     // ===== SITE REPORT MODULE DTOs =====
     
     public record SiteReportDto(

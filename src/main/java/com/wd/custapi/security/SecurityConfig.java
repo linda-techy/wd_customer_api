@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     
     @Autowired
@@ -31,6 +33,14 @@ public class SecurityConfig {
     
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
+
+    /** Set SWAGGER_ENABLED=true only in non-production environments. Defaults to false (safe). */
+    @Value("${swagger.enabled:false}")
+    private boolean swaggerEnabled;
+
+    /** Comma-separated list of IP addresses permitted to call /internal/** (e.g. the Portal API host). */
+    @Value("${internal.allowed-ips:127.0.0.1,::1}")
+    private String internalAllowedIps;
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -39,27 +49,49 @@ public class SecurityConfig {
             // are not automatically sent by browsers, preventing CSRF attacks
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth
+            .authorizeHttpRequests(auth -> {
                 // Allow OPTIONS requests for CORS preflight
-                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                auth.requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll();
                 // Public endpoints
-                .requestMatchers("/api/storage/**").authenticated()
-                .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                // Internal webhook endpoint — authenticated by HMAC signature, not JWT
-                .requestMatchers("/internal/**").permitAll()
-                // Swagger UI — only enabled when SWAGGER_ENABLED=true (disabled in production)
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                
+                auth.requestMatchers("/api/storage/**").authenticated();
+                auth.requestMatchers("/auth/**").permitAll();
+                auth.requestMatchers("/api/public/**").permitAll();
+                // Internal webhook endpoint — restricted to allowed IPs at the filter layer (InternalIpFilter);
+                // Spring Security still requires authentication so an unauthenticated call will be rejected
+                // unless the request has already been whitelisted by the IP filter.
+                auth.requestMatchers("/internal/**").access(internalIpAccessManager());
+                // Swagger UI — gate behind environment flag; blocked in production by default
+                if (swaggerEnabled) {
+                    auth.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll();
+                } else {
+                    auth.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").denyAll();
+                }
                 // All other requests require authentication
-                .anyRequest().authenticated()
-            )
+                auth.anyRequest().authenticated();
+            })
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
+    }
+
+    /**
+     * Restricts /internal/** to the IP addresses listed in internal.allowed-ips.
+     * Falls back to 127.0.0.1 and ::1 (loopback) if not configured.
+     */
+    private org.springframework.security.authorization.AuthorizationManager<
+            org.springframework.security.web.access.intercept.RequestAuthorizationContext> internalIpAccessManager() {
+        List<String> allowedIps = Arrays.stream(internalAllowedIps.split(","))
+                .map(String::trim)
+                .filter(ip -> !ip.isEmpty())
+                .collect(Collectors.toList());
+        return (authentication, context) -> {
+            String remoteAddr = context.getRequest().getRemoteAddr();
+            boolean allowed = allowedIps.contains(remoteAddr);
+            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+        };
     }
     
     @Bean
