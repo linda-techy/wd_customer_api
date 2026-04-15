@@ -2,9 +2,11 @@ package com.wd.custapi.controller;
 
 import com.wd.custapi.model.BoqDocument;
 import com.wd.custapi.model.ChangeOrder;
+import com.wd.custapi.model.CustomerUser;
 import com.wd.custapi.model.PaymentStage;
 import com.wd.custapi.model.Project;
 import com.wd.custapi.repository.BoqDocumentRepository;
+import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.repository.PaymentStageRepository;
 import com.wd.custapi.service.CustomerChangeOrderService;
 import com.wd.custapi.service.DashboardService;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -24,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Customer-facing BOQ endpoints:
@@ -42,15 +46,18 @@ public class CustomerBoqController {
     private final BoqDocumentRepository boqDocumentRepository;
     private final PaymentStageRepository paymentStageRepository;
     private final CustomerChangeOrderService changeOrderService;
+    private final CustomerUserRepository customerUserRepository;
 
     public CustomerBoqController(DashboardService dashboardService,
                                    BoqDocumentRepository boqDocumentRepository,
                                    PaymentStageRepository paymentStageRepository,
-                                   CustomerChangeOrderService changeOrderService) {
+                                   CustomerChangeOrderService changeOrderService,
+                                   CustomerUserRepository customerUserRepository) {
         this.dashboardService = dashboardService;
         this.boqDocumentRepository = boqDocumentRepository;
         this.paymentStageRepository = paymentStageRepository;
         this.changeOrderService = changeOrderService;
+        this.customerUserRepository = customerUserRepository;
     }
 
     // ---- BOQ Document ----
@@ -69,6 +76,128 @@ public class CustomerBoqController {
                             Map.of("success", false, "message", "No BOQ document found for this project")));
         } catch (Exception e) {
             logger.error("Failed to fetch BOQ document for project {}", projectUuid, e);
+            return ResponseEntity.status(500).body(
+                    Map.of("success", false, "message", "An internal error occurred"));
+        }
+    }
+
+    /**
+     * BOQ summary: approved (or latest non-rejected) document with embedded lean payment stages.
+     * Includes pendingAcknowledgement flag so the app can prompt the customer to acknowledge.
+     */
+    @GetMapping("/summary")
+    public ResponseEntity<Map<String, Object>> getBoqSummary(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+
+            // Prefer approved document; fall back to latest non-rejected
+            Optional<BoqDocument> docOpt = boqDocumentRepository.findByProjectIdAndStatus(
+                    project.getId(), "APPROVED");
+            if (docOpt.isEmpty()) {
+                docOpt = boqDocumentRepository.findTopByProjectIdAndStatusNotOrderByRevisionNumberDesc(
+                        project.getId(), "REJECTED");
+            }
+            if (docOpt.isEmpty()) {
+                Map<String, Object> noBoq = new LinkedHashMap<>();
+                noBoq.put("success", true);
+                noBoq.put("message", "No BOQ available yet");
+                noBoq.put("data", null);
+                return ResponseEntity.ok(noBoq);
+            }
+
+            BoqDocument doc = docOpt.get();
+            List<Map<String, Object>> stages = paymentStageRepository
+                    .findByBoqDocumentIdOrderByStageNumberAsc(doc.getId())
+                    .stream().map(this::stageSummaryToMap).toList();
+
+            return ResponseEntity.ok(Map.of("success", true, "data", boqSummaryToMap(doc, stages)));
+        } catch (Exception e) {
+            logger.error("Failed to fetch BOQ summary for project {}", projectUuid, e);
+            return ResponseEntity.status(500).body(
+                    Map.of("success", false, "message", "An internal error occurred"));
+        }
+    }
+
+    /**
+     * Payment stages for the project — lean customer view, no internal billing fields.
+     */
+    @GetMapping("/payment-stages")
+    public ResponseEntity<Map<String, Object>> getBoqPaymentStages(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+
+            List<Map<String, Object>> stages = paymentStageRepository
+                    .findByProjectIdOrderByStageNumberAsc(project.getId())
+                    .stream().map(this::stageSummaryToMap).toList();
+
+            return ResponseEntity.ok(Map.of("success", true, "stages", stages));
+        } catch (Exception e) {
+            logger.error("Failed to fetch BOQ payment stages for project {}", projectUuid, e);
+            return ResponseEntity.status(500).body(
+                    Map.of("success", false, "message", "An internal error occurred"));
+        }
+    }
+
+    /**
+     * Records the customer's digital acknowledgement of a BOQ document. Idempotent.
+     * Cross-checks document belongs to the requested project before writing.
+     */
+    @Transactional
+    @PatchMapping("/documents/{documentId}/acknowledge")
+    public ResponseEntity<Map<String, Object>> acknowledgeBoq(
+            @PathVariable("projectId") String projectUuid,
+            @PathVariable Long documentId,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+
+            BoqDocument doc = boqDocumentRepository.findById(documentId)
+                    .orElseThrow(() -> new IllegalArgumentException("BOQ document not found: " + documentId));
+
+            if (!doc.getProject().getId().equals(project.getId())) {
+                return ResponseEntity.status(403).body(
+                        Map.of("success", false, "message", "Document does not belong to this project"));
+            }
+
+            // Idempotency: if already acknowledged, skip write and return current state
+            if (doc.getCustomerAcknowledgedAt() != null) {
+                List<Map<String, Object>> existingStages = paymentStageRepository
+                        .findByBoqDocumentIdOrderByStageNumberAsc(documentId)
+                        .stream().map(this::stageSummaryToMap).toList();
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "BOQ acknowledged",
+                        "data", boqSummaryToMap(doc, existingStages)));
+            }
+
+            CustomerUser customer = customerUserRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + email));
+
+            boqDocumentRepository.recordAcknowledgement(documentId, LocalDateTime.now(), customer.getId());
+
+            // Reload after update to get fresh timestamps (JPQL update does not update in-memory entity)
+            BoqDocument updated = boqDocumentRepository.findById(documentId)
+                    .orElseThrow(() -> new IllegalStateException("Document disappeared after acknowledge"));
+
+            List<Map<String, Object>> stages = paymentStageRepository
+                    .findByBoqDocumentIdOrderByStageNumberAsc(documentId)
+                    .stream().map(this::stageSummaryToMap).toList();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "BOQ acknowledged",
+                    "data", boqSummaryToMap(updated, stages)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(Map.of("success", false, "message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Failed to acknowledge BOQ document {} for project {}", documentId, projectUuid, e);
             return ResponseEntity.status(500).body(
                     Map.of("success", false, "message", "An internal error occurred"));
         }
@@ -283,6 +412,42 @@ public class CustomerBoqController {
         m.put("rejectedAt", co.getRejectedAt());
         m.put("rejectionReason", co.getRejectionReason());
         m.put("createdAt", co.getCreatedAt());
+        return m;
+    }
+
+    /**
+     * Lean payment stage view for customer — excludes internal billing fields.
+     */
+    private Map<String, Object> stageSummaryToMap(PaymentStage s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("stageNumber", s.getStageNumber());
+        m.put("stageName", s.getStageName());
+        m.put("stageAmountExGst", s.getStageAmountExGst());
+        m.put("gstAmount", s.getGstAmount());
+        m.put("stageAmountInclGst", s.getStageAmountInclGst());
+        m.put("stagePercentage", s.getStagePercentage());
+        m.put("status", s.getStatus());
+        m.put("dueDate", s.getDueDate());
+        m.put("milestoneDescription", s.getMilestoneDescription());
+        return m;
+    }
+
+    private Map<String, Object> boqSummaryToMap(BoqDocument doc, List<Map<String, Object>> stages) {
+        boolean pendingAcknowledgement = "APPROVED".equals(doc.getStatus())
+                && doc.getCustomerAcknowledgedAt() == null;
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("documentId", doc.getId());
+        m.put("projectId", doc.getProject().getId()); // project is lazy but session is open here
+        m.put("totalValueExGst", doc.getTotalValueExGst());
+        m.put("totalGstAmount", doc.getTotalGstAmount());
+        m.put("totalValueInclGst", doc.getTotalValueInclGst());
+        m.put("gstRate", doc.getGstRate());
+        m.put("status", doc.getStatus());
+        m.put("revisionNumber", doc.getRevisionNumber());
+        m.put("approvedAt", doc.getCustomerApprovedAt());
+        m.put("acknowledgedAt", doc.getCustomerAcknowledgedAt());
+        m.put("pendingAcknowledgement", pendingAcknowledgement);
+        m.put("paymentStages", stages);
         return m;
     }
 

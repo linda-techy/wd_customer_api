@@ -41,7 +41,7 @@ spring:
             enable: true
 
 jwt:
-  secret: ${JWT_SECRET:6c6f63616c2d637573742d6170692d6a77742d7365637265742d6b65792d6e6f74-for-production-000000000}
+  secret: ${JWT_SECRET:6c6f63616c2d6465762d6a77742d7365637265742d6b65792d6e6f742d666f72-production-000000000000}
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
 
