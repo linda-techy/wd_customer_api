@@ -101,7 +101,11 @@ public class CustomerBoqController {
                         project.getId(), "REJECTED");
             }
             if (docOpt.isEmpty()) {
-                return ResponseEntity.ok(Map.of("success", true, "message", "No BOQ available yet", "data", (Object) null));
+                Map<String, Object> noBoq = new LinkedHashMap<>();
+                noBoq.put("success", true);
+                noBoq.put("message", "No BOQ available yet");
+                noBoq.put("data", null);
+                return ResponseEntity.ok(noBoq);
             }
 
             BoqDocument doc = docOpt.get();
@@ -162,12 +166,23 @@ public class CustomerBoqController {
                         Map.of("success", false, "message", "Document does not belong to this project"));
             }
 
+            // Idempotency: if already acknowledged, skip write and return current state
+            if (doc.getCustomerAcknowledgedAt() != null) {
+                List<Map<String, Object>> existingStages = paymentStageRepository
+                        .findByBoqDocumentIdOrderByStageNumberAsc(documentId)
+                        .stream().map(this::stageSummaryToMap).toList();
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "BOQ acknowledged",
+                        "data", boqSummaryToMap(doc, existingStages)));
+            }
+
             CustomerUser customer = customerUserRepository.findByEmail(email)
                     .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + email));
 
             boqDocumentRepository.recordAcknowledgement(documentId, LocalDateTime.now(), customer.getId());
 
-            // Reload after update to get fresh timestamps
+            // Reload after update to get fresh timestamps (JPQL update does not update in-memory entity)
             BoqDocument updated = boqDocumentRepository.findById(documentId)
                     .orElseThrow(() -> new IllegalStateException("Document disappeared after acknowledge"));
 
@@ -422,7 +437,7 @@ public class CustomerBoqController {
                 && doc.getCustomerAcknowledgedAt() == null;
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("documentId", doc.getId());
-        m.put("projectId", doc.getProject().getId());
+        m.put("projectId", doc.getProject().getId()); // project is lazy but session is open here
         m.put("totalValueExGst", doc.getTotalValueExGst());
         m.put("totalGstAmount", doc.getTotalGstAmount());
         m.put("totalValueInclGst", doc.getTotalValueInclGst());
