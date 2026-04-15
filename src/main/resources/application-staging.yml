@@ -37,16 +37,8 @@ spring:
         size: 3
 
   mail:
-    host: smtp.hostinger.com
-    port: 465
-    username: info@walldotbuilders.com
-    password: Wall.builders2018
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+    # Host/port/username/SMTP properties live in application.yml (base).
+    password: ${MAIL_PASSWORD}
 
 jwt:
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
@@ -59,8 +51,6 @@ file:
 storageBasePath: /home/ftpuser/var/www/app/walldotbuilders/storage
 
 app:
-  email:
-    enabled: true
   customer-portal-base-url: https://app.walldotbuilders.com
   cors:
     allowed-origins: https://app.walldotbuilders.com

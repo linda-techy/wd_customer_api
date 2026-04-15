@@ -30,20 +30,28 @@ spring:
       max-file-size: 10MB
       max-request-size: 20MB
 
+  # ── Mail (full config here — identical across all environments)
+  # Host: smtp.hostinger.com:465 uses IMPLICIT SSL (not STARTTLS).
+  # starttls.enable MUST be false on port 465 — STARTTLS is for port 587 only.
+  # ssl.trust prevents certificate errors on VPS JVMs that lack the Hostinger CA.
   mail:
+    host: smtp.hostinger.com
+    port: 465
+    username: ${MAIL_USERNAME:info@walldotbuilders.com}
+    # password: override per profile — never hardcoded here
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
-            enable: true
-            required: true
           ssl:
-            enable: false
+            enable: true
             trust: smtp.hostinger.com
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
+          starttls:
+            enable: false
+            required: false
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
 jwt:
   access-token-expiration: 3600000
@@ -61,6 +69,8 @@ springdoc:
     version: 1.0.0
 
 app:
+  email:
+    enabled: true
   portal:
     webhook-secret: ${PORTAL_WEBHOOK_SECRET:}
     base-url: ${PORTAL_API_BASE_URL:http://localhost:8080}

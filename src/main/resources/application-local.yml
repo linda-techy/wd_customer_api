@@ -29,16 +29,9 @@ spring:
     show-sql: true
 
   mail:
-    host: smtp.hostinger.com
-    port: 465
-    username: ${MAIL_USERNAME:info@walldotbuilders.com}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+    # Host/port/username/SMTP properties live in application.yml (base).
+    # Only the password is local-specific. Default allows local dev without env vars.
+    password: ${MAIL_PASSWORD:Wall.builders2018}
 
 jwt:
   secret: ${JWT_SECRET:6c6f63616c2d6465762d6a77742d7365637265742d6b65792d6e6f742d666f72-production-000000000000}
@@ -51,8 +44,6 @@ file:
 storageBasePath: "N:\\Projects\\wd projects git\\storage"
 
 app:
-  email:
-    enabled: true
   customer-portal-base-url: http://localhost:3002
   cors:
     allowed-origins: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002
