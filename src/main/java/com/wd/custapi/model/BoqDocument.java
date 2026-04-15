@@ -59,6 +59,12 @@ public class BoqDocument {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "customer_acknowledged_at")
+    private LocalDateTime customerAcknowledgedAt;
+
+    @Column(name = "customer_acknowledged_by")
+    private Long customerAcknowledgedBy;
+
     // ---- Getters ----
 
     public Long getId() { return id; }
@@ -76,4 +82,6 @@ public class BoqDocument {
     public String getRejectionReason() { return rejectionReason; }
     public Integer getRevisionNumber() { return revisionNumber; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getCustomerAcknowledgedAt() { return customerAcknowledgedAt; }
+    public Long getCustomerAcknowledgedBy() { return customerAcknowledgedBy; }
 }
