@@ -954,30 +954,6 @@ public class ProjectModuleController {
         }
     }
 
-    /**
-     * BOQ financial summary (totals, amounts) is restricted to CUSTOMER and ADMIN roles only.
-     */
-    @GetMapping("/boq/summary")
-    public ResponseEntity<ApiResponse<BoqSummaryDto>> getBoqSummary(
-            @PathVariable("projectId") String projectUuid,
-            Authentication auth) {
-        try {
-            if (!canSeeFinancials(auth)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new ApiResponse<>(false, "BOQ summary is not available for your role", null));
-            }
-            String email = auth.getName();
-            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-            Long projectId = project.getId();
-            BoqSummaryDto summary = boqService.getBoqSummary(projectId);
-            return ResponseEntity.ok(new ApiResponse<>(true, "BoQ summary retrieved successfully", summary));
-        } catch (Exception e) {
-            logger.error("Failed to get BOQ summary for project {}: {}", projectUuid, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to retrieve BoQ summary", null));
-        }
-    }
-
     @GetMapping("/boq/work-types")
     public ResponseEntity<ApiResponse<List<BoqWorkTypeDto>>> getWorkTypes() {
         try {
@@ -1084,17 +1060,6 @@ public class ProjectModuleController {
         return customerUserRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found for email: " + email))
                 .getId();
-    }
-
-    /**
-     * Returns true if the authenticated user's business role allows viewing financial data (BOQ, payments).
-     * Only primary customers (role=CUSTOMER) and admins are permitted.
-     */
-    private boolean canSeeFinancials(Authentication auth) {
-        String role = dashboardService.getUserRole(auth.getName());
-        return "CUSTOMER".equalsIgnoreCase(role)
-            || "ADMIN".equalsIgnoreCase(role)
-            || "CUSTOMER_ADMIN".equalsIgnoreCase(role);
     }
 
     /**
