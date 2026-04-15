@@ -14,4 +14,12 @@ public interface ProjectDesignStepRepository extends JpaRepository<ProjectDesign
 
     @Query("SELECT SUM(ds.weightPercentage * pds.progressPercentage / 100) FROM ProjectDesignStep pds JOIN pds.step ds WHERE pds.project.id = :projectId")
     Double calculateDesignProgress(@Param("projectId") Long projectId);
+
+    /**
+     * Batch variant — returns one row per project that has design steps.
+     * Object[0] = project_id (Long), Object[1] = computed progress (Double).
+     * Projects with no steps are simply absent from the result map; caller defaults them to 0.
+     */
+    @Query("SELECT pds.project.id, SUM(ds.weightPercentage * pds.progressPercentage / 100) FROM ProjectDesignStep pds JOIN pds.step ds WHERE pds.project.id IN :projectIds GROUP BY pds.project.id")
+    List<Object[]> calculateDesignProgressBatch(@Param("projectIds") List<Long> projectIds);
 }

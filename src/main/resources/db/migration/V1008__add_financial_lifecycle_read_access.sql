@@ -1,0 +1,16 @@
+-- =============================================================================
+-- V1008: Financial lifecycle — read access only (no DDL)
+--
+-- All tables used here were created by Portal API migrations V25 and V26:
+--   change_orders       — extended with vo_category, approved_cost, etc.
+--   payment_stages      — extended with certified_by, retention_pct, etc.
+--   co_approval_history — new (V26)
+--   co_payment_schedule — new (V26)
+--   deduction_register  — new (V26)
+--   final_account       — new (V26)
+--
+-- This migration is a no-op marker so customer_flyway_schema_history stays in
+-- sync with the actual schema state. Both APIs share one PostgreSQL database;
+-- DDL is owned exclusively by the Portal API Flyway schema history.
+-- =============================================================================
+SELECT 1; -- no-op

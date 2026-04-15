@@ -69,6 +69,20 @@ public class PaymentStage {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
+    // ---- Certification / retention (added V25) — read-only for customer ----
+
+    @Column(name = "certified_by", length = 100)
+    private String certifiedBy;
+
+    @Column(name = "retention_pct", precision = 5, scale = 4)
+    private java.math.BigDecimal retentionPct;
+
+    @Column(name = "retention_held", precision = 18, scale = 6)
+    private java.math.BigDecimal retentionHeld;
+
+    @Column(name = "certified_at")
+    private LocalDateTime certifiedAt;
+
     // ---- Getters ----
 
     public Long getId() { return id; }
@@ -89,4 +103,8 @@ public class PaymentStage {
     public LocalDate getDueDate() { return dueDate; }
     public String getMilestoneDescription() { return milestoneDescription; }
     public LocalDateTime getPaidAt() { return paidAt; }
+    public String getCertifiedBy() { return certifiedBy; }
+    public java.math.BigDecimal getRetentionPct() { return retentionPct; }
+    public java.math.BigDecimal getRetentionHeld() { return retentionHeld; }
+    public LocalDateTime getCertifiedAt() { return certifiedAt; }
 }

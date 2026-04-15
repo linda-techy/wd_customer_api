@@ -15,7 +15,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -122,22 +125,39 @@ public class DashboardService {
                 .count();
         long completedProjects = totalProjects - activeProjects;
 
-        // Get recent projects (last 5)
-        List<DashboardDto.ProjectCard> recentProjects = projects.stream()
-                .limit(5)
-                .map(this::toProjectCard)
-                .collect(Collectors.toList());
+        List<Project> recent = projects.stream().limit(5).collect(Collectors.toList());
+        List<DashboardDto.ProjectCard> recentProjects = toProjectCards(recent);
 
         return new DashboardDto.ProjectSummary(totalProjects, activeProjects, completedProjects, recentProjects);
     }
 
-    private DashboardDto.ProjectCard toProjectCard(Project project) {
-        String status = determineProjectStatus(project);
+    /**
+     * Converts a list of projects to ProjectCard DTOs in a single batch.
+     * One query fetches design-progress for all projects; avoids N+1 per card.
+     */
+    private List<DashboardDto.ProjectCard> toProjectCards(List<Project> projects) {
+        if (projects.isEmpty()) return Collections.emptyList();
 
-        Double calculatedDesignProgress = projectDesignStepRepository.calculateDesignProgress(project.getId());
-        if (calculatedDesignProgress == null) {
-            calculatedDesignProgress = 0.0;
+        List<Long> ids = projects.stream().map(Project::getId).collect(Collectors.toList());
+        Map<Long, Double> progressMap = new HashMap<>();
+        try {
+            List<Object[]> rows = projectDesignStepRepository.calculateDesignProgressBatch(ids);
+            for (Object[] row : rows) {
+                Long pid = ((Number) row[0]).longValue();
+                Double prog = row[1] != null ? ((Number) row[1]).doubleValue() : 0.0;
+                progressMap.put(pid, prog);
+            }
+        } catch (Exception e) {
+            logger.warn("Could not batch-load design progress: {}", e.getMessage());
         }
+
+        return projects.stream()
+                .map(p -> toProjectCard(p, progressMap.getOrDefault(p.getId(), 0.0)))
+                .collect(Collectors.toList());
+    }
+
+    private DashboardDto.ProjectCard toProjectCard(Project project, double designProgress) {
+        String status = determineProjectStatus(project);
 
         DashboardDto.ProjectCard card = new DashboardDto.ProjectCard(
                 project.getId(),
@@ -155,7 +175,7 @@ public class DashboardService {
                 project.getIsDesignAgreementSigned() != null
                         ? project.getIsDesignAgreementSigned()
                         : false,
-                calculatedDesignProgress);
+                designProgress);
 
         return card;
     }
@@ -264,9 +284,7 @@ public class DashboardService {
                 ? projectRepository.countForAdminSearch(q)
                 : projectRepository.countAllForAdmin();
 
-        List<DashboardDto.ProjectCard> cards = projects.stream()
-                .map(this::toProjectCard)
-                .collect(Collectors.toList());
+        List<DashboardDto.ProjectCard> cards = toProjectCards(projects);
 
         java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
         result.put("content", cards);
@@ -329,9 +347,7 @@ public class DashboardService {
         List<Project> projects = isAdminByEmail(email)
                 ? projectRepository.findRecentForAdmin(limit)
                 : projectRepository.findRecentByCustomerEmail(email, limit);
-        return projects.stream()
-                .map(this::toProjectCard)
-                .collect(Collectors.toList());
+        return toProjectCards(projects);
     }
 
     // Search projects by name, code, or location
@@ -344,9 +360,7 @@ public class DashboardService {
         List<Project> projects = isAdminByEmail(email)
                 ? projectRepository.searchForAdmin(term)
                 : projectRepository.searchByCustomerEmailAndTerm(email, term);
-        return projects.stream()
-                .map(this::toProjectCard)
-                .collect(Collectors.toList());
+        return toProjectCards(projects);
     }
 
     // Get detailed project information including progress and documents

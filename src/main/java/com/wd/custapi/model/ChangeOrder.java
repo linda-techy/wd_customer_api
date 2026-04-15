@@ -75,6 +75,20 @@ public class ChangeOrder {
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
 
+    // ---- VO classification fields (added V25) — read-only for customer ----
+
+    @Column(name = "vo_category", length = 30)
+    private String voCategory;
+
+    @Column(name = "scope_notes", columnDefinition = "TEXT")
+    private String scopeNotes;
+
+    @Column(name = "approved_cost", precision = 18, scale = 6)
+    private java.math.BigDecimal approvedCost;
+
+    @Column(name = "advance_collected")
+    private Boolean advanceCollected;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -115,4 +129,8 @@ public class ChangeOrder {
     public String getRejectionReason() { return rejectionReason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public Long getVersion() { return version; }
+    public String getVoCategory() { return voCategory; }
+    public String getScopeNotes() { return scopeNotes; }
+    public java.math.BigDecimal getApprovedCost() { return approvedCost; }
+    public Boolean getAdvanceCollected() { return advanceCollected; }
 }
