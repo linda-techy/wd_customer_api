@@ -341,6 +341,17 @@ public class DashboardService {
         return project;
     }
 
+    @Transactional(readOnly = true)
+    public Project getProjectByIdAndEmail(Long projectId, String email) {
+        Project project = isAdminByEmail(email)
+                ? projectRepository.findById(projectId).orElse(null)
+                : projectRepository.findByIdAndCustomerEmail(projectId, email);
+        if (project == null) {
+            throw new RuntimeException("Project not found or access denied");
+        }
+        return project;
+    }
+
     // Get recent N projects for dashboard
     @Transactional(readOnly = true)
     public List<DashboardDto.ProjectCard> getRecentProjects(String email, int limit) {

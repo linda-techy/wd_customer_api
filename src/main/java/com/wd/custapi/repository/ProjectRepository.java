@@ -50,8 +50,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         @Query(value = "SELECT DISTINCT p.* FROM customer_projects p " +
                         "LEFT JOIN project_members cpm ON p.id = cpm.project_id " +
                         "LEFT JOIN customer_users c_mem ON cpm.customer_user_id = c_mem.id " +
-                        "LEFT JOIN customer_users c_owner ON p.customer_id = c_owner.id " +
-                        "WHERE p.id = :projectId AND (c_mem.email = :email OR c_owner.email = :email)", nativeQuery = true)
+                        "WHERE p.id = :projectId AND c_mem.email = :email", nativeQuery = true)
         Project findByIdAndCustomerEmail(@Param("projectId") Long projectId, @Param("email") String email);
 
         // Get specific project by Project UUID for a customer
