@@ -3,6 +3,7 @@ package com.wd.custapi.controller;
 import com.wd.custapi.dto.NewEnquiryRequest;
 import com.wd.custapi.model.CustomerLead;
 import com.wd.custapi.service.CustomerLeadService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +43,7 @@ public class CustomerLeadController {
     }
 
     @PostMapping("/enquiry")
-    public ResponseEntity<Map<String, Object>> submitEnquiry(@RequestBody NewEnquiryRequest request) {
+    public ResponseEntity<Map<String, Object>> submitEnquiry(@Valid @RequestBody NewEnquiryRequest request) {
         String email = currentEmail();
         Long leadId = leadService.submitEnquiry(email, request);
         return ResponseEntity.ok(Map.of("success", true, "message", "Enquiry submitted successfully", "leadId", leadId));
