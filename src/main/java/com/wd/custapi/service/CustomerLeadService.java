@@ -45,7 +45,7 @@ public class CustomerLeadService {
 
         // Insert via JDBC since CustomerLead is read-only (insertable=false).
         // The leads PK column is lead_id (auto-generated); RETURNING lead_id.
-        return jdbc.queryForObject(
+        Long leadId = jdbc.queryForObject(
             "INSERT INTO leads (name, email, phone, project_type, state, district, location, "
           + "budget, project_sqft_area, requirements, lead_source, lead_status, priority, "
           + "customer_user_id, created_at) "
@@ -66,6 +66,22 @@ public class CustomerLeadService {
             request.area(), request.area(), request.area(),
             request.requirements() != null ? request.requirements() : request.message(),
             user.getId()
+        );
+
+        applyInitialScore(leadId);
+        return leadId;
+    }
+
+    /**
+     * Apply a WARM baseline score to customer-app leads.
+     * These are existing customers with HIGH priority and complete contact info.
+     * Full scoring kicks in when portal staff edits via JPA lifecycle.
+     */
+    private void applyInitialScore(Long leadId) {
+        jdbc.update(
+            "UPDATE leads SET score = 40, score_category = 'WARM', last_scored_at = now() "
+          + "WHERE lead_id = ? AND (score IS NULL OR score = 0)",
+            leadId
         );
     }
 }
