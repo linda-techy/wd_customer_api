@@ -5,6 +5,8 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,8 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
+
     @Value("${jwt.secret}")
     private String secret;
 
@@ -27,6 +31,12 @@ public class JwtService {
 
     @Value("${jwt.refresh-token-expiration}")
     private Long refreshTokenExpiration;
+
+    @Value("${jwt.aud.value}")
+    private String audValue;
+
+    @Value("${jwt.aud.enforce}")
+    private boolean audEnforce;
 
     /**
      * Cached signing key — built once at startup, not on every request.
@@ -123,6 +133,7 @@ public class JwtService {
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
+                .audience().add(audValue).and()
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
@@ -130,16 +141,32 @@ public class JwtService {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
+        if (!validateToken(token)) {
+            return false;
+        }
         final String actualSubject = extractActualSubject(token);
-        return (actualSubject.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return actualSubject.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     public Boolean validateToken(String token) {
         try {
-            Jwts.parser()
+            Claims claims = Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()
-                    .parseSignedClaims(token);
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            java.util.Set<String> tokenAud = claims.getAudience();
+            boolean audMatches = tokenAud != null && tokenAud.contains(audValue);
+
+            if (!audMatches) {
+                if (audEnforce) {
+                    return false;
+                }
+                logger.warn("JWT missing or mismatched aud claim (token audience={}, expected={}). "
+                        + "This should only occur during the phased aud rollout — investigate if seen post-rollout.",
+                        tokenAud, audValue);
+            }
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
