@@ -1,7 +1,11 @@
 package com.wd.custapi.controller;
 
+import com.wd.custapi.model.ProjectDocument;
+import com.wd.custapi.repository.ProjectDocumentRepository;
+import com.wd.custapi.service.DashboardService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -9,7 +13,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +27,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Controller for serving files from storage
@@ -33,6 +42,12 @@ public class FileDownloadController {
 
     @Value("${storageBasePath}")
     private String storageBasePath;
+
+    @Autowired
+    private ProjectDocumentRepository projectDocumentRepository;
+
+    @Autowired
+    private DashboardService dashboardService;
 
     /**
      * Serve files from storage path
@@ -81,6 +96,13 @@ public class FileDownloadController {
             } catch (Exception e) {
                 logger.warn("Failed to decode request path '{}': {}", requestPath, e.getMessage());
                 // Continue with original path if decoding fails
+            }
+
+            // Ownership check — file must be linked to a project the caller owns
+            String authenticatedEmail = currentUserEmail();
+            if (resolveOwnedDocument(requestPath, authenticatedEmail).isEmpty()) {
+                logger.info("Denied file access by {} to {} (no owned ProjectDocument match)", authenticatedEmail, requestPath);
+                return ResponseEntity.notFound().build();
             }
 
             logger.debug("File download request - URI: {}, Path: {}", requestURI, requestPath);
@@ -226,6 +248,12 @@ public class FileDownloadController {
                 logger.warn("Failed to decode path for HEAD request '{}': {}", requestPath, e.getMessage());
             }
 
+            // Ownership check — file must be linked to a project the caller owns
+            String authenticatedEmail = currentUserEmail();
+            if (resolveOwnedDocument(requestPath, authenticatedEmail).isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
             Path filePath = Paths.get(storageBasePath).resolve(requestPath).normalize();
 
             // Security check - ensure file is within storage directory
@@ -257,5 +285,29 @@ public class FileDownloadController {
             logger.error("Error getting file metadata: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private Optional<ProjectDocument> resolveOwnedDocument(String requestPath, String authenticatedEmail) {
+        List<ProjectDocument> candidates = projectDocumentRepository.findByFilePath(requestPath);
+        for (ProjectDocument doc : candidates) {
+            if (!ProjectDocumentRepository.REFERENCE_TYPE_PROJECT.equals(doc.getReferenceType())) {
+                continue;
+            }
+            try {
+                dashboardService.getProjectByIdAndEmail(doc.getReferenceId(), authenticatedEmail);
+                return Optional.of(doc);
+            } catch (RuntimeException notOwned) {
+                // keep scanning — another candidate row might be owned by this user
+            }
+        }
+        return Optional.empty();
+    }
+
+    private String currentUserEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            throw new AccessDeniedException("No authenticated user");
+        }
+        return auth.getName();
     }
 }
