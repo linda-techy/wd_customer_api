@@ -26,6 +26,13 @@ public class CustomerLeadController {
         return ResponseEntity.ok(leads.stream().map(this::toCustomerView).toList());
     }
 
+    @GetMapping("/my-referrals")
+    public ResponseEntity<List<Map<String, Object>>> getMyReferrals() {
+        String email = currentEmail();
+        List<CustomerLead> referrals = leadService.getMyReferrals(email);
+        return ResponseEntity.ok(referrals.stream().map(this::toReferralView).toList());
+    }
+
     @GetMapping("/my/{id}")
     public ResponseEntity<Map<String, Object>> getMyLeadById(@PathVariable Long id) {
         String email = currentEmail();
@@ -57,6 +64,17 @@ public class CustomerLeadController {
         map.put("internalStatus", lead.getLeadStatus() != null ? lead.getLeadStatus() : "");
         map.put("source", lead.getLeadSource() != null ? lead.getLeadSource() : "");
         map.put("nextFollowUp", lead.getNextFollowUp() != null ? lead.getNextFollowUp().toString() : "");
+        map.put("createdAt", lead.getCreatedAt() != null ? lead.getCreatedAt().toString() : "");
+        return map;
+    }
+
+    private Map<String, Object> toReferralView(CustomerLead lead) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", lead.getId());
+        map.put("friendName", lead.getName() != null ? lead.getName() : "");
+        map.put("friendPhone", lead.getPhone() != null ? lead.getPhone() : "");
+        map.put("projectType", lead.getProjectType() != null ? lead.getProjectType() : "");
+        map.put("status", lead.getCustomerFriendlyStatus());
         map.put("createdAt", lead.getCreatedAt() != null ? lead.getCreatedAt().toString() : "");
         return map;
     }

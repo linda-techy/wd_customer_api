@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface CustomerLeadRepository extends JpaRepository<CustomerLead, Long> {
     List<CustomerLead> findByEmailOrderByCreatedAtDesc(String email);
     Optional<CustomerLead> findByIdAndEmail(Long id, String email);
+    List<CustomerLead> findByReferredByEmailOrderByCreatedAtDesc(String email);
 }

@@ -69,6 +69,15 @@ public class CustomerLead {
     @Column(name = "deleted_at", insertable = false, updatable = false)
     private LocalDateTime deletedAt;
 
+    @Column(name = "referred_by_email", insertable = false, updatable = false)
+    private String referredByEmail;
+
+    @Column(name = "referred_by_name", insertable = false, updatable = false)
+    private String referredByName;
+
+    @Column(name = "referred_by_phone", insertable = false, updatable = false)
+    private String referredByPhone;
+
     // Getters only — no setters, entity is fully read-only
     public Long getId() { return id; }
     public String getName() { return name; }
@@ -88,6 +97,9 @@ public class CustomerLead {
     public LocalDateTime getNextFollowUp() { return nextFollowUp; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public Long getCustomerUserId() { return customerUserId; }
+    public String getReferredByEmail() { return referredByEmail; }
+    public String getReferredByName() { return referredByName; }
+    public String getReferredByPhone() { return referredByPhone; }
 
     public String getCustomerFriendlyStatus() {
         if (leadStatus == null) return "Processing";

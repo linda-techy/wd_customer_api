@@ -29,6 +29,11 @@ public class CustomerLeadService {
     }
 
     @Transactional(readOnly = true)
+    public List<CustomerLead> getMyReferrals(String email) {
+        return leadRepository.findByReferredByEmailOrderByCreatedAtDesc(email);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<CustomerLead> getMyLeadById(Long id, String email) {
         return leadRepository.findByIdAndEmail(id, email);
     }
