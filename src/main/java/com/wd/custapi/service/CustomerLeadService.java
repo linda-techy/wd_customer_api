@@ -52,7 +52,7 @@ public class CustomerLeadService {
           + "VALUES (?, ?, ?, ?, ?, ?, ?, "
           + "CASE WHEN ? IS NOT NULL AND ? != '' THEN CAST(? AS NUMERIC) ELSE NULL END, "
           + "CASE WHEN ? IS NOT NULL AND ? != '' THEN CAST(? AS NUMERIC) ELSE NULL END, "
-          + "?, 'CUSTOMER_APP', 'new_inquiry', 'HIGH', ?, now()) "
+          + "?, 'customer_app', 'new_inquiry', 'HIGH', ?, now()) "
           + "RETURNING lead_id",
             Long.class,
             user.getFirstName() != null ? user.getFirstName() : user.getEmail(),
