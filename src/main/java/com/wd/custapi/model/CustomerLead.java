@@ -109,6 +109,7 @@ public class CustomerLead {
             case "qualified" -> "Under Review";
             case "proposal_sent" -> "Proposal Sent";
             case "negotiation" -> "In Discussion";
+            case "project_won" -> "Project Started";
             case "converted" -> "Project Started";
             case "lost" -> "Enquiry Closed";
             default -> "Processing";
