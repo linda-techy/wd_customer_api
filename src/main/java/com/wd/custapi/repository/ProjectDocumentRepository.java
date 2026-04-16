@@ -13,6 +13,8 @@ public interface ProjectDocumentRepository extends JpaRepository<ProjectDocument
 
     String REFERENCE_TYPE_PROJECT = "PROJECT";
 
+    List<ProjectDocument> findByFilePath(String filePath);
+
     List<ProjectDocument> findByReferenceIdAndReferenceTypeAndIsActiveTrue(Long referenceId, String referenceType);
 
     List<ProjectDocument> findByReferenceIdAndReferenceTypeAndCategoryIdAndIsActiveTrue(
