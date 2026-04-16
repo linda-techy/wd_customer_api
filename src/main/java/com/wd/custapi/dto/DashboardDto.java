@@ -473,7 +473,6 @@ public class DashboardDto {
         private String state;
         private String createdBy;
         private String responsiblePerson;
-        private String leadId;
         private List<ProjectDocumentSummary> documents;
         private ProgressData progressData;
 
@@ -625,14 +624,6 @@ public class DashboardDto {
 
         public void setResponsiblePerson(String responsiblePerson) {
             this.responsiblePerson = responsiblePerson;
-        }
-
-        public String getLeadId() {
-            return leadId;
-        }
-
-        public void setLeadId(String leadId) {
-            this.leadId = leadId;
         }
 
         public List<ProjectDocumentSummary> getDocuments() {
