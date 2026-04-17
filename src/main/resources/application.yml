@@ -58,7 +58,7 @@ jwt:
   refresh-token-expiration: 604800000
   aud:
     value: "customer-api"
-    enforce: false
+    enforce: true
 
 springdoc:
   api-docs:
