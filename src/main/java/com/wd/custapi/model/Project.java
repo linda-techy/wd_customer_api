@@ -65,6 +65,27 @@ public class Project {
     @Column(name = "longitude")
     private Double longitude;
 
+    @Column(name = "project_status")
+    private String projectStatus;
+
+    @Column(name = "budget", precision = 15, scale = 2)
+    private java.math.BigDecimal budget;
+
+    @Column(name = "contract_type")
+    private String contractType;
+
+    @Column(name = "permit_status")
+    private String permitStatus;
+
+    @Column(name = "plot_area", precision = 10, scale = 2)
+    private java.math.BigDecimal plotArea;
+
+    @Column(name = "floors")
+    private Integer floors;
+
+    @Column(name = "facing")
+    private String facing;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -215,6 +236,34 @@ public class Project {
 
     public boolean hasLocation() {
         return latitude != null && longitude != null;
+    }
+
+    public String getProjectStatus() {
+        return projectStatus;
+    }
+
+    public java.math.BigDecimal getBudget() {
+        return budget;
+    }
+
+    public String getContractType() {
+        return contractType;
+    }
+
+    public String getPermitStatus() {
+        return permitStatus;
+    }
+
+    public java.math.BigDecimal getPlotArea() {
+        return plotArea;
+    }
+
+    public Integer getFloors() {
+        return floors;
+    }
+
+    public String getFacing() {
+        return facing;
     }
 
     public Long getVersion() { return version; }

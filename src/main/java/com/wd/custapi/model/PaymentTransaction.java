@@ -35,6 +35,9 @@ public class PaymentTransaction {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -61,6 +64,10 @@ public class PaymentTransaction {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
     }
 
     public LocalDateTime getCreatedAt() {
