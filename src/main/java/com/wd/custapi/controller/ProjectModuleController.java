@@ -4,8 +4,10 @@ import com.wd.custapi.dto.ProjectModuleDtos.*;
 import com.wd.custapi.model.BoqApproval;
 import com.wd.custapi.model.CustomerUser;
 import com.wd.custapi.model.Project;
+import com.wd.custapi.model.Task;
 import com.wd.custapi.repository.BoqApprovalRepository;
 import com.wd.custapi.repository.CustomerUserRepository;
+import com.wd.custapi.repository.TaskRepository;
 import com.wd.custapi.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +47,7 @@ public class ProjectModuleController {
     private final BoqService boqService;
     private final BoqApprovalRepository boqApprovalRepository;
     private final NotificationTriggerService notificationTriggerService;
+    private final TaskRepository taskRepository;
 
     public ProjectModuleController(ProjectDocumentService documentService,
                                    DashboardService dashboardService,
@@ -60,7 +63,8 @@ public class ProjectModuleController {
                                    FeedbackService feedbackService,
                                    BoqService boqService,
                                    BoqApprovalRepository boqApprovalRepository,
-                                   NotificationTriggerService notificationTriggerService) {
+                                   NotificationTriggerService notificationTriggerService,
+                                   TaskRepository taskRepository) {
         this.documentService = documentService;
         this.dashboardService = dashboardService;
         this.customerUserRepository = customerUserRepository;
@@ -76,6 +80,26 @@ public class ProjectModuleController {
         this.boqService = boqService;
         this.boqApprovalRepository = boqApprovalRepository;
         this.notificationTriggerService = notificationTriggerService;
+        this.taskRepository = taskRepository;
+    }
+
+    // ===== TASK ENDPOINTS =====
+
+    @GetMapping("/tasks")
+    public ResponseEntity<?> getProjectTasks(
+            @PathVariable("projectId") String projectUuid,
+            @RequestParam(required = false) String status,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            if (status != null && !status.isEmpty()) {
+                return ResponseEntity.ok(taskRepository.findByProjectIdAndStatusOrderByDueDateAsc(project.getId(), status));
+            }
+            return ResponseEntity.ok(taskRepository.findByProjectIdOrderByDueDateAsc(project.getId()));
+        } catch (RuntimeException e) {
+            return handleRuntimeException(e, "get tasks", projectUuid, auth);
+        }
     }
 
     // ===== DOCUMENT ENDPOINTS =====
