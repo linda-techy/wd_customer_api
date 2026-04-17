@@ -1,6 +1,7 @@
 package com.wd.custapi.repository;
 
 import com.wd.custapi.model.BoqInvoice;
+import com.wd.custapi.model.enums.InvoiceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,4 +11,6 @@ import java.util.List;
 public interface BoqInvoiceRepository extends JpaRepository<BoqInvoice, Long> {
 
     List<BoqInvoice> findByProjectIdOrderByCreatedAtDesc(Long projectId);
+
+    List<BoqInvoice> findByProjectIdAndStatusNotOrderByCreatedAtDesc(Long projectId, InvoiceStatus status);
 }

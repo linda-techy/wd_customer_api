@@ -1,6 +1,8 @@
 package com.wd.custapi.controller;
 
+import com.wd.custapi.dto.CustomerBoqInvoiceDto;
 import com.wd.custapi.model.*;
+import com.wd.custapi.model.enums.InvoiceStatus;
 import com.wd.custapi.repository.*;
 import com.wd.custapi.service.DashboardService;
 import org.slf4j.Logger;
@@ -35,6 +37,7 @@ public class CustomerFinancialController {
     private final ChangeOrderPaymentScheduleRepository scheduleRepository;
     private final DeductionRegisterRepository deductionRepository;
     private final FinalAccountRepository finalAccountRepository;
+    private final BoqInvoiceRepository boqInvoiceRepository;
 
     public CustomerFinancialController(
             DashboardService dashboardService,
@@ -42,13 +45,15 @@ public class CustomerFinancialController {
             ChangeOrderRepository changeOrderRepository,
             ChangeOrderPaymentScheduleRepository scheduleRepository,
             DeductionRegisterRepository deductionRepository,
-            FinalAccountRepository finalAccountRepository) {
+            FinalAccountRepository finalAccountRepository,
+            BoqInvoiceRepository boqInvoiceRepository) {
         this.dashboardService       = dashboardService;
         this.stageRepository        = stageRepository;
         this.changeOrderRepository  = changeOrderRepository;
         this.scheduleRepository     = scheduleRepository;
         this.deductionRepository    = deductionRepository;
         this.finalAccountRepository = finalAccountRepository;
+        this.boqInvoiceRepository   = boqInvoiceRepository;
     }
 
     // ---- Stage payment summary (with certification / retention) ----
@@ -217,6 +222,27 @@ public class CustomerFinancialController {
         } catch (Exception e) {
             logger.error("Failed to fetch final account for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch final account"));
+        }
+    }
+
+    // ---- BOQ invoices ----
+
+    @GetMapping("/boq-invoices")
+    public ResponseEntity<Map<String, Object>> getBoqInvoices(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            List<CustomerBoqInvoiceDto> invoices = boqInvoiceRepository
+                    .findByProjectIdAndStatusNotOrderByCreatedAtDesc(project.getId(), InvoiceStatus.DRAFT)
+                    .stream()
+                    .map(CustomerBoqInvoiceDto::from)
+                    .toList();
+            return ResponseEntity.ok(Map.of("invoices", invoices, "count", invoices.size()));
+        } catch (Exception e) {
+            logger.error("Failed to fetch BOQ invoices for project {}", projectUuid, e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch BOQ invoices"));
         }
     }
 
