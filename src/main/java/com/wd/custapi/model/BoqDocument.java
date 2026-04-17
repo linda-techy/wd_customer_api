@@ -1,6 +1,7 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
  * Read-only view of the boq_documents table for the customer-facing API.
  * Mutations are performed only by the portal API.
  */
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "boq_documents")
 public class BoqDocument {
