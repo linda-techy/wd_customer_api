@@ -56,6 +56,8 @@ spring:
 jwt:
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
+  algorithm: ${JWT_ALGORITHM:HS256}      # Set to RS256 (with JWT_PRIVATE_KEY) to activate RSA signing
+  private-key: ${JWT_PRIVATE_KEY:}       # PKCS#8 PEM RSA private key — leave blank to keep HS256
   aud:
     value: "customer-api"
     enforce: true
