@@ -1,5 +1,6 @@
 package com.wd.custapi.model;
 
+import com.wd.custapi.model.enums.ProjectPhase;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
@@ -7,6 +8,7 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Version;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -34,11 +36,12 @@ public class Project {
 
     private LocalDate endDate;
 
-    @Column(name = "overall_progress")
-    private Double progress = 0.0;
+    @Column(name = "overall_progress", precision = 5, scale = 2)
+    private BigDecimal progress = BigDecimal.ZERO;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "project_phase")
-    private String projectPhase;
+    private ProjectPhase projectPhase;
 
     @Column(name = "project_type", length = 255)
     private String projectType;
@@ -138,19 +141,19 @@ public class Project {
         this.endDate = endDate;
     }
 
-    public Double getProgress() {
+    public BigDecimal getProgress() {
         return progress;
     }
 
-    public void setProgress(Double progress) {
+    public void setProgress(BigDecimal progress) {
         this.progress = progress;
     }
 
-    public String getProjectPhase() {
+    public ProjectPhase getProjectPhase() {
         return projectPhase;
     }
 
-    public void setProjectPhase(String projectPhase) {
+    public void setProjectPhase(ProjectPhase projectPhase) {
         this.projectPhase = projectPhase;
     }
 
