@@ -168,8 +168,8 @@ public class DashboardService {
                 project.getStartDate(),
                 project.getEndDate(),
                 status,
-                project.getProgress(),
-                project.getProjectPhase(),
+                project.getProgress() != null ? project.getProgress().doubleValue() : 0.0,
+                project.getProjectPhase() != null ? project.getProjectPhase().name() : null,
                 project.getProjectType(),
                 project.getDesignPackage(),
                 project.getIsDesignAgreementSigned() != null
@@ -405,9 +405,9 @@ public class DashboardService {
         details.setLocation(project.getLocation());
         details.setStartDate(project.getStartDate());
         details.setEndDate(project.getEndDate());
-        details.setProgress(project.getProgress());
+        details.setProgress(project.getProgress() != null ? project.getProgress().doubleValue() : 0.0);
         details.setStatus(determineProjectStatus(project));
-        details.setPhase(project.getProjectPhase()); // Set project phase from database
+        details.setPhase(project.getProjectPhase() != null ? project.getProjectPhase().name() : null);
         details.setProjectType(project.getProjectType());
         details.setDesignPackage(project.getDesignPackage());
         details.setDesignAgreementSigned(
@@ -502,7 +502,7 @@ public class DashboardService {
 
     private DashboardDto.ProgressData buildProgressData(Project project) {
         DashboardDto.ProgressData progressData = new DashboardDto.ProgressData();
-        progressData.setOverallProgress(project.getProgress());
+        progressData.setOverallProgress(project.getProgress() != null ? project.getProgress().doubleValue() : 0.0);
 
         // Calculate days
         LocalDate now = LocalDate.now();
@@ -523,7 +523,7 @@ public class DashboardService {
                 progressData.setProgressStatus("DELAYED");
             } else {
                 double expectedProgress = (double) daysElapsed / totalDays * 100;
-                double actualProgress = project.getProgress() != null ? project.getProgress() : 0;
+                double actualProgress = project.getProgress() != null ? project.getProgress().doubleValue() : 0;
 
                 if (actualProgress >= expectedProgress + 5) {
                     progressData.setProgressStatus("AHEAD");

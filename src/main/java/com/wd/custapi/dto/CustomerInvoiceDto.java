@@ -30,7 +30,7 @@ public class CustomerInvoiceDto {
         this.subTotal = invoice.getSubTotal();
         this.gstAmount = invoice.getGstAmount();
         this.totalAmount = invoice.getTotalAmount();
-        this.status = invoice.getStatus();
+        this.status = invoice.getStatus() != null ? invoice.getStatus().name() : null;
         this.createdAt = invoice.getCreatedAt();
     }
 
