@@ -1,5 +1,6 @@
 package com.wd.custapi.service;
 
+import com.wd.custapi.security.JwtConstants;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.JwtException;
@@ -171,25 +172,25 @@ public class JwtService {
 
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("tokenType", "CUSTOMER"); // signed claim — not guessable via subject prefix
+        claims.put(JwtConstants.CLAIM_TOKEN_TYPE, JwtConstants.TOKEN_TYPE_CUSTOMER); // signed claim — not guessable via subject prefix
         return createToken(claims, userDetails.getUsername(), accessTokenExpiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("tokenType", "REFRESH");
+        claims.put(JwtConstants.CLAIM_TOKEN_TYPE, "REFRESH");
         return createToken(claims, userDetails.getUsername(), refreshTokenExpiration);
     }
 
     // Multi-tenant token generation — tokenType stored as a SIGNED claim, not subject prefix
     public String generateToken(String subject, String tokenType, Map<String, Object> claims, Long expiration) {
         claims = new HashMap<>(claims); // defensive copy
-        claims.put("tokenType", tokenType); // cryptographically signed in JWT payload
+        claims.put(JwtConstants.CLAIM_TOKEN_TYPE, tokenType); // cryptographically signed in JWT payload
         return createToken(claims, subject, expiration); // subject = just the email, no prefix
     }
 
     public String generateCustomerToken(String email, Map<String, Object> claims) {
-        return generateToken(email, "CUSTOMER", claims, accessTokenExpiration);
+        return generateToken(email, JwtConstants.TOKEN_TYPE_CUSTOMER, claims, accessTokenExpiration);
     }
 
     /**
@@ -199,11 +200,11 @@ public class JwtService {
      * Backward-compatible: if claim is missing, returns "CUSTOMER" as safe default.
      */
     public String extractTokenType(String token) {
-        Object tokenType = extractAllClaims(token).get("tokenType");
+        Object tokenType = extractAllClaims(token).get(JwtConstants.CLAIM_TOKEN_TYPE);
         if (tokenType != null) {
             return tokenType.toString();
         }
-        return "CUSTOMER"; // safe default for legacy tokens issued before this fix
+        return JwtConstants.DEFAULT_TOKEN_TYPE; // safe default for legacy tokens issued before this fix
     }
 
     /**
