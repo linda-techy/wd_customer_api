@@ -35,8 +35,26 @@ public class CustomerUser implements UserDetails {
     @Column(name = "phone")
     private String phone;
 
-    @Column(name = "whatsapp")
-    private String whatsapp;
+    @Column(name = "whatsapp_number")
+    private String whatsappNumber;
+
+    @Column(name = "address", columnDefinition = "TEXT")
+    private String address;
+
+    @Column(name = "company_name", length = 100)
+    private String companyName;
+
+    @Column(name = "gst_number", length = 20)
+    private String gstNumber;
+
+    @Column(name = "lead_source", length = 50, insertable = false, updatable = false)
+    private String leadSource;
+
+    @Column(name = "notes", columnDefinition = "TEXT", insertable = false, updatable = false)
+    private String notes;
+
+    @Column(name = "customer_type", length = 50, insertable = false, updatable = false)
+    private String customerType;
 
     @Column(name = "fcm_token")
     private String fcmToken;
@@ -204,12 +222,48 @@ public class CustomerUser implements UserDetails {
         this.phone = phone;
     }
 
-    public String getWhatsapp() {
-        return whatsapp;
+    public String getWhatsappNumber() {
+        return whatsappNumber;
     }
 
-    public void setWhatsapp(String whatsapp) {
-        this.whatsapp = whatsapp;
+    public void setWhatsappNumber(String whatsappNumber) {
+        this.whatsappNumber = whatsappNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public String getGstNumber() {
+        return gstNumber;
+    }
+
+    public void setGstNumber(String gstNumber) {
+        this.gstNumber = gstNumber;
+    }
+
+    public String getLeadSource() {
+        return leadSource;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public String getCustomerType() {
+        return customerType;
     }
 
     public String getFcmToken() {

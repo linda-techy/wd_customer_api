@@ -165,8 +165,17 @@ public class AuthService {
         if (updates.containsKey("phone")) {
             user.setPhone(updates.get("phone"));
         }
-        if (updates.containsKey("whatsapp")) {
-            user.setWhatsapp(updates.get("whatsapp"));
+        if (updates.containsKey("whatsappNumber")) {
+            user.setWhatsappNumber(updates.get("whatsappNumber"));
+        }
+        if (updates.containsKey("address")) {
+            user.setAddress(updates.get("address"));
+        }
+        if (updates.containsKey("companyName")) {
+            user.setCompanyName(updates.get("companyName"));
+        }
+        if (updates.containsKey("gstNumber")) {
+            user.setGstNumber(updates.get("gstNumber"));
         }
 
         customerUserRepository.save(user);
