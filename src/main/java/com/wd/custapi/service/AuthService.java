@@ -83,12 +83,7 @@ public class AuthService {
                 .map(Object::toString)
                 .collect(Collectors.toList());
 
-        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
-                user.getId(),
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getRole().getName());
+        LoginResponse.UserInfo userInfo = buildUserInfo(user);
 
         // Get actual project count for the user from the authentication principal
         long projectCount = user.getAuthorities().size(); // placeholder — replace with real repo call if needed
@@ -139,12 +134,7 @@ public class AuthService {
         CustomerUser user = customerUserRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Customer user not found"));
 
-        return new LoginResponse.UserInfo(
-                user.getId(),
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getRole().getName());
+        return buildUserInfo(user);
     }
 
     /**
@@ -181,12 +171,7 @@ public class AuthService {
         customerUserRepository.save(user);
         log.info("Profile updated for user: {}", email);
 
-        return new LoginResponse.UserInfo(
-                user.getId(),
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getRole() != null ? user.getRole().getName() : "VIEWER");
+        return buildUserInfo(user);
     }
 
     /**
@@ -276,12 +261,7 @@ public class AuthService {
                 .map(Object::toString)
                 .collect(Collectors.toList());
 
-        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
-                newUser.getId(),
-                newUser.getEmail(),
-                newUser.getFirstName(),
-                newUser.getLastName(),
-                newUser.getRole().getName());
+        LoginResponse.UserInfo userInfo = buildUserInfo(newUser);
 
         return new LoginResponse(accessToken, refreshToken, jwtService.getAccessTokenExpiration(), userInfo,
                 permissions, 0L, "/dashboard");
@@ -393,6 +373,21 @@ public class AuthService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is not available", e);
         }
+    }
+
+    private LoginResponse.UserInfo buildUserInfo(CustomerUser user) {
+        return new LoginResponse.UserInfo(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getRole() != null ? user.getRole().getName() : "VIEWER",
+                user.getPhone(),
+                user.getWhatsappNumber(),
+                user.getAddress(),
+                user.getCompanyName(),
+                user.getGstNumber(),
+                user.getCustomerType());
     }
 
     private String buildResetLink(String resetToken, String email) {

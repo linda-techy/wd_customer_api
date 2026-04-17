@@ -98,10 +98,16 @@ public class LoginResponse {
         private String firstName;
         private String lastName;
         private String role;
-        
+        private String phone;
+        private String whatsappNumber;
+        private String address;
+        private String companyName;
+        private String gstNumber;
+        private String customerType;
+
         // Constructors
         public UserInfo() {}
-        
+
         public UserInfo(Long id, String email, String firstName, String lastName, String role) {
             this.id = id;
             this.email = email;
@@ -109,7 +115,19 @@ public class LoginResponse {
             this.lastName = lastName;
             this.role = role;
         }
-        
+
+        public UserInfo(Long id, String email, String firstName, String lastName, String role,
+                        String phone, String whatsappNumber, String address, String companyName,
+                        String gstNumber, String customerType) {
+            this(id, email, firstName, lastName, role);
+            this.phone = phone;
+            this.whatsappNumber = whatsappNumber;
+            this.address = address;
+            this.companyName = companyName;
+            this.gstNumber = gstNumber;
+            this.customerType = customerType;
+        }
+
         // Getters and Setters
         public Long getId() {
             return id;
@@ -146,9 +164,57 @@ public class LoginResponse {
         public String getRole() {
             return role;
         }
-        
+
         public void setRole(String role) {
             this.role = role;
+        }
+
+        public String getPhone() {
+            return phone;
+        }
+
+        public void setPhone(String phone) {
+            this.phone = phone;
+        }
+
+        public String getWhatsappNumber() {
+            return whatsappNumber;
+        }
+
+        public void setWhatsappNumber(String whatsappNumber) {
+            this.whatsappNumber = whatsappNumber;
+        }
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public String getCompanyName() {
+            return companyName;
+        }
+
+        public void setCompanyName(String companyName) {
+            this.companyName = companyName;
+        }
+
+        public String getGstNumber() {
+            return gstNumber;
+        }
+
+        public void setGstNumber(String gstNumber) {
+            this.gstNumber = gstNumber;
+        }
+
+        public String getCustomerType() {
+            return customerType;
+        }
+
+        public void setCustomerType(String customerType) {
+            this.customerType = customerType;
         }
     }
 }
