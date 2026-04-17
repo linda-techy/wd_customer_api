@@ -63,6 +63,9 @@ public class CustomerUser implements UserDetails {
     @JoinColumn(name = "role_id")
     private Role role;
 
+    /** Projects this user can access — includes projects where they are the owner
+     *  (customer_projects.customer_id) OR a collaborator (project_members join table).
+     *  Roles: CUSTOMER (owner), ARCHITECT, INTERIOR_DESIGNER, SITE_ENGINEER, VIEWER. */
     @ManyToMany
     @JoinTable(name = "project_members", joinColumns = @JoinColumn(name = "customer_user_id"), inverseJoinColumns = @JoinColumn(name = "project_id"))
     private Set<Project> projects;
