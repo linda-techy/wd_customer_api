@@ -26,6 +26,7 @@ public class AuthRateLimitInterceptor implements HandlerInterceptor {
     private static final int LOGIN_CAPACITY           = 5;
     private static final int REFRESH_CAPACITY         = 20;
     private static final int PASSWORD_RESET_CAPACITY  = 5;
+    private static final int REGISTER_CAPACITY        = 3;
     private static final Duration WINDOW = Duration.ofMinutes(1);
 
     private final RateLimiterConfig rateLimiterConfig;
@@ -74,6 +75,9 @@ public class AuthRateLimitInterceptor implements HandlerInterceptor {
         }
         if (uri.endsWith("/auth/forgot-password") || uri.endsWith("/auth/reset-password")) {
             return PASSWORD_RESET_CAPACITY;
+        }
+        if (uri.endsWith("/auth/register")) {
+            return REGISTER_CAPACITY;
         }
         return 0;
     }
