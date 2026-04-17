@@ -232,7 +232,7 @@ public class CustomerFinancialController {
             Long pid = project.getId();
 
             List<PaymentStage> stages = stageRepository.findByProjectIdOrderByStageNumberAsc(pid);
-            long stagesPaid = stages.stream().filter(s -> "PAID".equals(s.getStatus())).count();
+            long stagesPaid = stages.stream().filter(s -> com.wd.custapi.model.enums.PaymentStageStatus.PAID == s.getStatus()).count();
             BigDecimal totalRetentionHeld = stages.stream()
                     .filter(s -> s.getRetentionHeld() != null)
                     .map(PaymentStage::getRetentionHeld)

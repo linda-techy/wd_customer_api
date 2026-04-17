@@ -433,7 +433,7 @@ public class CustomerBoqController {
     }
 
     private Map<String, Object> boqSummaryToMap(BoqDocument doc, List<Map<String, Object>> stages) {
-        boolean pendingAcknowledgement = "APPROVED".equals(doc.getStatus())
+        boolean pendingAcknowledgement = com.wd.custapi.model.enums.BoqDocumentStatus.APPROVED == doc.getStatus()
                 && doc.getCustomerAcknowledgedAt() == null;
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("documentId", doc.getId());

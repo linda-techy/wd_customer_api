@@ -1,5 +1,6 @@
 package com.wd.custapi.model;
 
+import com.wd.custapi.model.enums.InvoiceStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,9 +43,9 @@ public class ProjectInvoice {
     @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
     private BigDecimal totalAmount;
 
-    /** DRAFT | ISSUED | PAID | CANCELLED — stored as String to avoid enum coupling with portal */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private InvoiceStatus status;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -65,7 +66,7 @@ public class ProjectInvoice {
     public BigDecimal getGstPercentage() { return gstPercentage; }
     public BigDecimal getGstAmount() { return gstAmount; }
     public BigDecimal getTotalAmount() { return totalAmount; }
-    public String getStatus() { return status; }
+    public InvoiceStatus getStatus() { return status; }
     public String getNotes() { return notes; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

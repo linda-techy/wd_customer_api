@@ -1,5 +1,6 @@
 package com.wd.custapi.model;
 
+import com.wd.custapi.model.enums.BoqDocumentStatus;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
@@ -34,8 +35,9 @@ public class BoqDocument {
     @Column(name = "total_value_incl_gst", precision = 18, scale = 6)
     private BigDecimal totalValueInclGst;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private String status;
+    private BoqDocumentStatus status;
 
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
@@ -75,7 +77,7 @@ public class BoqDocument {
     public BigDecimal getGstRate() { return gstRate; }
     public BigDecimal getTotalGstAmount() { return totalGstAmount; }
     public BigDecimal getTotalValueInclGst() { return totalValueInclGst; }
-    public String getStatus() { return status; }
+    public BoqDocumentStatus getStatus() { return status; }
     public LocalDateTime getSubmittedAt() { return submittedAt; }
     public LocalDateTime getApprovedAt() { return approvedAt; }
     public LocalDateTime getCustomerApprovedAt() { return customerApprovedAt; }

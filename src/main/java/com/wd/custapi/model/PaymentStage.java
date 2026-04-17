@@ -1,5 +1,6 @@
 package com.wd.custapi.model;
 
+import com.wd.custapi.model.enums.PaymentStageStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -57,8 +58,9 @@ public class PaymentStage {
     @Column(name = "paid_amount", precision = 18, scale = 6)
     private BigDecimal paidAmount;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status;
+    private PaymentStageStatus status;
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -99,7 +101,7 @@ public class PaymentStage {
     public BigDecimal getAppliedCreditAmount() { return appliedCreditAmount; }
     public BigDecimal getNetPayableAmount() { return netPayableAmount; }
     public BigDecimal getPaidAmount() { return paidAmount; }
-    public String getStatus() { return status; }
+    public PaymentStageStatus getStatus() { return status; }
     public LocalDate getDueDate() { return dueDate; }
     public String getMilestoneDescription() { return milestoneDescription; }
     public LocalDateTime getPaidAt() { return paidAt; }
