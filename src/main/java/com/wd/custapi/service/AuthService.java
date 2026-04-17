@@ -2,11 +2,13 @@ package com.wd.custapi.service;
 
 import com.wd.custapi.dto.*;
 import com.wd.custapi.model.CustomerUser;
+import com.wd.custapi.model.EmailVerificationToken;
 import com.wd.custapi.util.TokenHashUtil;
 import com.wd.custapi.model.PasswordResetToken;
 import com.wd.custapi.model.RefreshToken;
 import com.wd.custapi.model.Role;
 import com.wd.custapi.repository.CustomerUserRepository;
+import com.wd.custapi.repository.EmailVerificationTokenRepository;
 import com.wd.custapi.repository.PasswordResetTokenRepository;
 import com.wd.custapi.repository.RefreshTokenRepository;
 import com.wd.custapi.repository.RoleRepository;
@@ -54,6 +56,9 @@ public class AuthService {
 
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -252,6 +257,18 @@ public class AuthService {
         customerUserRepository.save(newUser);
         log.info("New customer registered: {}", newUser.getEmail());
 
+        // Send email verification
+        newUser.setEmailVerified(false);
+        customerUserRepository.save(newUser);
+
+        String verificationToken = UUID.randomUUID().toString();
+        EmailVerificationToken evToken = new EmailVerificationToken(
+                newUser, verificationToken, LocalDateTime.now().plusHours(24));
+        emailVerificationTokenRepository.save(evToken);
+
+        String verificationLink = buildVerificationLink(verificationToken);
+        emailService.sendVerificationEmail(newUser.getEmail(), newUser.getFirstName(), verificationLink);
+
         // Auto-login after registration
         String accessToken = jwtService.generateAccessToken(newUser);
         String refreshToken = jwtService.generateRefreshToken(newUser);
@@ -390,6 +407,17 @@ public class AuthService {
                 user.getCustomerType());
     }
 
+    private String buildVerificationLink(String token) {
+        String normalizedBaseUrl = customerPortalBaseUrl == null
+                ? ""
+                : customerPortalBaseUrl.trim().replaceAll("/+$", "");
+        if (normalizedBaseUrl.isEmpty()) {
+            normalizedBaseUrl = "https://cust.walldotbuilders.com";
+        }
+        String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
+        return normalizedBaseUrl + "/#/verify-email?token=" + encodedToken;
+    }
+
     private String buildResetLink(String resetToken, String email) {
         String normalizedBaseUrl = customerPortalBaseUrl == null
                 ? ""
@@ -402,6 +430,28 @@ public class AuthService {
         return normalizedBaseUrl
                 + "/#/reset_password?token=" + encodedToken
                 + "&email=" + encodedEmail;
+    }
+
+    @Transactional
+    public void verifyEmail(String token) {
+        EmailVerificationToken evToken = emailVerificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid verification token"));
+
+        if (evToken.isUsed()) {
+            throw new IllegalStateException("Verification token has already been used");
+        }
+        if (evToken.isExpired()) {
+            throw new IllegalStateException("Verification token has expired. Please request a new one.");
+        }
+
+        evToken.setUsed(true);
+        emailVerificationTokenRepository.save(evToken);
+
+        CustomerUser user = evToken.getUser();
+        user.setEmailVerified(true);
+        customerUserRepository.save(user);
+
+        log.info("Email verified for user: {}", user.getEmail());
     }
 
 }

@@ -73,6 +73,9 @@ public class CustomerUser implements UserDetails {
     @Column(nullable = false)
     private Boolean enabled = true;
 
+    @Column(name = "email_verified")
+    private Boolean emailVerified = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -199,6 +202,14 @@ public class CustomerUser implements UserDetails {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 
     public LocalDateTime getCreatedAt() {
