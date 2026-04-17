@@ -45,7 +45,7 @@ public class PaymentSchedule {
     private String status;
 
     @Column(name = "paid_amount", precision = 15, scale = 2)
-    private BigDecimal paidAmount;
+    private BigDecimal paidAmount = BigDecimal.ZERO;
 
     @Column(name = "paid_date")
     private LocalDateTime paidDate;
