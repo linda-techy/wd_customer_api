@@ -56,6 +56,8 @@ public class SecurityConfig {
                 auth.requestMatchers("/api/storage/**").authenticated();
                 auth.requestMatchers("/auth/**").permitAll();
                 auth.requestMatchers("/api/public/**").permitAll();
+                // Actuator health/info — publicly accessible; show-details is controlled by management config
+                auth.requestMatchers("/actuator/**").permitAll();
                 // Internal webhook endpoint — restricted to allowed IPs at the filter layer (InternalIpFilter);
                 // Spring Security still requires authentication so an unauthenticated call will be rejected
                 // unless the request has already been whitelisted by the IP filter.

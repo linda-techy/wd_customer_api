@@ -13,6 +13,13 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  # ── JPA / Hibernate ────────────────────────────────────────────
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+
   datasource:
     driver-class-name: org.postgresql.Driver
     hikari:
@@ -83,3 +90,12 @@ app:
 portal:
   api:
     url: ${PORTAL_API_URL:http://localhost:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

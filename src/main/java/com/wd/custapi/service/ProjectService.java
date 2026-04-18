@@ -34,13 +34,10 @@ public class ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
 
-        List<com.wd.custapi.model.DesignStep> steps = designStepRepository.findAll();
-
-        for (com.wd.custapi.model.DesignStep step : steps) {
-            com.wd.custapi.model.ProjectDesignStep projectStep = new com.wd.custapi.model.ProjectDesignStep(project,
-                    step);
-            projectDesignStepRepository.save(projectStep);
-        }
+        List<com.wd.custapi.model.ProjectDesignStep> steps = designStepRepository.findAll().stream()
+                .map(step -> new com.wd.custapi.model.ProjectDesignStep(project, step))
+                .collect(Collectors.toList());
+        projectDesignStepRepository.saveAll(steps);
     }
 
     private ProjectDtos.ProjectCard toCard(Project project) {

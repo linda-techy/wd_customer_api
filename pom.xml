@@ -105,6 +105,12 @@
         <artifactId>spring-boot-starter-mail</artifactId>
     </dependency>
 
+    <!-- Spring Boot Actuator — health and info endpoints -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
     <!-- Test Starter -->
     <dependency>
         <groupId>org.springframework.boot</groupId>
