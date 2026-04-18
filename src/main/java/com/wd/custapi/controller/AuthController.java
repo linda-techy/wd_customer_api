@@ -1,5 +1,6 @@
 package com.wd.custapi.controller;
 
+import com.wd.custapi.dto.ChangePasswordRequest;
 import com.wd.custapi.dto.ForgotPasswordRequest;
 import com.wd.custapi.dto.LoginRequest;
 import com.wd.custapi.dto.LoginResponse;
@@ -184,6 +185,37 @@ public class AuthController {
             logger.error("Profile update failed for {}: {}", authentication != null ? authentication.getName() : "unknown", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to update profile"));
+        }
+    }
+
+    /**
+     * Change password for the currently authenticated user.
+     * Verifies current password before accepting the new one.
+     * All existing sessions are invalidated after a successful change.
+     */
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Not authenticated"));
+            }
+            authService.changePassword(
+                    authentication.getName(),
+                    request.getCurrentPassword(),
+                    request.getNewPassword());
+            return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Password change validation failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Password change failed for {}: {}",
+                    authentication != null ? authentication.getName() : "unknown", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to change password"));
         }
     }
 

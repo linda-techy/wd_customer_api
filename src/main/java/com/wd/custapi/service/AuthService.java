@@ -180,6 +180,34 @@ public class AuthService {
     }
 
     /**
+     * Change password for an already-authenticated user.
+     * Verifies the current password, enforces that the new password differs,
+     * then re-hashes and saves. All existing refresh tokens are revoked so
+     * the user must re-authenticate on other devices.
+     */
+    @Transactional
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        CustomerUser user = customerUserRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        if (currentPassword.equals(newPassword)) {
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        customerUserRepository.save(user);
+
+        // Revoke all refresh tokens so user must re-authenticate on other devices
+        refreshTokenRepository.deleteByUser_Id(user.getId());
+
+        log.info("Password changed for user: {}", email);
+    }
+
+    /**
      * Register or update a device FCM token for push notifications.
      * One token per user — overwrites previous token on new device login.
      */
