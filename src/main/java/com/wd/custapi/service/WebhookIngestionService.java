@@ -103,6 +103,7 @@ public class WebhookIngestionService {
             case SITE_REPORT_SUBMITTED -> "New Site Report: " + getOrDefault(meta, "reportTitle", "");
             case DOCUMENT_UPLOADED -> "Document Added: " + getOrDefault(meta, "filename", "");
             case PAYMENT_RECORDED  -> "Payment Recorded: ₹" + getOrDefault(meta, "amount", "");
+            case DELAY_REPORTED    -> "Delay Reported: " + getOrDefault(meta, "category", "");
         };
     }
 
@@ -112,6 +113,7 @@ public class WebhookIngestionService {
             case PHASE_UPDATED, MILESTONE_REACHED -> "MILESTONE";
             case SITE_REPORT_SUBMITTED -> "SITE_REPORT";
             case DOCUMENT_UPLOADED -> "DOCUMENT";
+            case DELAY_REPORTED -> "DELAY";
         };
     }
 

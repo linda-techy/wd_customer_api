@@ -10,6 +10,10 @@ public record CustomerDelayLogDto(
         LocalDate fromDate,
         LocalDate toDate,
         String reasonText,
+        String reasonCategory,
+        String responsibleParty,
+        Integer durationDays,
+        String impactDescription,
         boolean isOpen,
         long impactDays
 ) {
@@ -19,7 +23,8 @@ public record CustomerDelayLogDto(
         long days = ChronoUnit.DAYS.between(d.getFromDate(), end);
         return new CustomerDelayLogDto(
                 d.getId(), d.getDelayType(), d.getFromDate(), d.getToDate(),
-                d.getReasonText(), open, days
+                d.getReasonText(), d.getReasonCategory(), d.getResponsibleParty(),
+                d.getDurationDays(), d.getImpactDescription(), open, days
         );
     }
 }

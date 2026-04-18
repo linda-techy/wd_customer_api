@@ -35,6 +35,20 @@ public class Task {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
+    // ===== Gantt / Scheduling fields (V53) — read-only =====
+
+    @Column(name = "start_date", insertable = false, updatable = false)
+    private LocalDate startDate;
+
+    @Column(name = "end_date", insertable = false, updatable = false)
+    private LocalDate endDate;
+
+    @Column(name = "depends_on_task_id", insertable = false, updatable = false)
+    private Long dependsOnTaskId;
+
+    @Column(name = "progress_percent", insertable = false, updatable = false)
+    private Integer progressPercent;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
@@ -52,6 +66,10 @@ public class Task {
     public String getStatus() { return status; }
     public String getPriority() { return priority; }
     public LocalDate getDueDate() { return dueDate; }
+    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getEndDate() { return endDate; }
+    public Long getDependsOnTaskId() { return dependsOnTaskId; }
+    public Integer getProgressPercent() { return progressPercent; }
     public Project getProject() { return project; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

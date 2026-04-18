@@ -63,6 +63,13 @@ public interface BoqItemRepository extends JpaRepository<BoqItem, Long> {
     List<BoqItem> findApprovedByProjectId(@Param("projectId") Long projectId);
     
     List<BoqItem> findByProjectIdOrderByWorkTypeIdAsc(Long projectId);
+
+    /**
+     * All active items belonging to a specific BOQ document snapshot.
+     * Used by BoqDiffService for revision-to-revision comparison.
+     */
+    @Query("SELECT b FROM BoqItem b WHERE b.boqDocumentId = :docId AND b.isActive = true AND b.deletedAt IS NULL")
+    List<BoqItem> findByBoqDocumentId(@Param("docId") Long docId);
     
     @Query("SELECT SUM(b.quantity * b.rate) FROM BoqItem b WHERE b.project.id = :projectId AND b.isActive = true AND b.deletedAt IS NULL")
     BigDecimal getTotalAmountByProjectId(Long projectId);

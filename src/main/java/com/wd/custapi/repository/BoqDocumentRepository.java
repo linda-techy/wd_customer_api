@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,6 +20,8 @@ public interface BoqDocumentRepository extends JpaRepository<BoqDocument, Long> 
     Optional<BoqDocument> findTopByProjectIdOrderByRevisionNumberDesc(Long projectId);
 
     Optional<BoqDocument> findTopByProjectIdAndStatusNotOrderByRevisionNumberDesc(Long projectId, String status);
+
+    List<BoqDocument> findByProjectIdOrderByRevisionNumberAsc(Long projectId);
 
     @Modifying
     @Transactional

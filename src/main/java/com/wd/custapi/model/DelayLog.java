@@ -28,15 +28,31 @@ public class DelayLog {
     @Column(name = "reason_text", columnDefinition = "TEXT")
     private String reasonText;
 
+    @Column(name = "reason_category", length = 50)
+    private String reasonCategory;
+
+    @Column(name = "responsible_party")
+    private String responsibleParty;
+
+    @Column(name = "duration_days")
+    private Integer durationDays;
+
+    @Column(name = "impact_description", columnDefinition = "TEXT")
+    private String impactDescription;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // Getters only — mitigationPlan and loggedBy deliberately excluded
+    // Getters only — write operations are Portal API's responsibility
     public Long getId() { return id; }
     public Long getProjectId() { return projectId; }
     public String getDelayType() { return delayType; }
     public LocalDate getFromDate() { return fromDate; }
     public LocalDate getToDate() { return toDate; }
     public String getReasonText() { return reasonText; }
+    public String getReasonCategory() { return reasonCategory; }
+    public String getResponsibleParty() { return responsibleParty; }
+    public Integer getDurationDays() { return durationDays; }
+    public String getImpactDescription() { return impactDescription; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

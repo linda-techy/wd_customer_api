@@ -102,6 +102,64 @@ public class ProjectModuleController {
         }
     }
 
+    @GetMapping("/schedule/gantt")
+    public ResponseEntity<?> getGanttData(
+            @PathVariable("projectId") String projectUuid,
+            Authentication auth) {
+        try {
+            String email = auth.getName();
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+            List<Task> tasks = taskRepository.findByProjectIdOrderedForGantt(project.getId());
+
+            LocalDate today = LocalDate.now();
+            LocalDate projectStart = null;
+            LocalDate projectEnd = null;
+            int totalProgress = 0;
+            int countForProgress = 0;
+            int overdueTasks = 0;
+
+            List<Map<String, Object>> taskDtos = new java.util.ArrayList<>();
+            for (Task t : tasks) {
+                if (t.getStartDate() != null) {
+                    if (projectStart == null || t.getStartDate().isBefore(projectStart)) projectStart = t.getStartDate();
+                }
+                if (t.getEndDate() != null) {
+                    if (projectEnd == null || t.getEndDate().isAfter(projectEnd)) projectEnd = t.getEndDate();
+                }
+                boolean overdue = t.getEndDate() != null && t.getEndDate().isBefore(today)
+                        && !"COMPLETED".equals(t.getStatus()) && !"CANCELLED".equals(t.getStatus());
+                if (overdue) overdueTasks++;
+                if (!"CANCELLED".equals(t.getStatus())) {
+                    totalProgress += (t.getProgressPercent() != null ? t.getProgressPercent() : 0);
+                    countForProgress++;
+                }
+                Map<String, Object> dto = new java.util.LinkedHashMap<>();
+                dto.put("id", t.getId());
+                dto.put("title", t.getTitle());
+                dto.put("status", t.getStatus());
+                dto.put("priority", t.getPriority());
+                dto.put("startDate", t.getStartDate());
+                dto.put("endDate", t.getEndDate());
+                dto.put("dueDate", t.getDueDate());
+                dto.put("progressPercent", t.getProgressPercent() != null ? t.getProgressPercent() : 0);
+                dto.put("dependsOnTaskId", t.getDependsOnTaskId());
+                dto.put("overdue", overdue);
+                taskDtos.add(dto);
+            }
+
+            int overallProgress = countForProgress > 0 ? totalProgress / countForProgress : 0;
+            Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("tasks", taskDtos);
+            result.put("projectStartDate", projectStart);
+            result.put("projectEndDate", projectEnd);
+            result.put("overallProgress", overallProgress);
+            result.put("overdueTasks", overdueTasks);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Gantt data retrieved successfully", result));
+        } catch (RuntimeException e) {
+            return handleRuntimeException(e, "get gantt data", projectUuid, auth);
+        }
+    }
+
     // ===== DOCUMENT ENDPOINTS =====
 
     @PostMapping(value = "/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
