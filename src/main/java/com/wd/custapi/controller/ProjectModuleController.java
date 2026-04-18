@@ -607,34 +607,12 @@ public class ProjectModuleController {
     }
 
     // ===== CCTV ENDPOINTS =====
-    // CCTV cameras are installed and managed by portal staff; customer API is primarily read-only.
-    // GET allowed: CUSTOMER, ADMIN, ARCHITECT (3rd-party professionals who need live monitoring)
-    // POST/PUT restricted to ADMIN only in customer API (portal manages camera setup)
-
-    @PostMapping("/cctv")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CctvCameraDto>> addCamera(
-            @PathVariable("projectId") String projectUuid,
-            @RequestBody CctvCameraRequest request,
-            Authentication auth) {
-        try {
-            String email = auth.getName();
-            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-            Long projectId = project.getId();
-            CctvCameraDto camera = cctvService.addCamera(projectId, request);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Camera added successfully", camera));
-        } catch (Exception e) {
-            logger.error("Failed to add camera for project {}: {}", projectUuid, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to add camera", null));
-        }
-    }
+    // CCTV cameras are managed by portal API; customer API is read-only.
+    // Camera CRUD is done via CustomerCctvController (new endpoint) and portal API.
 
     @GetMapping("/cctv")
     public ResponseEntity<ApiResponse<List<CctvCameraDto>>> getCameras(
             @PathVariable("projectId") String projectUuid,
-            @RequestParam(required = false, defaultValue = "false") boolean installedOnly,
             Authentication auth) {
         try {
             if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "CUSTOMER_ADMIN")) {
@@ -643,33 +621,12 @@ public class ProjectModuleController {
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             Long projectId = project.getId();
-            List<CctvCameraDto> cameras;
-            if (installedOnly) {
-                cameras = cctvService.getInstalledCameras(projectId);
-            } else {
-                cameras = cctvService.getProjectCameras(projectId);
-            }
+            List<CctvCameraDto> cameras = cctvService.getActiveCameras(projectId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Cameras retrieved successfully", cameras));
         } catch (Exception e) {
             logger.error("Failed to get cameras for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to retrieve cameras", null));
-        }
-    }
-
-    @PutMapping("/cctv/{cameraId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CctvCameraDto>> updateCamera(
-            @PathVariable("projectId") String projectUuid,
-            @PathVariable Long cameraId,
-            @RequestBody CctvCameraRequest request) {
-        try {
-            CctvCameraDto camera = cctvService.updateCamera(cameraId, request);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Camera updated successfully", camera));
-        } catch (Exception e) {
-            logger.error("Failed to update camera {} for project {}: {}", cameraId, projectUuid, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to update camera", null));
         }
     }
 

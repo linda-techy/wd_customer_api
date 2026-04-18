@@ -8,11 +8,6 @@ import java.util.List;
 
 @Repository
 public interface CctvCameraRepository extends JpaRepository<CctvCamera, Long> {
-    
-    List<CctvCamera> findByProjectIdAndIsActiveTrue(Long projectId);
-    
-    List<CctvCamera> findByProjectIdAndIsInstalledTrue(Long projectId);
-    
-    List<CctvCamera> findByProjectId(Long projectId);
-}
 
+    List<CctvCamera> findByProjectIdAndIsActiveTrueOrderByDisplayOrder(Long projectId);
+}

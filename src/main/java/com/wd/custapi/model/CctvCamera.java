@@ -1,160 +1,84 @@
 package com.wd.custapi.model;
 
+import com.wd.custapi.model.enums.StreamProtocol;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.SQLRestriction;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Immutable
 @Entity
 @Table(name = "cctv_cameras")
+@SQLRestriction("deleted_at IS NULL")
 public class CctvCamera {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = false)
-    private Project project;
-    
-    @Column(name = "camera_name", nullable = false, length = 100)
+
+    @Column(name = "project_id", nullable = false)
+    private Long projectId;
+
+    @Column(name = "camera_name", nullable = false)
     private String cameraName;
-    
-    @Column(length = 255)
+
+    @Column(name = "location")
     private String location;
-    
-    @Column(name = "stream_url", length = 500)
+
+    @Column(name = "provider", length = 100)
+    private String provider;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stream_protocol", length = 20)
+    private StreamProtocol streamProtocol;
+
+    @Column(name = "stream_url", length = 1000)
     private String streamUrl;
-    
-    @Column(name = "snapshot_url", length = 500)
+
+    @Column(name = "snapshot_url", length = 1000)
     private String snapshotUrl;
-    
-    @Column(name = "is_installed")
-    private Boolean isInstalled = false;
-    
+
+    @Column(name = "username")
+    private String username;
+
+    @Column(name = "password")
+    private String password;
+
+    @Column(name = "port")
+    private Integer port;
+
     @Column(name = "is_active")
-    private Boolean isActive = true;
-    
+    private Boolean isActive;
+
+    @Column(name = "resolution", length = 50)
+    private String resolution;
+
     @Column(name = "installation_date")
     private LocalDate installationDate;
-    
-    @Column(name = "last_active")
-    private LocalDateTime lastActive;
-    
-    @Column(name = "camera_type", length = 50)
-    private String cameraType;
-    
-    @Column(length = 20)
-    private String resolution;
-    
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-    
-    // Constructors
-    public CctvCamera() {}
-    
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public Project getProject() {
-        return project;
-    }
-    
-    public void setProject(Project project) {
-        this.project = project;
-    }
-    
-    public String getCameraName() {
-        return cameraName;
-    }
-    
-    public void setCameraName(String cameraName) {
-        this.cameraName = cameraName;
-    }
-    
-    public String getLocation() {
-        return location;
-    }
-    
-    public void setLocation(String location) {
-        this.location = location;
-    }
-    
-    public String getStreamUrl() {
-        return streamUrl;
-    }
-    
-    public void setStreamUrl(String streamUrl) {
-        this.streamUrl = streamUrl;
-    }
-    
-    public String getSnapshotUrl() {
-        return snapshotUrl;
-    }
-    
-    public void setSnapshotUrl(String snapshotUrl) {
-        this.snapshotUrl = snapshotUrl;
-    }
-    
-    public Boolean getIsInstalled() {
-        return isInstalled;
-    }
-    
-    public void setIsInstalled(Boolean isInstalled) {
-        this.isInstalled = isInstalled;
-    }
-    
-    public Boolean getIsActive() {
-        return isActive;
-    }
-    
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
-    
-    public LocalDate getInstallationDate() {
-        return installationDate;
-    }
-    
-    public void setInstallationDate(LocalDate installationDate) {
-        this.installationDate = installationDate;
-    }
-    
-    public LocalDateTime getLastActive() {
-        return lastActive;
-    }
-    
-    public void setLastActive(LocalDateTime lastActive) {
-        this.lastActive = lastActive;
-    }
-    
-    public String getCameraType() {
-        return cameraType;
-    }
-    
-    public void setCameraType(String cameraType) {
-        this.cameraType = cameraType;
-    }
-    
-    public String getResolution() {
-        return resolution;
-    }
-    
-    public void setResolution(String resolution) {
-        this.resolution = resolution;
-    }
-    
-    public String getNotes() {
-        return notes;
-    }
-    
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-}
 
+    @Column(name = "display_order")
+    private Integer displayOrder;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    // All getters (including credentials for server-side URL building)
+    public Long getId() { return id; }
+    public Long getProjectId() { return projectId; }
+    public String getCameraName() { return cameraName; }
+    public String getLocation() { return location; }
+    public String getProvider() { return provider; }
+    public StreamProtocol getStreamProtocol() { return streamProtocol; }
+    public String getStreamUrl() { return streamUrl; }
+    public String getSnapshotUrl() { return snapshotUrl; }
+    public String getUsername() { return username; }
+    public String getPassword() { return password; }
+    public Integer getPort() { return port; }
+    public Boolean getIsActive() { return isActive; }
+    public String getResolution() { return resolution; }
+    public LocalDate getInstallationDate() { return installationDate; }
+    public Integer getDisplayOrder() { return displayOrder; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+}

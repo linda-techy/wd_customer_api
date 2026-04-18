@@ -218,32 +218,20 @@ public class ProjectModuleDtos {
     ) {}
     
     // ===== CCTV MODULE DTOs =====
-    
+
     public record CctvCameraDto(
         Long id,
         Long projectId,
         String cameraName,
         String location,
+        String provider,
+        String streamProtocol,
         String streamUrl,
         String snapshotUrl,
-        Boolean isInstalled,
         Boolean isActive,
         LocalDate installationDate,
-        LocalDateTime lastActive,
-        String cameraType,
         String resolution,
-        String notes
-    ) {}
-    
-    public record CctvCameraRequest(
-        String cameraName,
-        String location,
-        String streamUrl,
-        String snapshotUrl,
-        Boolean isInstalled,
-        String cameraType,
-        String resolution,
-        String notes
+        Integer displayOrder
     ) {}
     
     // ===== 360 VIEW MODULE DTOs =====
