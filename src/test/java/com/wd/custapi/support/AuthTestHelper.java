@@ -23,6 +23,11 @@ public class AuthTestHelper {
     /** Token cache shared across all AuthTestHelper instances within a JVM. */
     private static final Map<String, String> TOKEN_CACHE = new ConcurrentHashMap<>();
 
+    /** Clears the static token cache. Call in scenario test {@code @BeforeAll} to force fresh logins. */
+    public static void clearTokenCache() {
+        TOKEN_CACHE.clear();
+    }
+
     private final TestRestTemplate restTemplate;
     private final int port;
 

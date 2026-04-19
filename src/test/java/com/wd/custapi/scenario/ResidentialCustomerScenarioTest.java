@@ -43,6 +43,8 @@ class ResidentialCustomerScenarioTest extends TestcontainersPostgresBase {
     @BeforeAll
     void setUpOnce() {
         seeder.seed();
+        // Clear any cached tokens from previous test classes
+        AuthTestHelper.clearTokenCache();
     }
 
     @BeforeEach
