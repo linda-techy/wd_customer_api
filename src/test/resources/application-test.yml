@@ -28,6 +28,8 @@ storageBasePath: /tmp/test-storage
 app:
   email:
     enabled: false
+  rate-limiting:
+    enabled: false
   portal:
     webhook-secret: test-webhook-secret
     base-url: http://localhost:8080

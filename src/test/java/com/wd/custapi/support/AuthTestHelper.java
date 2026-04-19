@@ -8,24 +8,20 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Helper for authentication in integration tests.
- * <p>
- * Wraps the auth endpoints so test classes can obtain JWT tokens with a single
- * method call. Uses {@link TestRestTemplate} to hit the running server.
- *
- * <pre>
- * AuthTestHelper auth = new AuthTestHelper(restTemplate, port);
- * String token = auth.loginAsCustomerA();
- * HttpHeaders headers = auth.authHeaders(token);
- * </pre>
+ * Caches tokens per email to avoid hitting rate limits across test methods.
  */
 public class AuthTestHelper {
 
     private static final String CUSTOMER_A_EMAIL = "customerA@test.com";
     private static final String CUSTOMER_B_EMAIL = "customerB@test.com";
     private static final String DEFAULT_PASSWORD = "password123";
+
+    /** Token cache shared across all AuthTestHelper instances within a JVM. */
+    private static final Map<String, String> TOKEN_CACHE = new ConcurrentHashMap<>();
 
     private final TestRestTemplate restTemplate;
     private final int port;
@@ -59,6 +55,12 @@ public class AuthTestHelper {
      */
     @SuppressWarnings("unchecked")
     public String login(String email, String password) {
+        String cacheKey = email + ":" + port;
+        String cached = TOKEN_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
         String url = baseUrl() + "/auth/login";
 
         Map<String, String> body = new LinkedHashMap<>();
@@ -80,7 +82,9 @@ public class AuthTestHelper {
         if (accessToken == null) {
             throw new RuntimeException("Login response missing 'accessToken' for " + email);
         }
-        return accessToken.toString();
+        String token = accessToken.toString();
+        TOKEN_CACHE.put(cacheKey, token);
+        return token;
     }
 
     /**

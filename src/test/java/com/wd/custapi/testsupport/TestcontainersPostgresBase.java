@@ -50,5 +50,7 @@ public abstract class TestcontainersPostgresBase {
         registry.add("jwt.refresh-token-expiration", () -> "604800000");
         registry.add("jwt.aud.value", () -> "customer-api");
         registry.add("jwt.aud.enforce", () -> "false");
+        // Disable rate limiting to prevent 429 in tests.
+        registry.add("app.rate-limiting.enabled", () -> "false");
     }
 }
