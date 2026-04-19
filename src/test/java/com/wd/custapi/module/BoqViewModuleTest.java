@@ -61,7 +61,7 @@ class BoqViewModuleTest extends TestcontainersPostgresBase {
         setField(doc, "status", status);
         setField(doc, "revisionNumber", 1);
         setField(doc, "totalValueExGst", new BigDecimal("1000000.00"));
-        setField(doc, "gstRate", new BigDecimal("18.0000"));
+        setField(doc, "gstRate", new BigDecimal("0.1800"));
         setField(doc, "totalGstAmount", new BigDecimal("180000.00"));
         setField(doc, "totalValueInclGst", new BigDecimal("1180000.00"));
         setField(doc, "submittedAt", LocalDateTime.now());

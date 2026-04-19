@@ -215,8 +215,9 @@ class ResidentialCustomerScenarioTest extends TestcontainersPostgresBase {
     void step09_getInvoices() {
         HttpHeaders headers = auth.authHeaders(token);
 
+        // Invoice list endpoint requires projectId query parameter
         ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/api/customer/invoices",
+                baseUrl() + "/api/customer/invoices?projectId=" + projectUuid,
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
                 Map.class);

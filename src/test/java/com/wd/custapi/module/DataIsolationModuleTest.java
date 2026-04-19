@@ -171,7 +171,7 @@ class DataIsolationModuleTest extends TestcontainersPostgresBase {
         setField(doc, "status", BoqDocumentStatus.APPROVED);
         setField(doc, "revisionNumber", 1);
         setField(doc, "totalValueExGst", new BigDecimal("500000.00"));
-        setField(doc, "gstRate", new BigDecimal("18.0000"));
+        setField(doc, "gstRate", new BigDecimal("0.1800"));
         setField(doc, "totalGstAmount", new BigDecimal("90000.00"));
         setField(doc, "totalValueInclGst", new BigDecimal("590000.00"));
         setField(doc, "submittedAt", LocalDateTime.now());
