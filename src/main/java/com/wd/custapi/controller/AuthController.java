@@ -13,10 +13,17 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AccountExpiredException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.CredentialsExpiredException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -36,6 +43,15 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    /**
+     * Active Spring profile. When the profile is {@code local} or {@code dev}
+     * we include the specific auth-failure reason in the error response to
+     * speed up debugging. Production always returns the generic
+     * "Invalid email or password" message (anti-enumeration).
+     */
+    @Value("${spring.profiles.active:prod}")
+    private String activeProfile;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
@@ -48,10 +64,39 @@ public class AuthController {
         } catch (Exception e) {
             // Redact email to prevent PII accumulation in logs (GDPR/PDPA compliance)
             String maskedEmail = loginRequest.getEmail().replaceAll("(.).+(@.+)", "$1***$2");
-            logger.error("Login failed for email {}: {}", maskedEmail, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Invalid email or password"));
+            String reasonCode = classifyAuthFailure(e);
+            logger.warn("Login failed for email {} reason={}: {}", maskedEmail, reasonCode, e.getMessage());
+
+            Map<String, Object> body = new java.util.LinkedHashMap<>();
+            body.put("error", "Invalid email or password");
+            // Surface the real cause in non-prod to avoid 401-with-correct-password mysteries.
+            if (isDevProfile()) {
+                body.put("debugReason", reasonCode);
+                body.put("debugMessage", e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
         }
+    }
+
+    /**
+     * Maps Spring Security auth exceptions to a stable short code so clients
+     * (and logs) can distinguish the five common failure modes without
+     * relying on Spring's sometimes-localised message strings.
+     */
+    private static String classifyAuthFailure(Exception e) {
+        if (e instanceof UsernameNotFoundException) return "USER_NOT_FOUND";
+        if (e instanceof BadCredentialsException)   return "BAD_PASSWORD";
+        if (e instanceof DisabledException)         return "USER_DISABLED";
+        if (e instanceof LockedException)           return "USER_LOCKED";
+        if (e instanceof CredentialsExpiredException) return "CREDENTIALS_EXPIRED";
+        if (e instanceof AccountExpiredException)   return "ACCOUNT_EXPIRED";
+        return "UNKNOWN";
+    }
+
+    private boolean isDevProfile() {
+        if (activeProfile == null) return false;
+        String p = activeProfile.toLowerCase();
+        return p.contains("local") || p.contains("dev") || p.contains("test");
     }
 
     @PostMapping("/register")
