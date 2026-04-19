@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:custapi_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;NON_KEYWORDS=VALUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    enabled: false
+  mail:
+    host: localhost
+    port: 25
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
+  aud:
+    value: "customer-api"
+    enforce: false
+
+storageBasePath: /tmp/test-storage
+
+app:
+  email:
+    enabled: false
+  portal:
+    webhook-secret: test-webhook-secret
+    base-url: http://localhost:8080
+
+portal:
+  api:
+    url: http://localhost:8080
