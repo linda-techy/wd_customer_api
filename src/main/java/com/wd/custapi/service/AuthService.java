@@ -224,9 +224,15 @@ public class AuthService {
     }
 
     private void saveRefreshToken(CustomerUser user, String refreshToken) {
+        String hash = TokenHashUtil.hash(refreshToken);
+        // Two logins in the same millisecond produce identical JWTs (all
+        // claims + timestamps match) — skip to avoid unique-constraint violation.
+        if (refreshTokenRepository.findByToken(hash).isPresent()) {
+            return;
+        }
         RefreshToken token = new RefreshToken();
         token.setUser(user);
-        token.setToken(TokenHashUtil.hash(refreshToken)); // Store SHA-256 hash — never the raw JWT
+        token.setToken(hash); // Store SHA-256 hash — never the raw JWT
         token.setExpiryDate(LocalDateTime.now().plusDays(7)); // 7 days
         token.setRevoked(false);
 
@@ -456,7 +462,7 @@ public class AuthService {
         String encodedToken = URLEncoder.encode(resetToken, StandardCharsets.UTF_8);
         String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
         return normalizedBaseUrl
-                + "/#/reset_password?token=" + encodedToken
+                + "/reset-password?token=" + encodedToken
                 + "&email=" + encodedEmail;
     }
 

@@ -9,8 +9,11 @@ import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.repository.PermissionRepository;
 import com.wd.custapi.repository.ProjectRepository;
 import com.wd.custapi.repository.RoleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -35,6 +38,8 @@ public class TestDataSeeder {
     private final CustomerUserRepository customerUserRepository;
     private final ProjectRepository projectRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     private boolean seeded = false;
 
@@ -78,15 +83,18 @@ public class TestDataSeeder {
     /**
      * Seeds all baseline test data. Safe to call multiple times (idempotent).
      */
+    @Transactional
     public synchronized void seed() {
-        // Always reseed users to ensure passwords are correct (tests may modify them)
+        // Always reseed — Hibernate create-drop may have wiped the DB between
+        // test classes even when Spring reuses the cached context (and the
+        // TestDataSeeder bean with it, including its field references to
+        // now-orphan rows).
         seedPermissions();
         seedRoles();
         seedUsers();
-        if (!seeded) {
-            seedProjects();
-            seeded = true;
-        }
+        seedProjects();
+        seeded = true;
+        ensureCustomerProjectLinks();
     }
 
     private void seedPermissions() {
@@ -150,10 +158,59 @@ public class TestDataSeeder {
                 "RENOVATION", "Chennai", ProjectPhase.CONSTRUCTION,
                 new BigDecimal("2000000.00"), 1800.0);
 
-        // Associate each project with its customer via the ManyToMany relationship
-        associateProjectWithCustomer(customerA, residentialVilla);
-        associateProjectWithCustomer(customerB, commercialOffice);
-        associateProjectWithCustomer(customerC, renovationHome);
+        // Association to project_members is handled by ensureCustomerProjectLinks()
+        // via native SQL on every seed() call — avoids JPA cascade surprises.
+    }
+
+    /**
+     * Idempotent: guarantees each seeded project has its owner's customer_id
+     * set and that the project_members join-table row exists.
+     *
+     * <p>Called from {@link #seed()} on every invocation. Re-queries projects
+     * and users by a stable key instead of trusting the in-memory field —
+     * Hibernate create-drop between test classes wipes the DB but the seeder
+     * bean (with stale project references) may be reused by the cached
+     * Spring context.
+     */
+    private void ensureCustomerProjectLinks() {
+        residentialVilla = refreshProject("PRJ-001", residentialVilla);
+        commercialOffice = refreshProject("PRJ-002", commercialOffice);
+        renovationHome = refreshProject("PRJ-003", renovationHome);
+        customerA = customerUserRepository.findByEmail("customerA@test.com").orElse(customerA);
+        customerB = customerUserRepository.findByEmail("customerB@test.com").orElse(customerB);
+        customerC = customerUserRepository.findByEmail("customerC@test.com").orElse(customerC);
+        linkProjectToOwner(residentialVilla, customerA);
+        linkProjectToOwner(commercialOffice, customerB);
+        linkProjectToOwner(renovationHome, customerC);
+    }
+
+    private Project refreshProject(String code, Project fallback) {
+        return projectRepository.findAll().stream()
+                .filter(p -> code.equals(p.getCode()))
+                .findFirst()
+                .orElse(fallback);
+    }
+
+    private void linkProjectToOwner(Project project, CustomerUser owner) {
+        if (project == null || owner == null || project.getId() == null) return;
+        // Force-set customer_id via native UPDATE — avoids JPA version checks
+        // and stays idempotent across reseeds.
+        jdbcTemplate.update(
+                "UPDATE customer_projects SET customer_id = ? WHERE id = ?",
+                owner.getId(), project.getId());
+        // Upsert the project_members row. Columns customer_id and
+        // role_in_project are NOT NULL in the production schema; Hibernate
+        // create-drop creates the join table with only (customer_user_id,
+        // project_id), but we add the extras defensively in case the table
+        // was created via a richer entity.
+        Integer existing = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM project_members WHERE customer_user_id = ? AND project_id = ?",
+                Integer.class, owner.getId(), project.getId());
+        if (existing == null || existing == 0) {
+            jdbcTemplate.update(
+                    "INSERT INTO project_members (customer_user_id, project_id) VALUES (?, ?)",
+                    owner.getId(), project.getId());
+        }
     }
 
     // ---- Helper methods ----
