@@ -64,7 +64,7 @@ class ChangeOrderViewModuleTest extends TestcontainersPostgresBase {
         setField(co, "netAmountInclGst", new BigDecimal("59000.00"));
         setField(co, "submittedAt", LocalDateTime.now());
         setField(co, "createdAt", LocalDateTime.now());
-        co.setStatus("PENDING");
+        co.setStatus("CUSTOMER_REVIEW");
         return changeOrderRepository.save(co);
     }
 

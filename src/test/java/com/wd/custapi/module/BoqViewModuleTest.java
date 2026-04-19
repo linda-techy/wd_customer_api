@@ -238,7 +238,7 @@ class BoqViewModuleTest extends TestcontainersPostgresBase {
     @Test
     @Order(8)
     void approveChangeOrder_pendingCo_succeeds() {
-        ChangeOrder co = createChangeOrder(seeder.getResidentialVilla(), "PENDING");
+        ChangeOrder co = createChangeOrder(seeder.getResidentialVilla(), "CUSTOMER_REVIEW");
         String token = auth.loginAsCustomerA();
         HttpHeaders headers = auth.authHeaders(token);
 
@@ -256,7 +256,7 @@ class BoqViewModuleTest extends TestcontainersPostgresBase {
     @Order(9)
     @SuppressWarnings("unchecked")
     void rejectChangeOrder_withReason_succeeds() {
-        ChangeOrder co = createChangeOrder(seeder.getResidentialVilla(), "PENDING");
+        ChangeOrder co = createChangeOrder(seeder.getResidentialVilla(), "CUSTOMER_REVIEW");
         String token = auth.loginAsCustomerA();
         HttpHeaders headers = auth.authHeaders(token);
 

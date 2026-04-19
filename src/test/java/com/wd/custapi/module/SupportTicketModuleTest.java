@@ -1,6 +1,8 @@
 package com.wd.custapi.module;
 
 import com.wd.custapi.config.TestDataSeeder;
+import com.wd.custapi.model.SupportTicket;
+import com.wd.custapi.repository.SupportTicketRepository;
 import com.wd.custapi.support.AuthTestHelper;
 import com.wd.custapi.testsupport.TestcontainersPostgresBase;
 import org.junit.jupiter.api.*;
@@ -29,6 +31,7 @@ class SupportTicketModuleTest extends TestcontainersPostgresBase {
     @LocalServerPort int port;
     @Autowired TestRestTemplate restTemplate;
     @Autowired TestDataSeeder seeder;
+    @Autowired SupportTicketRepository ticketRepository;
     AuthTestHelper auth;
 
     /** Shared ticket ID across ordered tests. */
@@ -189,6 +192,11 @@ class SupportTicketModuleTest extends TestcontainersPostgresBase {
         if (createdTicketId == null) {
             createTicketForTest();
         }
+
+        // Customer can only close RESOLVED tickets — simulate staff resolving it.
+        SupportTicket ticket = ticketRepository.findById(createdTicketId).orElseThrow();
+        ticket.setStatus("RESOLVED");
+        ticketRepository.save(ticket);
 
         String token = auth.loginAsCustomerA();
         HttpHeaders headers = auth.authHeaders(token);

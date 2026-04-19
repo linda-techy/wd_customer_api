@@ -18,6 +18,9 @@ public class CctvCamera {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "project_id", nullable = false)
     private Long projectId;
 

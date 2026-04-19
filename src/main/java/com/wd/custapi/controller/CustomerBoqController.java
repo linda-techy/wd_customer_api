@@ -95,10 +95,10 @@ public class CustomerBoqController {
 
             // Prefer approved document; fall back to latest non-rejected
             Optional<BoqDocument> docOpt = boqDocumentRepository.findByProjectIdAndStatus(
-                    project.getId(), "APPROVED");
+                    project.getId(), com.wd.custapi.model.enums.BoqDocumentStatus.APPROVED);
             if (docOpt.isEmpty()) {
                 docOpt = boqDocumentRepository.findTopByProjectIdAndStatusNotOrderByRevisionNumberDesc(
-                        project.getId(), "REJECTED");
+                        project.getId(), com.wd.custapi.model.enums.BoqDocumentStatus.REJECTED);
             }
             if (docOpt.isEmpty()) {
                 Map<String, Object> noBoq = new LinkedHashMap<>();

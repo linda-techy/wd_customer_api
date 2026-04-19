@@ -197,7 +197,12 @@ public class CustomerFinancialController {
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             Optional<FinalAccount> opt = finalAccountRepository.findByProjectId(project.getId());
             if (opt.isEmpty()) {
-                return ResponseEntity.ok(Map.of("finalAccount", null, "message", "Not yet prepared"));
+                // Map.of rejects null values; use LinkedHashMap to preserve
+                // the null finalAccount signal without crashing.
+                Map<String, Object> empty = new LinkedHashMap<>();
+                empty.put("finalAccount", null);
+                empty.put("message", "Not yet prepared");
+                return ResponseEntity.ok(empty);
             }
             FinalAccount fa = opt.get();
             Map<String, Object> m = new LinkedHashMap<>();

@@ -1,6 +1,7 @@
 package com.wd.custapi.repository;
 
 import com.wd.custapi.model.BoqDocument;
+import com.wd.custapi.model.enums.BoqDocumentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,11 +16,15 @@ import java.util.Optional;
 @Repository
 public interface BoqDocumentRepository extends JpaRepository<BoqDocument, Long> {
 
-    Optional<BoqDocument> findByProjectIdAndStatus(Long projectId, String status);
+    Optional<BoqDocument> findFirstByProjectIdAndStatusOrderByRevisionNumberDesc(Long projectId, BoqDocumentStatus status);
+
+    default Optional<BoqDocument> findByProjectIdAndStatus(Long projectId, BoqDocumentStatus status) {
+        return findFirstByProjectIdAndStatusOrderByRevisionNumberDesc(projectId, status);
+    }
 
     Optional<BoqDocument> findTopByProjectIdOrderByRevisionNumberDesc(Long projectId);
 
-    Optional<BoqDocument> findTopByProjectIdAndStatusNotOrderByRevisionNumberDesc(Long projectId, String status);
+    Optional<BoqDocument> findTopByProjectIdAndStatusNotOrderByRevisionNumberDesc(Long projectId, BoqDocumentStatus status);
 
     List<BoqDocument> findByProjectIdOrderByRevisionNumberAsc(Long projectId);
 

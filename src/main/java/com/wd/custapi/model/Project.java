@@ -89,6 +89,15 @@ public class Project {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    // Owner customer (mirrors Portal API's customer_projects.customer_id).
+    // Several native repository queries join via p.customer_id, so the column
+    // must exist on this entity's create-drop schema.
+    @Column(name = "customer_id")
+    private Long customerId;
+
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+
     @Version
     @Column(nullable = false)
     private Long version = 0L;

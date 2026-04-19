@@ -79,16 +79,14 @@ public class TestDataSeeder {
      * Seeds all baseline test data. Safe to call multiple times (idempotent).
      */
     public synchronized void seed() {
-        if (seeded) {
-            return;
-        }
-
+        // Always reseed users to ensure passwords are correct (tests may modify them)
         seedPermissions();
         seedRoles();
         seedUsers();
-        seedProjects();
-
-        seeded = true;
+        if (!seeded) {
+            seedProjects();
+            seeded = true;
+        }
     }
 
     private void seedPermissions() {
@@ -181,18 +179,16 @@ public class TestDataSeeder {
 
     private CustomerUser findOrCreateUser(String email, String firstName, String lastName,
                                            String phone, String encodedPassword, Role role) {
-        return customerUserRepository.findByEmail(email).orElseGet(() -> {
-            CustomerUser u = new CustomerUser();
-            u.setEmail(email);
-            u.setFirstName(firstName);
-            u.setLastName(lastName);
-            u.setPhone(phone);
-            u.setPassword(encodedPassword);
-            u.setRole(role);
-            u.setEnabled(true);
-            u.setEmailVerified(true);
-            return customerUserRepository.save(u);
-        });
+        CustomerUser u = customerUserRepository.findByEmail(email).orElseGet(CustomerUser::new);
+        u.setEmail(email);
+        u.setFirstName(firstName);
+        u.setLastName(lastName);
+        u.setPhone(phone);
+        u.setPassword(encodedPassword);
+        u.setRole(role);
+        u.setEnabled(true);
+        u.setEmailVerified(true);
+        return customerUserRepository.save(u);
     }
 
     private Project findOrCreateProject(String name, String code, String projectType,

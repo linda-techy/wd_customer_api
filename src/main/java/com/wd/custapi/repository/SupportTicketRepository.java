@@ -14,6 +14,9 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
 
     Page<SupportTicket> findByCustomerUser_IdAndStatusOrderByUpdatedAtDesc(Long userId, String status, Pageable pageable);
 
-    @Query(value = "SELECT nextval('support_ticket_seq')", nativeQuery = true)
+    // Portable "next id" that works without a Postgres sequence object —
+    // critical for test environments using Hibernate create-drop where the
+    // sequence isn't auto-created.
+    @Query(value = "SELECT COALESCE(MAX(id), 0) + 1 FROM support_tickets", nativeQuery = true)
     Long getNextTicketSequence();
 }
