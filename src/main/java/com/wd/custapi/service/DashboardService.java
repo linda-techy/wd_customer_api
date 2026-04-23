@@ -420,6 +420,10 @@ public class DashboardService {
         details.setDesignProgress(calculatedDesignProgress);
 
         details.setSqFeet(project.getSqFeet());
+        details.setContractValueDisplay(
+                com.wd.custapi.util.ContractValueFormatter.formatINR(project.getBudget()));
+        details.setEstimatedCompletionDate(
+                project.getEndDate() != null ? project.getEndDate().toString() : null);
         details.setState(null); // State not in Project entity yet
         details.setCreatedBy(null); // CreatedBy not in Project entity yetPerson, sqFeet, leadId
         // are not in the current Project model - add them to the model if needed
