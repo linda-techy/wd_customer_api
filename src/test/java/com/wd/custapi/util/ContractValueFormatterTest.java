@@ -54,4 +54,24 @@ class ContractValueFormatterTest {
         assertThatThrownBy(() -> ContractValueFormatter.formatINR(new BigDecimal("-1")))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void formatsZeroAsRupeeZero() {
+        assertThat(ContractValueFormatter.formatINR(BigDecimal.ZERO))
+                .isEqualTo("\u20B90");
+    }
+
+    @Test
+    void formatsSingleRupee() {
+        assertThat(ContractValueFormatter.formatINR(new BigDecimal("1")))
+                .isEqualTo("\u20B91");
+    }
+
+    @Test
+    void roundsFractionalSubLakhToNearestRupee() {
+        assertThat(ContractValueFormatter.formatINR(new BigDecimal("999.50")))
+                .isEqualTo("\u20B91,000");
+        assertThat(ContractValueFormatter.formatINR(new BigDecimal("999.49")))
+                .isEqualTo("\u20B9999");
+    }
 }
