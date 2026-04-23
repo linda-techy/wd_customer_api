@@ -16,7 +16,7 @@ public class PortalUserLookupJpaImpl implements PortalUserLookup {
                 """
                 SELECT id,
                        TRIM(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) AS name,
-                       NULL AS phone,
+                       phone,
                        email,
                        NULL AS photo_url
                   FROM portal_users
