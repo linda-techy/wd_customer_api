@@ -425,8 +425,7 @@ public class DashboardService {
         details.setEstimatedCompletionDate(
                 project.getEndDate() != null ? project.getEndDate().toString() : null);
         details.setState(null); // State not in Project entity yet
-        details.setCreatedBy(null); // CreatedBy not in Project entity yetPerson, sqFeet, leadId
-        // are not in the current Project model - add them to the model if needed
+        details.setCreatedBy(null); // CreatedBy not in Project entity yet
 
         // Get project documents
         List<ProjectDocument> documents = projectDocumentRepository
