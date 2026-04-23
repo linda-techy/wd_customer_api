@@ -475,6 +475,8 @@ public class DashboardDto {
         private String responsiblePerson;
         private List<ProjectDocumentSummary> documents;
         private ProgressData progressData;
+        private String contractValueDisplay;        // e.g. "₹1.20 Cr" or null
+        private String estimatedCompletionDate;     // ISO date string or null
 
         public ProjectDetails() {
         }
@@ -640,6 +642,22 @@ public class DashboardDto {
 
         public void setProgressData(ProgressData progressData) {
             this.progressData = progressData;
+        }
+
+        public String getContractValueDisplay() {
+            return contractValueDisplay;
+        }
+
+        public void setContractValueDisplay(String contractValueDisplay) {
+            this.contractValueDisplay = contractValueDisplay;
+        }
+
+        public String getEstimatedCompletionDate() {
+            return estimatedCompletionDate;
+        }
+
+        public void setEstimatedCompletionDate(String estimatedCompletionDate) {
+            this.estimatedCompletionDate = estimatedCompletionDate;
         }
 
         // Helper setters for LocalDate conversion
