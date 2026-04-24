@@ -52,7 +52,10 @@ class DashboardControllerProjectInfoIT extends TestcontainersPostgresBase {
 
     @BeforeEach
     void setUp() {
-        // Clean slate (FK order matters)
+        // Clean slate (FK order: child tables before parent)
+        // tasks and project_milestones have FKs to customer_projects (added in F2 Task 4)
+        jdbc.update("DELETE FROM tasks");
+        jdbc.update("DELETE FROM project_milestones");
         jdbc.update("DELETE FROM project_members");
         jdbc.update("DELETE FROM customer_projects");
         jdbc.update("DELETE FROM customer_users");
