@@ -56,7 +56,7 @@ public interface CustomerTaskRepository extends JpaRepository<Task, Long> {
              WHERE t.project.id = :projectId
                AND t.customerVisible = TRUE
                AND (t.status = 'COMPLETED' OR t.progressPercent = 100)
-            ORDER BY t.endDate DESC
+            ORDER BY COALESCE(t.actualEndDate, t.endDate) DESC
             """)
     List<Task> findCompletedBucket(@Param("projectId") Long projectId);
 }

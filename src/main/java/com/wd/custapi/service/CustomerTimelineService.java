@@ -94,10 +94,15 @@ public class CustomerTimelineService {
         d.title = t.getTitle();
         d.plannedStart = t.getStartDate();
         d.plannedEnd = t.getEndDate();
+        d.actualEnd = t.getActualEndDate();
         d.progressPercent = t.getProgressPercent();
         d.status = t.getStatus();
         d.statusLabel = labelDeriver.derive(t.getStartDate(), t.getEndDate(), today,
                 t.getProgressPercent() != null ? t.getProgressPercent() : 0).name();
+        if (t.getMilestoneId() != null) {
+            d.milestoneId = t.getMilestoneId();
+            milestoneRepo.findById(t.getMilestoneId()).ifPresent(m -> d.milestoneName = m.getName());
+        }
         return d;
     }
 }
