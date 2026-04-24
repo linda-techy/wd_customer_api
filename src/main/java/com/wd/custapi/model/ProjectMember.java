@@ -35,7 +35,7 @@ public class ProjectMember {
     @Column(name = "role_in_project", length = 50)
     private String roleInProject;
 
-    @Column(name = "share_with_customer", nullable = false)
+    @Column(name = "share_with_customer", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
     private Boolean shareWithCustomer = Boolean.FALSE;
 
     @Column(name = "created_at")

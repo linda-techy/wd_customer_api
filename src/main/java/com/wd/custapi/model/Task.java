@@ -52,8 +52,8 @@ public class Task {
     @Column(name = "progress_percent", insertable = false, updatable = false)
     private Integer progressPercent;
 
-    @Column(name = "customer_visible", insertable = false, updatable = false)
-    private Boolean customerVisible;
+    @Column(name = "customer_visible", insertable = false, updatable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT TRUE")
+    private Boolean customerVisible = Boolean.TRUE;
 
     @Column(name = "milestone_id", insertable = false, updatable = false)
     private Long milestoneId;

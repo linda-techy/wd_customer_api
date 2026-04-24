@@ -47,8 +47,8 @@ public class ProjectMilestone {
     @Column(name = "amount", precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "progress_source", length = 16, insertable = false, updatable = false)
-    private String progressSource;
+    @Column(name = "progress_source", insertable = false, updatable = false, length = 16, columnDefinition = "VARCHAR(16) NOT NULL DEFAULT 'COMPUTED'")
+    private String progressSource = "COMPUTED";
 
     @Column(name = "actual_start_date")
     private LocalDate actualStartDate;
