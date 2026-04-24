@@ -13,4 +13,8 @@ public interface ProjectMilestoneRepository extends JpaRepository<ProjectMilesto
 
     /** Returns milestones for a project ordered by due date ascending. */
     List<ProjectMilestone> findByProjectIdOrderByDueDateAsc(Long projectId);
+
+    /** Returns milestones for a project ordered by insertion order (id).
+     *  Used by the Timeline endpoint as the canonical milestone order. */
+    List<ProjectMilestone> findByProjectIdOrderByIdAsc(Long projectId);
 }

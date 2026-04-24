@@ -47,6 +47,9 @@ public class ProjectMilestone {
     @Column(name = "amount", precision = 15, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "progress_source", length = 16, insertable = false, updatable = false)
+    private String progressSource;
+
     @Column(name = "actual_start_date")
     private LocalDate actualStartDate;
 
@@ -66,6 +69,7 @@ public class ProjectMilestone {
     public LocalDate getCompletedDate() { return completedDate; }
     public BigDecimal getCompletionPercentage() { return completionPercentage; }
     public BigDecimal getWeightPercentage() { return weightPercentage; }
+    public String getProgressSource() { return progressSource; }
     public BigDecimal getMilestonePercentage() { return milestonePercentage; }
     public BigDecimal getAmount() { return amount; }
     public LocalDate getActualStartDate() { return actualStartDate; }

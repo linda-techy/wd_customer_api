@@ -52,6 +52,9 @@ public class Task {
     @Column(name = "progress_percent", insertable = false, updatable = false)
     private Integer progressPercent;
 
+    @Column(name = "customer_visible", insertable = false, updatable = false)
+    private Boolean customerVisible;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
@@ -73,6 +76,7 @@ public class Task {
     public LocalDate getEndDate() { return endDate; }
     public Long getDependsOnTaskId() { return dependsOnTaskId; }
     public Integer getProgressPercent() { return progressPercent; }
+    public Boolean getCustomerVisible() { return customerVisible; }
     public Project getProject() { return project; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
