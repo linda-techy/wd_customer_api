@@ -83,24 +83,8 @@ public class ProjectModuleController {
         this.taskRepository = taskRepository;
     }
 
-    // ===== TASK ENDPOINTS =====
-
-    @GetMapping("/tasks")
-    public ResponseEntity<?> getProjectTasks(
-            @PathVariable("projectId") String projectUuid,
-            @RequestParam(required = false) String status,
-            Authentication auth) {
-        try {
-            String email = auth.getName();
-            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-            if (status != null && !status.isEmpty()) {
-                return ResponseEntity.ok(taskRepository.findByProjectIdAndStatusOrderByDueDateAsc(project.getId(), status));
-            }
-            return ResponseEntity.ok(taskRepository.findByProjectIdOrderByDueDateAsc(project.getId()));
-        } catch (RuntimeException e) {
-            return handleRuntimeException(e, "get tasks", projectUuid, auth);
-        }
-    }
+    // Task list endpoint intentionally removed — customer app no longer exposes raw tasks.
+    // The /schedule/gantt endpoint below still aggregates tasks into a customer-facing timeline.
 
     @GetMapping("/schedule/gantt")
     public ResponseEntity<?> getGanttData(
@@ -733,8 +717,8 @@ public class ProjectModuleController {
             @PathVariable Long viewId,
             Authentication auth) {
         try {
-            dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
-            View360Dto view = view360Service.incrementViewCount(viewId);
+            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
+            View360Dto view = view360Service.incrementViewCount(viewId, project.getId());
             return ResponseEntity.ok(new ApiResponse<>(true, "View count incremented", view));
         } catch (Exception e) {
             logger.error("Failed to increment view count for view {} in project {}: {}", viewId, projectUuid, e.getMessage(), e);

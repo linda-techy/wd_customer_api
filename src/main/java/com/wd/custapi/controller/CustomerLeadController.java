@@ -62,8 +62,7 @@ public class CustomerLeadController {
         map.put("district", lead.getDistrict() != null ? lead.getDistrict() : "");
         map.put("state", lead.getState() != null ? lead.getState() : "");
         map.put("status", lead.getCustomerFriendlyStatus());
-        map.put("internalStatus", lead.getLeadStatus() != null ? lead.getLeadStatus() : "");
-        map.put("source", lead.getLeadSource() != null ? lead.getLeadSource() : "");
+        // Internal pipeline fields (leadStatus, leadSource) intentionally omitted — not customer-facing.
         map.put("nextFollowUp", lead.getNextFollowUp() != null ? lead.getNextFollowUp().toString() : "");
         map.put("createdAt", lead.getCreatedAt() != null ? lead.getCreatedAt().toString() : "");
         return map;
@@ -73,11 +72,26 @@ public class CustomerLeadController {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", lead.getId());
         map.put("friendName", lead.getName() != null ? lead.getName() : "");
-        map.put("friendPhone", lead.getPhone() != null ? lead.getPhone() : "");
+        map.put("friendPhone", maskPhone(lead.getPhone()));
         map.put("projectType", lead.getProjectType() != null ? lead.getProjectType() : "");
         map.put("status", lead.getCustomerFriendlyStatus());
         map.put("createdAt", lead.getCreatedAt() != null ? lead.getCreatedAt().toString() : "");
         return map;
+    }
+
+    /**
+     * Mask a phone so the referrer sees only the last 3 digits.
+     * Example: +919876543210 -> "+91xxxxxxx210", 9876543210 -> "xxxxxxx210".
+     */
+    private String maskPhone(String phone) {
+        if (phone == null || phone.isBlank()) return "";
+        String digits = phone.replaceAll("\\D", "");
+        if (digits.length() < 4) return "xxx";
+        String cc = phone.startsWith("+") ? phone.substring(0, Math.min(3, phone.indexOf(digits.charAt(0)) + 3)) : "";
+        String last3 = digits.substring(digits.length() - 3);
+        int hiddenLen = digits.length() - 3 - (cc.isEmpty() ? 0 : cc.replaceAll("\\D", "").length());
+        if (hiddenLen < 0) hiddenLen = digits.length() - 3;
+        return cc + "x".repeat(hiddenLen) + last3;
     }
 
     private String currentEmail() {

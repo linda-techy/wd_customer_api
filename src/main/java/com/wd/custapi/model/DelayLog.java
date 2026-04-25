@@ -40,6 +40,17 @@ public class DelayLog {
     @Column(name = "impact_description", columnDefinition = "TEXT")
     private String impactDescription;
 
+    // ─── Curated customer-facing fields (V58) ─────────────────────────────────
+    @Column(name = "customer_visible", nullable = false)
+    private boolean customerVisible;
+
+    @Column(name = "customer_summary", columnDefinition = "TEXT")
+    private String customerSummary;
+
+    /** NONE | MINOR | MATERIAL */
+    @Column(name = "impact_on_handover", length = 20)
+    private String impactOnHandover;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -54,5 +65,8 @@ public class DelayLog {
     public String getResponsibleParty() { return responsibleParty; }
     public Integer getDurationDays() { return durationDays; }
     public String getImpactDescription() { return impactDescription; }
+    public boolean isCustomerVisible() { return customerVisible; }
+    public String getCustomerSummary() { return customerSummary; }
+    public String getImpactOnHandover() { return impactOnHandover; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

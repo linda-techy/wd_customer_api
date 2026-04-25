@@ -1,8 +1,11 @@
 package com.wd.custapi.controller;
 
+import com.wd.custapi.dto.CustomerNotificationDto;
 import com.wd.custapi.dto.ProjectModuleDtos.ApiResponse;
 import com.wd.custapi.model.CustomerNotification;
 import com.wd.custapi.model.CustomerUser;
+
+import java.util.List;
 import com.wd.custapi.repository.CustomerNotificationRepository;
 import com.wd.custapi.repository.CustomerUserRepository;
 import org.slf4j.Logger;
@@ -58,8 +61,12 @@ public class NotificationController {
                     notificationRepository.findByCustomerUser_IdOrderByCreatedAtDesc(user.getId(), pageable);
             long unreadCount = notificationRepository.countByCustomerUser_IdAndReadFalse(user.getId());
 
+            List<CustomerNotificationDto> dtos = notifications.getContent().stream()
+                    .map(CustomerNotificationDto::from)
+                    .toList();
+
             Map<String, Object> response = Map.of(
-                    "notifications", notifications.getContent(),
+                    "notifications", dtos,
                     "totalElements", notifications.getTotalElements(),
                     "totalPages", notifications.getTotalPages(),
                     "currentPage", page,

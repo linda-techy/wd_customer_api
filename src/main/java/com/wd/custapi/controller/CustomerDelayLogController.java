@@ -34,7 +34,7 @@ public class CustomerDelayLogController {
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             List<CustomerDelayLogDto> delays = delayLogRepository
-                    .findByProjectIdOrderByFromDateDesc(project.getId())
+                    .findByProjectIdAndCustomerVisibleTrueOrderByFromDateDesc(project.getId())
                     .stream().map(CustomerDelayLogDto::from).toList();
             return ResponseEntity.ok(Map.of("delays", delays, "count", delays.size()));
         } catch (Exception e) {

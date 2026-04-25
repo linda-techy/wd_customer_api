@@ -47,10 +47,15 @@ public class View360Service {
     }
     
     @Transactional
-    public View360Dto incrementViewCount(Long viewId) {
+    public View360Dto incrementViewCount(Long viewId, Long projectId) {
         View360 view = view360Repository.findById(viewId)
             .orElseThrow(() -> new RuntimeException("360 view not found"));
-        
+
+        if (view.getProject() == null || !projectId.equals(view.getProject().getId())) {
+            // Same message as not-found to avoid cross-project enumeration
+            throw new RuntimeException("360 view not found");
+        }
+
         view.setViewCount(view.getViewCount() + 1);
         view = view360Repository.save(view);
         return toDto(view);
