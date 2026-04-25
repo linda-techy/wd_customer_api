@@ -72,12 +72,17 @@ public class ProjectDocumentService {
     }
 
     public List<ProjectDocumentDto> getProjectDocuments(Long projectId, Long categoryId) {
+        // Active-only: portal-side soft-deletes flip is_active=false AND set
+        // deleted_at; the customer must not see those rows. Earlier this used
+        // findAll* which leaked deleted docs (with broken downloadUrls) into
+        // the customer UI.
         List<ProjectDocument> documents;
         if (categoryId != null) {
-            documents = documentRepository.findAllByReferenceIdAndReferenceTypeAndCategoryId(
+            documents = documentRepository.findByReferenceIdAndReferenceTypeAndCategoryIdAndIsActiveTrue(
                     projectId, REFERENCE_TYPE_PROJECT, categoryId);
         } else {
-            documents = documentRepository.findAllByReferenceIdAndReferenceType(projectId, REFERENCE_TYPE_PROJECT);
+            documents = documentRepository.findByReferenceIdAndReferenceTypeAndIsActiveTrue(
+                    projectId, REFERENCE_TYPE_PROJECT);
         }
         return documents.stream().map(this::toDto).collect(Collectors.toList());
     }
