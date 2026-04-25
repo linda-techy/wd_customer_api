@@ -1,5 +1,6 @@
 package com.wd.custapi.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -72,14 +73,14 @@ public class ProjectModuleDtos {
         String sopReference,
         String status,
         String priority,
-        Long assignedToId,
-        String assignedToName,
-        Long createdById,
-        String createdByName,
+        @JsonIgnore Long assignedToId,
+        @JsonIgnore String assignedToName,
+        @JsonIgnore Long createdById,
+        @JsonIgnore String createdByName,
         LocalDateTime createdAt,
         LocalDateTime resolvedAt,
-        Long resolvedById,
-        String resolvedByName,
+        @JsonIgnore Long resolvedById,
+        @JsonIgnore String resolvedByName,
         String resolutionNotes
     ) {}
     
@@ -107,8 +108,8 @@ public class ProjectModuleDtos {
         String description,
         Long referenceId,
         String referenceType,
-        Long createdById,
-        String createdByName,
+        @JsonIgnore Long createdById,
+        @JsonIgnore String createdByName,
         LocalDateTime createdAt,
         Map<String, Object> metadata
     ) {}
@@ -154,8 +155,8 @@ public class ProjectModuleDtos {
         Long projectId,
         String title,
         String description,
-        Long reportedById,
-        String reportedByName,
+        @JsonIgnore Long reportedById,
+        @JsonIgnore String reportedByName,
         Long reportedByRoleId,
         String reportedByRoleName,
         LocalDateTime reportedDate,
@@ -164,8 +165,8 @@ public class ProjectModuleDtos {
         String location,
         String imagePath,
         LocalDateTime resolvedDate,
-        Long resolvedById,
-        String resolvedByName,
+        @JsonIgnore Long resolvedById,
+        @JsonIgnore String resolvedByName,
         String resolutionNotes
     ) {}
     
@@ -188,19 +189,19 @@ public class ProjectModuleDtos {
         Long projectId,
         String title,
         String description,
-        Long raisedById,
-        String raisedByName,
+        @JsonIgnore Long raisedById,
+        @JsonIgnore String raisedByName,
         Long raisedByRoleId,
         String raisedByRoleName,
         LocalDateTime raisedDate,
         String status,
         String priority,
         String category,
-        Long assignedToId,
-        String assignedToName,
+        @JsonIgnore Long assignedToId,
+        @JsonIgnore String assignedToName,
         LocalDateTime resolvedDate,
-        Long resolvedById,
-        String resolvedByName,
+        @JsonIgnore Long resolvedById,
+        @JsonIgnore String resolvedByName,
         String resolution
     ) {}
     
@@ -266,8 +267,8 @@ public class ProjectModuleDtos {
     public record SiteVisitDto(
         Long id,
         Long projectId,
-        Long visitorId,
-        String visitorName,
+        @JsonIgnore Long visitorId,
+        @JsonIgnore String visitorName,
         Long visitorRoleId,
         String visitorRoleName,
         LocalDateTime checkInTime,
@@ -278,12 +279,12 @@ public class ProjectModuleDtos {
         String location,
         String weatherConditions,
         List<String> attendees,
-        Double checkInLatitude,
-        Double checkInLongitude,
-        Double checkOutLatitude,
-        Double checkOutLongitude,
-        Double distanceFromProjectCheckIn,
-        Double distanceFromProjectCheckOut
+        @JsonIgnore Double checkInLatitude,
+        @JsonIgnore Double checkInLongitude,
+        @JsonIgnore Double checkOutLatitude,
+        @JsonIgnore Double checkOutLongitude,
+        @JsonIgnore Double distanceFromProjectCheckIn,
+        @JsonIgnore Double distanceFromProjectCheckOut
     ) {}
     
     public record SiteVisitCheckInRequest(
@@ -311,8 +312,8 @@ public class ProjectModuleDtos {
         String title,
         String description,
         String formType,
-        Long createdById,
-        String createdByName,
+        @JsonIgnore Long createdById,
+        @JsonIgnore String createdByName,
         LocalDateTime createdAt,
         Boolean isActive,
         Boolean isCompleted
@@ -379,8 +380,8 @@ public class ProjectModuleDtos {
         String notes,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        Long createdById,
-        String createdByName,
+        @JsonIgnore Long createdById,
+        @JsonIgnore String createdByName,
         Boolean isActive,
         // Scope classification: BASE | ADDON | OPTIONAL | EXCLUSION
         String itemKind
@@ -434,8 +435,8 @@ public class ProjectModuleDtos {
         String description,
         String status,
         String reportType,
-        Long submittedById,
-        String submittedByName,
+        @JsonIgnore Long submittedById,
+        @JsonIgnore String submittedByName,
         LocalDateTime createdAt
     ) {}
     
