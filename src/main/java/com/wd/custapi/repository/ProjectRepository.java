@@ -45,12 +45,17 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "WHERE cpm.customer_user_id = :customerId", nativeQuery = true)
         long countByCustomerId(@Param("customerId") Long customerId);
 
-        // Get specific project by ID for a customer (ensures user can only access their
-        // projects)
+        // Get specific project by ID for a customer. Customer can own a project
+        // either via project_members membership OR via direct customer_projects.customer_id.
+        // Earlier this only checked project_members which caused FileDownloadController
+        // to 404 storage requests for direct-owner customers (whose only link is
+        // customer_projects.customer_id, no project_members row).
+        // Mirrors the OR-clause from findByProjectUuidAndCustomerEmail.
         @Query(value = "SELECT DISTINCT p.* FROM customer_projects p " +
                         "LEFT JOIN project_members cpm ON p.id = cpm.project_id " +
                         "LEFT JOIN customer_users c_mem ON cpm.customer_user_id = c_mem.id " +
-                        "WHERE p.id = :projectId AND c_mem.email = :email", nativeQuery = true)
+                        "LEFT JOIN customer_users c_owner ON p.customer_id = c_owner.id " +
+                        "WHERE p.id = :projectId AND (c_mem.email = :email OR c_owner.email = :email)", nativeQuery = true)
         Project findByIdAndCustomerEmail(@Param("projectId") Long projectId, @Param("email") String email);
 
         // Get specific project by Project UUID for a customer
