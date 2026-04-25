@@ -487,9 +487,11 @@ public class DashboardService {
 
     private DashboardDto.ProjectDocumentSummary toDocumentSummary(ProjectDocument doc) {
         String downloadUrl = "/api/storage/" + doc.getFilePath();
-        String uploadedBy = doc.getCreatedBy() != null
-                ? doc.getCreatedBy().getFirstName() + " " + doc.getCreatedBy().getLastName()
-                : "Company";
+        // Uploader id is polymorphic (customer_users.id or portal_users.id);
+        // Customer-side has no portal_users entity, so for portal uploads we
+        // simply attribute to "Company". Customer-uploaded docs (future) get
+        // resolved via CustomerUserRepository.
+        String uploadedBy = "Company";
         String categoryName = doc.getCategory() != null ? doc.getCategory().getName() : "Uncategorized";
 
         return new DashboardDto.ProjectDocumentSummary(

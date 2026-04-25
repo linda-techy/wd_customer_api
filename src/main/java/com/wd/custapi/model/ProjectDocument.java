@@ -37,9 +37,14 @@ public class ProjectDocument {
     @Column(name = "file_type", length = 50)
     private String fileType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_user_id", nullable = true)
-    private CustomerUser createdBy;
+    /**
+     * Polymorphic uploader id — may reference customer_users.id (when
+     * uploaded_by_type='CUSTOMER') or portal_users.id (when 'PORTAL').
+     * Stored as a plain Long because JPA cannot model a polymorphic
+     * association across two unrelated tables.
+     */
+    @Column(name = "created_by_user_id", nullable = true, insertable = false, updatable = false)
+    private Long createdByUserId;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -125,12 +130,8 @@ public class ProjectDocument {
         this.fileType = fileType;
     }
 
-    public CustomerUser getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(CustomerUser createdBy) {
-        this.createdBy = createdBy;
+    public Long getCreatedByUserId() {
+        return createdByUserId;
     }
 
     public LocalDateTime getCreatedAt() {
