@@ -58,7 +58,8 @@ public class ProjectDocumentService {
         document.setFilePath(filePath);
         document.setFileSize(file.getSize());
         document.setFileType(file.getContentType());
-        document.setCreatedBy(user);
+        // createdByUserId is set automatically by BaseEntity audit (read-only on
+        // the customer side; portal/customer upload context populates it).
         document.setCreatedAt(java.time.LocalDateTime.now());
         document.setDescription(request.description());
 
@@ -90,10 +91,12 @@ public class ProjectDocumentService {
     private ProjectDocumentDto toDto(ProjectDocument doc) {
         String downloadUrl = "/api/storage/" + doc.getFilePath();
         Long projectId = "PROJECT".equals(doc.getReferenceType()) ? doc.getReferenceId() : null;
-        Long uploadedById = doc.getCreatedBy() != null ? doc.getCreatedBy().getId() : null;
-        String uploadedByName = doc.getCreatedBy() != null
-                ? doc.getCreatedBy().getFirstName() + " " + doc.getCreatedBy().getLastName()
-                : "Company";
+        // Uploader id is polymorphic (portal_users or customer_users); the
+        // customer-side cannot resolve a portal_users.id to a name without a
+        // cross-API call. Attribute portal-uploaded docs to "Company" — same
+        // fallback used in DashboardService.toDocumentSummary.
+        Long uploadedById = doc.getCreatedByUserId();
+        String uploadedByName = "Company";
 
         return new ProjectDocumentDto(
                 doc.getId(),
