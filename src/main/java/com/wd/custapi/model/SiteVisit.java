@@ -68,6 +68,27 @@ public class SiteVisit {
     @Column(name = "created_by_type", length = 10, nullable = false)
     private String createdByType = "CUSTOMER"; // CUSTOMER | STAFF
 
+    /**
+     * Portal-side visitor pointer (V83). Read-only mirror of the column
+     * the Portal API writes to via its own {@code visited_by} field. The
+     * Customer API does not write here — it sets {@link #visitor}
+     * (CustomerUser) instead. When this column is non-null and
+     * {@code visitor_id} is null, the row originated from a staff
+     * check-in on the Portal app; the toDto path looks up the staff
+     * name via PortalUserLookup.
+     */
+    @Column(name = "visited_by", insertable = false, updatable = false)
+    private Long visitedBy;
+
+    /**
+     * Portal-side visit type (V83). Read-only mirror — Portal writes
+     * SITE_ENGINEER / PROJECT_MANAGER / SUPERVISOR / etc. and we surface
+     * a humanised version as the visitor role on the customer-facing
+     * card so customers can tell who's been on site.
+     */
+    @Column(name = "visit_type", length = 50, insertable = false, updatable = false)
+    private String visitType;
+
     // Constructors
     public SiteVisit() {}
     
@@ -222,6 +243,14 @@ public class SiteVisit {
 
     public void setCreatedByType(String createdByType) {
         this.createdByType = createdByType;
+    }
+
+    public Long getVisitedBy() {
+        return visitedBy;
+    }
+
+    public String getVisitType() {
+        return visitType;
     }
 }
 

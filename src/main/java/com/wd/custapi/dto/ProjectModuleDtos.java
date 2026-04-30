@@ -267,8 +267,14 @@ public class ProjectModuleDtos {
     public record SiteVisitDto(
         Long id,
         Long projectId,
-        @JsonIgnore Long visitorId,
-        @JsonIgnore String visitorName,
+        // visitorId/visitorName ARE exposed to the customer Flutter — the
+        // SiteVisits screen renders the visitor's initial as the avatar
+        // and their name on each card. The @JsonIgnore that used to hide
+        // these caused "type 'Null' is not a subtype of type 'int'"
+        // Flutter crashes because the Dart model declares both as
+        // non-nullable.
+        Long visitorId,
+        String visitorName,
         Long visitorRoleId,
         String visitorRoleName,
         LocalDateTime checkInTime,

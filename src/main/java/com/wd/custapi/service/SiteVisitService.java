@@ -27,17 +27,20 @@ public class SiteVisitService {
     private final CustomerUserRepository userRepository;
     private final StaffRoleRepository staffRoleRepository;
     private final ActivityFeedService activityFeedService;
+    private final PortalUserLookup portalUserLookup;
 
     public SiteVisitService(SiteVisitRepository siteVisitRepository,
             ProjectRepository projectRepository,
             CustomerUserRepository userRepository,
             StaffRoleRepository staffRoleRepository,
-            ActivityFeedService activityFeedService) {
+            ActivityFeedService activityFeedService,
+            PortalUserLookup portalUserLookup) {
         this.siteVisitRepository = siteVisitRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.staffRoleRepository = staffRoleRepository;
         this.activityFeedService = activityFeedService;
+        this.portalUserLookup = portalUserLookup;
     }
 
     @Transactional
@@ -186,14 +189,64 @@ public class SiteVisitService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Map {@link SiteVisit} → DTO. Handles two row origins:
+     *
+     * <ul>
+     *   <li><b>Customer-side:</b> {@code visitor} (CustomerUser) populated.
+     *       Use the customer's name; role from {@code visitorRole}.</li>
+     *   <li><b>Portal-side (staff):</b> {@code visitor} is null but
+     *       {@code visitedBy} (portal_user_id) is set. Look up the staff
+     *       name via {@link PortalUserLookup}; use the portal-side
+     *       {@code visit_type} (SITE_ENGINEER → "Site Engineer") as the
+     *       customer-facing role label.</li>
+     * </ul>
+     *
+     * <p>Both branches must be NPE-safe — the Customer Flutter app crashes
+     * on a null visitorName, so we fall back to "Staff" when no lookup
+     * resolves.
+     */
     private SiteVisitDto toDto(SiteVisit visit) {
+        Long visitorId;
+        String visitorName;
+        Long visitorRoleId;
+        String visitorRoleName;
+
+        if (visit.getVisitor() != null) {
+            visitorId = visit.getVisitor().getId();
+            visitorName = (safe(visit.getVisitor().getFirstName())
+                    + " " + safe(visit.getVisitor().getLastName())).trim();
+            visitorRoleId = visit.getVisitorRole() != null ? visit.getVisitorRole().getId() : null;
+            visitorRoleName = visit.getVisitorRole() != null ? visit.getVisitorRole().getName() : null;
+        } else if (visit.getVisitedBy() != null) {
+            // Staff-side row from the Portal API. Resolve the staff member's
+            // name via the read-only portal_users lookup; fall back to a
+            // generic label if the lookup misses (e.g. user deleted).
+            PortalUserLookup.View staff = portalUserLookup.lookup(visit.getVisitedBy());
+            visitorId = visit.getVisitedBy();
+            visitorName = (staff != null && staff.name() != null && !staff.name().isBlank())
+                    ? staff.name()
+                    : "Staff";
+            visitorRoleId = null;
+            visitorRoleName = humaniseVisitType(visit.getVisitType());
+        } else {
+            // Defensive — shouldn't happen, both pointers null. Keep the
+            // row visible so the customer doesn't see a silent gap. 0L is
+            // a placeholder because the customer Flutter model declares
+            // visitorId as a non-nullable int.
+            visitorId = 0L;
+            visitorName = "Staff";
+            visitorRoleId = null;
+            visitorRoleName = humaniseVisitType(visit.getVisitType());
+        }
+
         return new SiteVisitDto(
                 visit.getId(),
                 visit.getProject().getId(),
-                visit.getVisitor().getId(),
-                visit.getVisitor().getFirstName() + " " + visit.getVisitor().getLastName(),
-                visit.getVisitorRole() != null ? visit.getVisitorRole().getId() : null,
-                visit.getVisitorRole() != null ? visit.getVisitorRole().getName() : null,
+                visitorId,
+                visitorName,
+                visitorRoleId,
+                visitorRoleName,
                 visit.getCheckInTime(),
                 visit.getCheckOutTime(),
                 visit.getPurpose(),
@@ -208,5 +261,22 @@ public class SiteVisitService {
                 visit.getCheckOutLongitude(),
                 visit.getDistanceFromProjectCheckIn(),
                 visit.getDistanceFromProjectCheckOut());
+    }
+
+    private static String safe(String s) {
+        return s == null ? "" : s;
+    }
+
+    /** Convert an enum-shaped visit type ("SITE_ENGINEER") to a customer-facing label ("Site Engineer"). */
+    private static String humaniseVisitType(String visitType) {
+        if (visitType == null || visitType.isBlank()) return null;
+        StringBuilder out = new StringBuilder();
+        boolean upper = true;
+        for (char c : visitType.toCharArray()) {
+            if (c == '_') { out.append(' '); upper = true; continue; }
+            out.append(upper ? Character.toUpperCase(c) : Character.toLowerCase(c));
+            upper = false;
+        }
+        return out.toString();
     }
 }

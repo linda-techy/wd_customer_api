@@ -21,7 +21,11 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/customer/site-reports")
-@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER', 'CUSTOMER_ADMIN', 'CONTRACTOR', 'BUILDER')")
+// Tightened from the original sprawling list (was 9 roles including
+// CONTRACTOR + BUILDER which aren't real roles in this seed). The
+// customer-facing API is for the *project's customer*, plus admin
+// access for support staff. Other roles use the Portal API.
+@PreAuthorize("hasAnyRole('CUSTOMER', 'CUSTOMER_ADMIN', 'ADMIN')")
 public class CustomerSiteReportController {
 
         private static final Logger logger = LoggerFactory.getLogger(CustomerSiteReportController.class);
@@ -52,6 +56,23 @@ public class CustomerSiteReportController {
 
                 return ResponseEntity.ok(new ApiResponse<>(true,
                         "Site reports retrieved successfully", reports));
+        }
+
+        /**
+         * Per-project report-count summary for the current customer.
+         * Drives the customer-app empty-state hint when a specific
+         * project shows 0 reports but reports exist on other projects
+         * (common scenario when the admin filed a report against the
+         * wrong project from the portal dropdown).
+         */
+        @GetMapping("/summary")
+        public ResponseEntity<ApiResponse<java.util.List<java.util.Map<String, Object>>>> getSummary(
+                        Authentication auth) {
+                String email = auth.getName();
+                java.util.List<java.util.Map<String, Object>> rows =
+                                siteReportService.getReportSummaryForCustomer(email);
+                return ResponseEntity.ok(new ApiResponse<>(true,
+                                "Site report summary retrieved", rows));
         }
 
         /**

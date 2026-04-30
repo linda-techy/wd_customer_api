@@ -95,6 +95,41 @@ public class SiteReportService {
      * @throws ResourceNotFoundException if report doesn't exist
      * @throws UnauthorizedException if user lacks access
      */
+    /**
+     * Per-project report counts across every project the customer can
+     * access. Helps the customer Flutter empty-state show "no reports for
+     * THIS project, but you have N on Project X" — common scenario when
+     * the admin picks the wrong project from the portal dropdown.
+     *
+     * @return list of {@code [projectId, projectName, reportCount]} rows,
+     *         only for projects with at least one report.
+     */
+    @Transactional(readOnly = true)
+    public List<java.util.Map<String, Object>> getReportSummaryForCustomer(String userEmail) {
+        List<Long> projectIds = authorizationService.getAccessibleProjectIds(userEmail);
+        if (projectIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        List<SiteReport> reports = siteReportRepository.findByProjectIdInWithPhotos(projectIds);
+        java.util.Map<Long, long[]> counts = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, String> names = new java.util.LinkedHashMap<>();
+        for (SiteReport r : reports) {
+            if (r.getProject() == null) continue;
+            Long pid = r.getProject().getId();
+            counts.computeIfAbsent(pid, k -> new long[]{0})[0]++;
+            names.putIfAbsent(pid, r.getProject().getName());
+        }
+        List<java.util.Map<String, Object>> out = new java.util.ArrayList<>();
+        counts.forEach((pid, n) -> {
+            java.util.Map<String, Object> row = new java.util.HashMap<>();
+            row.put("projectId", pid);
+            row.put("projectName", names.get(pid));
+            row.put("count", n[0]);
+            out.add(row);
+        });
+        return out;
+    }
+
     @Transactional(readOnly = true)
     public CustomerSiteReportDto getSiteReportById(String userEmail, Long reportId) {
         logger.debug("Fetching site report {} for user {}", reportId, userEmail);

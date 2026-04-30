@@ -61,6 +61,32 @@ public class SiteReport {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    // ── Read-only mirrors of Portal-owned operational columns ──
+    // The Portal API populates these via its own SiteReport entity
+    // (which extends BaseEntity + has GPS/weather/manpower fields). The
+    // Customer API doesn't write here; insertable/updatable=false keeps
+    // these out of any Hibernate-generated INSERT/UPDATE statements.
+    @Column(name = "weather", length = 100, insertable = false, updatable = false)
+    private String weather;
+
+    @Column(name = "manpower_deployed", insertable = false, updatable = false)
+    private Integer manpowerDeployed;
+
+    @Column(name = "equipment_used", columnDefinition = "TEXT", insertable = false, updatable = false)
+    private String equipmentUsed;
+
+    @Column(name = "work_progress", columnDefinition = "TEXT", insertable = false, updatable = false)
+    private String workProgress;
+
+    @Column(name = "latitude", insertable = false, updatable = false)
+    private Double latitude;
+
+    @Column(name = "longitude", insertable = false, updatable = false)
+    private Double longitude;
+
+    @Column(name = "distance_from_project", insertable = false, updatable = false)
+    private Double distanceFromProject;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
@@ -176,8 +202,16 @@ public class SiteReport {
     public List<SiteReportPhoto> getPhotos() {
         return photos;
     }
-    
+
     public void setPhotos(List<SiteReportPhoto> photos) {
         this.photos = photos;
     }
+
+    public String getWeather() { return weather; }
+    public Integer getManpowerDeployed() { return manpowerDeployed; }
+    public String getEquipmentUsed() { return equipmentUsed; }
+    public String getWorkProgress() { return workProgress; }
+    public Double getLatitude() { return latitude; }
+    public Double getLongitude() { return longitude; }
+    public Double getDistanceFromProject() { return distanceFromProject; }
 }
