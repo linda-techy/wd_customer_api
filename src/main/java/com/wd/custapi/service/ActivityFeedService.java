@@ -21,19 +21,31 @@ public class ActivityFeedService {
     private final CustomerUserRepository userRepository;
     private final SiteReportRepository siteReportRepository;
     private final ProjectQueryRepository projectQueryRepository;
+    private final ObservationRepository observationRepository;
+    private final QualityCheckRepository qualityCheckRepository;
+    private final GalleryImageRepository galleryImageRepository;
+    private final SiteVisitRepository siteVisitRepository;
     
     public ActivityFeedService(ActivityFeedRepository activityFeedRepository,
                                ActivityTypeRepository activityTypeRepository,
                                ProjectRepository projectRepository,
                                CustomerUserRepository userRepository,
                                SiteReportRepository siteReportRepository,
-                               ProjectQueryRepository projectQueryRepository) {
+                               ProjectQueryRepository projectQueryRepository,
+                               ObservationRepository observationRepository,
+                               QualityCheckRepository qualityCheckRepository,
+                               GalleryImageRepository galleryImageRepository,
+                               SiteVisitRepository siteVisitRepository) {
         this.activityFeedRepository = activityFeedRepository;
         this.activityTypeRepository = activityTypeRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.siteReportRepository = siteReportRepository;
         this.projectQueryRepository = projectQueryRepository;
+        this.observationRepository = observationRepository;
+        this.qualityCheckRepository = qualityCheckRepository;
+        this.galleryImageRepository = galleryImageRepository;
+        this.siteVisitRepository = siteVisitRepository;
     }
     
     @Transactional
@@ -118,23 +130,45 @@ public class ActivityFeedService {
     ) {}
     
     /**
-     * Get combined activity feed with site reports and queries.
+     * Get combined activity feed with site reports, queries, observations, etc.
      * Returns items sorted by date descending.
      */
     public List<CombinedActivityItem> getCombinedActivityFeed(Long projectId) {
         List<SiteReport> siteReports = siteReportRepository.findByProjectIdOrderByReportDateDesc(projectId);
         List<ProjectQuery> queries = projectQueryRepository.findByProjectIdOrderByRaisedDateDesc(projectId);
+        List<Observation> observations = observationRepository.findByProjectIdOrderByReportedDateDesc(projectId);
+        List<QualityCheck> checks = qualityCheckRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        List<GalleryImage> images = galleryImageRepository.findByProjectIdOrderByTakenDateDesc(projectId);
+        List<SiteVisit> visits = siteVisitRepository.findByProjectIdOrderByCheckInTimeDesc(projectId);
         
         List<CombinedActivityItem> siteReportItems = siteReports.stream()
+            .filter(r -> r.getStatus() == null || !"DRAFT".equalsIgnoreCase(r.getStatus()))
             .map(this::toActivityItem)
             .collect(Collectors.toList());
         
         List<CombinedActivityItem> queryItems = queries.stream()
             .map(this::toActivityItem)
             .collect(Collectors.toList());
+            
+        List<CombinedActivityItem> obsItems = observations.stream()
+            .map(this::toActivityItem)
+            .collect(Collectors.toList());
+            
+        List<CombinedActivityItem> qcItems = checks.stream()
+            .map(this::toActivityItem)
+            .collect(Collectors.toList());
+            
+        List<CombinedActivityItem> galleryItems = images.stream()
+            .map(this::toActivityItem)
+            .collect(Collectors.toList());
+            
+        List<CombinedActivityItem> visitItems = visits.stream()
+            .map(this::toActivityItem)
+            .collect(Collectors.toList());
         
         // Merge and sort by timestamp descending
-        return Stream.concat(siteReportItems.stream(), queryItems.stream())
+        return Stream.of(siteReportItems, queryItems, obsItems, qcItems, galleryItems, visitItems)
+            .flatMap(List::stream)
             .sorted(Comparator.comparing(CombinedActivityItem::timestamp).reversed())
             .collect(Collectors.toList());
     }
@@ -215,6 +249,98 @@ public class ActivityFeedService {
             query.getRaisedDate(),
             query.getRaisedDate() != null ? query.getRaisedDate().toLocalDate() : LocalDate.now(),
             query.getStatus() != null ? query.getStatus().name() : null,
+            createdByName,
+            metadata
+        );
+    }
+    
+    private CombinedActivityItem toActivityItem(Observation obs) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("priority", obs.getPriority() != null ? obs.getPriority().name() : null);
+        metadata.put("location", obs.getLocation());
+        
+        String createdByName = "Staff";
+        if (obs.getReportedBy() != null) {
+            createdByName = obs.getReportedBy().getFirstName() + " " + obs.getReportedBy().getLastName();
+        }
+        
+        return new CombinedActivityItem(
+            obs.getId(),
+            "OBSERVATION",
+            obs.getTitle(),
+            obs.getDescription(),
+            obs.getReportedDate(),
+            obs.getReportedDate() != null ? obs.getReportedDate().toLocalDate() : LocalDate.now(),
+            obs.getStatus() != null ? obs.getStatus().name() : null,
+            createdByName,
+            metadata
+        );
+    }
+    
+    private CombinedActivityItem toActivityItem(QualityCheck qc) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("priority", qc.getPriority() != null ? qc.getPriority().name() : null);
+        metadata.put("sopReference", qc.getSopReference());
+        
+        String createdByName = "Staff";
+        if (qc.getCreatedBy() != null) {
+            createdByName = qc.getCreatedBy().getFirstName() + " " + qc.getCreatedBy().getLastName();
+        }
+        
+        return new CombinedActivityItem(
+            qc.getId(),
+            "QUALITY_CHECK",
+            qc.getTitle(),
+            qc.getDescription(),
+            qc.getCreatedAt(),
+            qc.getCreatedAt() != null ? qc.getCreatedAt().toLocalDate() : LocalDate.now(),
+            qc.getStatus() != null ? qc.getStatus().name() : null,
+            createdByName,
+            metadata
+        );
+    }
+    
+    private CombinedActivityItem toActivityItem(GalleryImage img) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("imagePath", img.getImagePath());
+        metadata.put("locationTag", img.getLocationTag());
+        
+        String createdByName = "Staff";
+        if (img.getUploadedBy() != null) {
+            createdByName = img.getUploadedBy().getFirstName() + " " + img.getUploadedBy().getLastName();
+        }
+        
+        return new CombinedActivityItem(
+            img.getId(),
+            "GALLERY",
+            img.getCaption() != null && !img.getCaption().isEmpty() ? img.getCaption() : "New Photo Uploaded",
+            null,
+            img.getUploadedAt(),
+            img.getTakenDate() != null ? img.getTakenDate() : img.getUploadedAt().toLocalDate(),
+            "PUBLISHED",
+            createdByName,
+            metadata
+        );
+    }
+    
+    private CombinedActivityItem toActivityItem(SiteVisit visit) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("purpose", visit.getPurpose());
+        metadata.put("location", visit.getLocation());
+        
+        String createdByName = "Staff";
+        if (visit.getVisitor() != null) {
+            createdByName = visit.getVisitor().getFirstName() + " " + visit.getVisitor().getLastName();
+        }
+        
+        return new CombinedActivityItem(
+            visit.getId(),
+            "SITE_VISIT",
+            "Site Visit",
+            visit.getNotes() != null ? visit.getNotes() : visit.getPurpose(),
+            visit.getCheckInTime(),
+            visit.getCheckInTime() != null ? visit.getCheckInTime().toLocalDate() : LocalDate.now(),
+            visit.getCheckOutTime() != null ? "COMPLETED" : "ONGOING",
             createdByName,
             metadata
         );
