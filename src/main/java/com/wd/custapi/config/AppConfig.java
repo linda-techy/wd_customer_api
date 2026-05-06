@@ -8,11 +8,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class AppConfig {
-    
+
     // Application-specific constants
     public static final String CONTEXT_PATH = "/api";
     public static final String DATABASE_SCHEMA = "public";
-    
+
     // Database table constants for customer users
     // Note: These tables are auto-created by Hibernate (ddl-auto=update).
     // Portal API's Flyway migration V1_46 dropped customer_permissions and
@@ -23,4 +23,3 @@ public class AppConfig {
     public static final String PERMISSION_TABLE = "customer_permissions";
     public static final String REFRESH_TOKEN_TABLE = "customer_refresh_tokens";
 }
-

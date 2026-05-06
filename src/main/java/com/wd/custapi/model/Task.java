@@ -61,6 +61,13 @@ public class Task {
     @Column(name = "actual_end_date", insertable = false, updatable = false)
     private LocalDate actualEndDate;
 
+    // ===== CPM-denormalized fields (V118) — read-only =====
+    // Populated by portal-api's CpmService.recompute(projectId).
+    // Customer-API only needs ef_date to compute the project's expected
+    // handover date (max ef_date across the project's open tasks).
+    @Column(name = "ef_date", insertable = false, updatable = false)
+    private LocalDate efDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
@@ -85,6 +92,7 @@ public class Task {
     public Boolean getCustomerVisible() { return customerVisible; }
     public Long getMilestoneId() { return milestoneId; }
     public LocalDate getActualEndDate() { return actualEndDate; }
+    public LocalDate getEfDate() { return efDate; }
     public Project getProject() { return project; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
