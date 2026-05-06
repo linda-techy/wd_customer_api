@@ -145,6 +145,27 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
                 .isFalse();
     }
 
+    @Test
+    void compute_oldMaterialThenRecentMinor_doesNotFlag() {
+        // Spec: hasMaterialDelay reflects the LATEST customer-visible delay,
+        // not "any historical MATERIAL ever". A project that had a MATERIAL
+        // delay 30 days ago and now has a MINOR delay this week must NOT
+        // show the struck-through baseline indicator.
+        UUID projectUuid = UUID.randomUUID();
+        long projectId = seedProject(projectUuid, "alice-supersede@test.com");
+        seedTaskWithEf(projectId, "T1", LocalDate.of(2026, 8, 12));
+        // Old MATERIAL delay (30 days ago)
+        seedDelayLogOnDate(projectId, "MATERIAL", true, FIXED_TODAY.minusDays(30));
+        // Recent MINOR delay (7 days ago) — supersedes the MATERIAL row.
+        seedDelayLogOnDate(projectId, "MINOR", true, FIXED_TODAY.minusDays(7));
+
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
+
+        assertThat(dto.hasMaterialDelay())
+                .as("only the latest customer-visible delay drives the flag")
+                .isFalse();
+    }
+
     // --- helpers ---
     private long seedProject(UUID projectUuid, String email) {
         jdbc.update("INSERT INTO customer_roles (id, name) VALUES (1, 'CUSTOMER') ON CONFLICT DO NOTHING");
@@ -179,5 +200,13 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
                 "INSERT INTO delay_logs (project_id, delay_type, from_date, impact_on_handover, customer_visible, created_at) "
                         + "VALUES (?, 'WEATHER', '2026-04-01', ?, ?, NOW())",
                 projectId, impactOnHandover, customerVisible);
+    }
+
+    private void seedDelayLogOnDate(long projectId, String impactOnHandover,
+                                    boolean customerVisible, LocalDate fromDate) {
+        jdbc.update(
+                "INSERT INTO delay_logs (project_id, delay_type, from_date, impact_on_handover, customer_visible, created_at) "
+                        + "VALUES (?, 'WEATHER', ?, ?, ?, NOW())",
+                projectId, fromDate, impactOnHandover, customerVisible);
     }
 }

@@ -91,10 +91,15 @@ public class ExpectedHandoverService {
                 .map(ProjectBaseline::getProjectFinishDate)
                 .orElse(null);
 
+        // Spec: hasMaterialDelay reflects the LATEST customer-visible delay,
+        // not "any historical MATERIAL ever". Take the head of the
+        // from-date-desc list and check only that row's impact.
         boolean hasMaterialDelay = delayLogRepository
                 .findByProjectIdAndCustomerVisibleTrueOrderByFromDateDesc(projectId)
                 .stream()
-                .anyMatch(d -> "MATERIAL".equalsIgnoreCase(d.getImpactOnHandover()));
+                .findFirst()
+                .map(d -> "MATERIAL".equalsIgnoreCase(d.getImpactOnHandover()))
+                .orElse(false);
 
         Integer weeksRemaining = null;
         if (projectFinishDate != null) {
