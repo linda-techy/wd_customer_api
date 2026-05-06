@@ -1,21 +1,20 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.dto.ExpectedHandoverDto;
+import com.wd.custapi.model.Project;
+import com.wd.custapi.repository.ProjectRepository;
 import com.wd.custapi.testsupport.TestcontainersPostgresBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
-import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * End-to-end Service test for ExpectedHandoverService — uses Postgres
@@ -23,10 +22,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * (so the JPA queries on real columns are exercised).
  *
  * <p>Tests pass an explicit {@code LocalDate today=2026-05-05} via the
- * {@link ExpectedHandoverService#computeAt(String, LocalDate)} test seam so
+ * {@link ExpectedHandoverService#computeAt(Project, LocalDate)} test seam so
  * weeksRemaining assertions are deterministic without needing to fork the
  * shared Spring test context (which would happen if we replaced the Clock
  * bean for this test only).
+ *
+ * <p>The service takes an already-authorized Project (the controller does
+ * the auth lookup). Tests resolve the Project via ProjectRepository directly
+ * since the auth path is not what's under test here.
  */
 class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
 
@@ -34,6 +37,9 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
 
     @Autowired
     private ExpectedHandoverService expectedHandoverService;
+
+    @Autowired
+    private ProjectRepository projectRepository;
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -77,7 +83,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedTaskWithEf(projectId, "T2", LocalDate.of(2026, 8, 12));
         seedTaskWithEf(projectId, "T3", LocalDate.of(2026, 6, 15));
 
-        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(loadProject(projectUuid), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isEqualTo(LocalDate.of(2026, 8, 12));
         assertThat(dto.baselineFinishDate()).isNull();
@@ -96,7 +102,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedBaseline(projectId, LocalDate.of(2026, 8, 5));
         seedDelayLog(projectId, "MINOR", true);
 
-        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(loadProject(projectUuid), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isEqualTo(LocalDate.of(2026, 8, 12));
         assertThat(dto.baselineFinishDate()).isEqualTo(LocalDate.of(2026, 8, 5));
@@ -111,7 +117,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedBaseline(projectId, LocalDate.of(2026, 8, 5));
         seedDelayLog(projectId, "MATERIAL", true);
 
-        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(loadProject(projectUuid), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isEqualTo(LocalDate.of(2026, 8, 12));
         assertThat(dto.baselineFinishDate()).isEqualTo(LocalDate.of(2026, 8, 5));
@@ -126,7 +132,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         jdbc.update("INSERT INTO tasks (project_id, title, status, priority, due_date, customer_visible) "
                 + "VALUES (?, 'T1', 'OPEN', 'NORMAL', '2026-08-12', true)", projectId);
 
-        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(loadProject(projectUuid), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isNull();
         assertThat(dto.weeksRemaining()).isNull();
@@ -141,30 +147,11 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedTaskWithEf(projectId, "T1", LocalDate.of(2026, 8, 12));
         seedDelayLog(projectId, "MATERIAL", false);
 
-        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(loadProject(projectUuid), FIXED_TODAY);
 
         assertThat(dto.hasMaterialDelay())
                 .as("internal-only material delays must not leak to customer flag")
                 .isFalse();
-    }
-
-    @Test
-    void compute_invalidUuid_throwsBadRequest() {
-        assertThatThrownBy(() ->
-                expectedHandoverService.computeAt("not-a-uuid", FIXED_TODAY))
-                .isInstanceOfSatisfying(ResponseStatusException.class, ex ->
-                        assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-    }
-
-    @Test
-    void compute_unknownProject_throwsNotFound() {
-        // Random UUID that doesn't correspond to any seeded project — must
-        // surface as 404, not a 500-mapped RuntimeException.
-        UUID unknown = UUID.randomUUID();
-        assertThatThrownBy(() ->
-                expectedHandoverService.computeAt(unknown.toString(), FIXED_TODAY))
-                .isInstanceOfSatisfying(ResponseStatusException.class, ex ->
-                        assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 
     @Test
@@ -181,7 +168,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         // Recent MINOR delay (7 days ago) — supersedes the MATERIAL row.
         seedDelayLogOnDate(projectId, "MINOR", true, FIXED_TODAY.minusDays(7));
 
-        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(loadProject(projectUuid), FIXED_TODAY);
 
         assertThat(dto.hasMaterialDelay())
                 .as("only the latest customer-visible delay drives the flag")
@@ -189,6 +176,12 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
     }
 
     // --- helpers ---
+    private Project loadProject(UUID projectUuid) {
+        Project project = projectRepository.findByProjectUuid(projectUuid);
+        assertThat(project).as("seeded project must be loadable").isNotNull();
+        return project;
+    }
+
     private long seedProject(UUID projectUuid, String email) {
         jdbc.update("INSERT INTO customer_roles (id, name) VALUES (1, 'CUSTOMER') ON CONFLICT DO NOTHING");
         jdbc.update("INSERT INTO customer_users (email, password, first_name, role_id, created_at, enabled) "

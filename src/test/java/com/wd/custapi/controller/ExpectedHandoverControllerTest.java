@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
@@ -61,7 +62,7 @@ class ExpectedHandoverControllerTest {
                 LocalDate.of(2026, 8, 5),
                 14,
                 true);
-        when(expectedHandoverService.compute("uuid")).thenReturn(dto);
+        when(expectedHandoverService.compute(any(Project.class))).thenReturn(dto);
 
         ResponseEntity<ExpectedHandoverDto> response = controller.get("uuid", auth);
 
@@ -71,21 +72,23 @@ class ExpectedHandoverControllerTest {
 
     @Test
     void get_callsDashboardServiceForOwnershipBeforeService() {
-        when(expectedHandoverService.compute("target-uuid"))
+        when(expectedHandoverService.compute(any(Project.class)))
                 .thenReturn(new ExpectedHandoverDto(null, null, null, false));
 
         controller.get("target-uuid", auth);
 
-        // Ownership lookup must happen first; service second.
+        // Ownership lookup must happen first; service second. The service
+        // receives the authorized Project from the controller (not a UUID
+        // string) so a future non-controller caller can't bypass auth.
         InOrder ordered = inOrder(dashboardService, expectedHandoverService);
         ordered.verify(dashboardService).getProjectByUuidAndEmail("target-uuid", "alice@x");
-        ordered.verify(expectedHandoverService).compute("target-uuid");
+        ordered.verify(expectedHandoverService).compute(project);
     }
 
     @Test
     void get_returnsNullableFieldsAsIs() {
         ExpectedHandoverDto dto = new ExpectedHandoverDto(null, null, null, false);
-        when(expectedHandoverService.compute("uuid")).thenReturn(dto);
+        when(expectedHandoverService.compute(any(Project.class))).thenReturn(dto);
 
         ResponseEntity<ExpectedHandoverDto> response = controller.get("uuid", auth);
 

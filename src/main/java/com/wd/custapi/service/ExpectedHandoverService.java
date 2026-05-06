@@ -5,17 +5,13 @@ import com.wd.custapi.model.Project;
 import com.wd.custapi.model.ProjectBaseline;
 import com.wd.custapi.repository.DelayLogRepository;
 import com.wd.custapi.repository.ProjectBaselineRepository;
-import com.wd.custapi.repository.ProjectRepository;
 import com.wd.custapi.repository.TaskRepository;
 import com.wd.custapi.util.WorkingDayCalculator;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 /**
  * Aggregates the data needed by the customer-facing expected-handover row:
@@ -25,8 +21,8 @@ import java.util.UUID;
  *       (the CPM-denormalized column populated by portal-api's CpmService).</li>
  *   <li>{@code baselineFinishDate} — {@code project_baseline.project_finish_date}
  *       if the project has an approved baseline.</li>
- *   <li>{@code hasMaterialDelay} — any customer-visible delay log row whose
- *       {@code impact_on_handover='MATERIAL'}.</li>
+ *   <li>{@code hasMaterialDelay} — true iff the LATEST customer-visible delay
+ *       log row has {@code impact_on_handover='MATERIAL'}.</li>
  *   <li>{@code weeksRemaining} — Mon-Sat working days from "today" to
  *       {@code projectFinishDate}, divided by 5 and rounded.</li>
  * </ul>
@@ -34,56 +30,48 @@ import java.util.UUID;
  * <p>Cached 5 min via the existing Caffeine CacheManager (cache name
  * {@code expectedHandover}) — see {@link com.wd.custapi.config.CacheConfig}.
  *
- * <p>Tests inject "today" via {@link #computeAt(String, LocalDate)}; the
- * production endpoint calls {@link #compute(String)} which delegates to
- * {@code computeAt} with {@link LocalDate#now()}. This avoids the need to
- * fork the test ApplicationContext to swap a Clock bean.
+ * <p>The service takes an already-authorized {@link Project} from the
+ * controller — it intentionally does NOT re-resolve via
+ * {@code projectRepository.findByProjectUuid} (which is admin-unscoped).
+ * This removes the structural footgun where a future non-controller caller
+ * could bypass the controller's
+ * {@link DashboardService#getProjectByUuidAndEmail} pre-auth and saves a
+ * DB roundtrip.
+ *
+ * <p>Tests inject "today" via {@link #computeAt(Project, LocalDate)}; the
+ * production endpoint calls {@link #compute(Project)} which delegates to
+ * {@code computeAt} with {@link LocalDate#now()}.
  */
 @Service
 public class ExpectedHandoverService {
 
-    private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final ProjectBaselineRepository projectBaselineRepository;
     private final DelayLogRepository delayLogRepository;
 
     public ExpectedHandoverService(
-            ProjectRepository projectRepository,
             TaskRepository taskRepository,
             ProjectBaselineRepository projectBaselineRepository,
             DelayLogRepository delayLogRepository) {
-        this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.projectBaselineRepository = projectBaselineRepository;
         this.delayLogRepository = delayLogRepository;
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "expectedHandover", key = "#projectUuid")
-    public ExpectedHandoverDto compute(String projectUuid) {
-        return computeAt(projectUuid, LocalDate.now());
+    @Cacheable(value = "expectedHandover", key = "#project.projectUuid")
+    public ExpectedHandoverDto compute(Project project) {
+        return computeAt(project, LocalDate.now());
     }
 
     /**
-     * Test seam — same as {@link #compute(String)} but with an explicit
+     * Test seam — same as {@link #compute(Project)} but with an explicit
      * "today" date so weeksRemaining assertions are deterministic. NOT
      * cached (caching the test seam would let an unrelated cache eviction
      * leak the test date into a production response).
      */
     @Transactional(readOnly = true)
-    public ExpectedHandoverDto computeAt(String projectUuid, LocalDate today) {
-        UUID uuid;
-        try {
-            uuid = UUID.fromString(projectUuid);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Invalid UUID: " + projectUuid);
-        }
-        Project project = projectRepository.findByProjectUuid(uuid);
-        if (project == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Project not found: " + projectUuid);
-        }
+    public ExpectedHandoverDto computeAt(Project project, LocalDate today) {
         Long projectId = project.getId();
 
         LocalDate projectFinishDate = taskRepository

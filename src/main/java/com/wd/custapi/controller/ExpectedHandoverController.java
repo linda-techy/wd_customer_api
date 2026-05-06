@@ -1,6 +1,7 @@
 package com.wd.custapi.controller;
 
 import com.wd.custapi.dto.ExpectedHandoverDto;
+import com.wd.custapi.model.Project;
 import com.wd.custapi.service.DashboardService;
 import com.wd.custapi.service.ExpectedHandoverService;
 import org.slf4j.Logger;
@@ -19,7 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>{@code GET /api/customer/projects/{uuid}/expected-handover} — gated on
  * the same role set as the delay-log endpoint. Project ownership is verified
  * via {@link DashboardService} BEFORE the service call so an unauthorised
- * UUID never reaches the cache.
+ * UUID never reaches the cache. The authorised {@link Project} is then
+ * passed to the service directly so the service doesn't need to re-resolve
+ * the UUID via an admin-unscoped lookup.
  */
 @RestController
 @RequestMapping("/api/customer/projects/{projectId}/expected-handover")
@@ -45,10 +48,8 @@ public class ExpectedHandoverController {
         String email = auth.getName();
         // Throws RuntimeException("Project not found or access denied") when
         // the caller is not authorised — handled by GlobalExceptionHandler.
-        // Result intentionally unused: ownership verification happens here so
-        // the cache below never sees an unauthorised UUID.
-        dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-        ExpectedHandoverDto dto = expectedHandoverService.compute(projectUuid);
+        Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+        ExpectedHandoverDto dto = expectedHandoverService.compute(project);
         logger.debug("Returning expected-handover DTO for project {}", projectUuid);
         return ResponseEntity.ok(dto);
     }
