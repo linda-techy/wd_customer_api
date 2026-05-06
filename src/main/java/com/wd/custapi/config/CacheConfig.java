@@ -25,7 +25,10 @@ public class CacheConfig {
      */
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager manager = new CaffeineCacheManager("userProjects");
+        // Caches share one Caffeine builder (5,000 max entries, 5min TTL).
+        // - userProjects: dashboard's per-email project lookup
+        // - expectedHandover: per-projectUuid expected-handover DTO
+        CaffeineCacheManager manager = new CaffeineCacheManager("userProjects", "expectedHandover");
         manager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(5_000)
                 .expireAfterWrite(5, TimeUnit.MINUTES)
