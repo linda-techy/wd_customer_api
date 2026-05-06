@@ -7,12 +7,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * End-to-end Service test for ExpectedHandoverService — uses Postgres
@@ -143,6 +146,25 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         assertThat(dto.hasMaterialDelay())
                 .as("internal-only material delays must not leak to customer flag")
                 .isFalse();
+    }
+
+    @Test
+    void compute_invalidUuid_throwsBadRequest() {
+        assertThatThrownBy(() ->
+                expectedHandoverService.computeAt("not-a-uuid", FIXED_TODAY))
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex ->
+                        assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void compute_unknownProject_throwsNotFound() {
+        // Random UUID that doesn't correspond to any seeded project — must
+        // surface as 404, not a 500-mapped RuntimeException.
+        UUID unknown = UUID.randomUUID();
+        assertThatThrownBy(() ->
+                expectedHandoverService.computeAt(unknown.toString(), FIXED_TODAY))
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex ->
+                        assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 
     @Test

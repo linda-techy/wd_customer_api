@@ -9,8 +9,10 @@ import com.wd.custapi.repository.ProjectRepository;
 import com.wd.custapi.repository.TaskRepository;
 import com.wd.custapi.util.WorkingDayCalculator;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -74,11 +76,13 @@ public class ExpectedHandoverService {
         try {
             uuid = UUID.fromString(projectUuid);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid project UUID format: " + projectUuid);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid UUID: " + projectUuid);
         }
         Project project = projectRepository.findByProjectUuid(uuid);
         if (project == null) {
-            throw new RuntimeException("Project not found: " + projectUuid);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Project not found: " + projectUuid);
         }
         Long projectId = project.getId();
 
