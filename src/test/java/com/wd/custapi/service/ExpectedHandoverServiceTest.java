@@ -19,11 +19,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Testcontainer to seed real rows in tasks, project_baseline, and delay_logs
  * (so the JPA queries on real columns are exercised).
  *
- * <p>Today's date is pinned to 2026-05-05 via a test {@code Clock} bean
- * defined in {@link TestcontainersPostgresBase} so weeksRemaining assertions
- * remain deterministic regardless of when the suite runs.
+ * <p>Tests pass an explicit {@code LocalDate today=2026-05-05} via the
+ * {@link ExpectedHandoverService#computeAt(String, LocalDate)} test seam so
+ * weeksRemaining assertions are deterministic without needing to fork the
+ * shared Spring test context (which would happen if we replaced the Clock
+ * bean for this test only).
  */
 class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
+
+    private static final LocalDate FIXED_TODAY = LocalDate.of(2026, 5, 5);
 
     @Autowired
     private ExpectedHandoverService expectedHandoverService;
@@ -43,13 +47,23 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
 
     @AfterEach
     void cleanup() {
-        // Order matters — children before parents.
-        jdbc.update("DELETE FROM delay_logs");
-        jdbc.update("DELETE FROM project_baseline");
-        jdbc.update("DELETE FROM tasks");
-        jdbc.update("DELETE FROM project_members");
-        jdbc.update("DELETE FROM customer_projects");
-        jdbc.update("DELETE FROM customer_users");
+        // Order matters — children before parents. The shared container is
+        // populated by many other test classes, so we only delete rows seeded
+        // by this class (matched on email prefix / project name) to avoid
+        // tripping FK constraints to unrelated rows like customer_refresh_tokens.
+        jdbc.update("DELETE FROM delay_logs WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name LIKE 'Project alice-%')");
+        jdbc.update("DELETE FROM project_baseline WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name LIKE 'Project alice-%')");
+        jdbc.update("DELETE FROM tasks WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name LIKE 'Project alice-%')");
+        // Drop any project_members owned by our seeded customers OR projects.
+        jdbc.update("DELETE FROM project_members WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name LIKE 'Project alice-%')");
+        jdbc.update("DELETE FROM project_members WHERE customer_user_id IN "
+                + "(SELECT id FROM customer_users WHERE email LIKE 'alice-%')");
+        jdbc.update("DELETE FROM customer_projects WHERE name LIKE 'Project alice-%'");
+        jdbc.update("DELETE FROM customer_users WHERE email LIKE 'alice-%'");
     }
 
     @Test
@@ -60,7 +74,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedTaskWithEf(projectId, "T2", LocalDate.of(2026, 8, 12));
         seedTaskWithEf(projectId, "T3", LocalDate.of(2026, 6, 15));
 
-        ExpectedHandoverDto dto = expectedHandoverService.compute(projectUuid.toString());
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isEqualTo(LocalDate.of(2026, 8, 12));
         assertThat(dto.baselineFinishDate()).isNull();
@@ -79,7 +93,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedBaseline(projectId, LocalDate.of(2026, 8, 5));
         seedDelayLog(projectId, "MINOR", true);
 
-        ExpectedHandoverDto dto = expectedHandoverService.compute(projectUuid.toString());
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isEqualTo(LocalDate.of(2026, 8, 12));
         assertThat(dto.baselineFinishDate()).isEqualTo(LocalDate.of(2026, 8, 5));
@@ -94,7 +108,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedBaseline(projectId, LocalDate.of(2026, 8, 5));
         seedDelayLog(projectId, "MATERIAL", true);
 
-        ExpectedHandoverDto dto = expectedHandoverService.compute(projectUuid.toString());
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isEqualTo(LocalDate.of(2026, 8, 12));
         assertThat(dto.baselineFinishDate()).isEqualTo(LocalDate.of(2026, 8, 5));
@@ -109,7 +123,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         jdbc.update("INSERT INTO tasks (project_id, title, status, priority, due_date, customer_visible) "
                 + "VALUES (?, 'T1', 'OPEN', 'NORMAL', '2026-08-12', true)", projectId);
 
-        ExpectedHandoverDto dto = expectedHandoverService.compute(projectUuid.toString());
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
 
         assertThat(dto.projectFinishDate()).isNull();
         assertThat(dto.weeksRemaining()).isNull();
@@ -124,7 +138,7 @@ class ExpectedHandoverServiceTest extends TestcontainersPostgresBase {
         seedTaskWithEf(projectId, "T1", LocalDate.of(2026, 8, 12));
         seedDelayLog(projectId, "MATERIAL", false);
 
-        ExpectedHandoverDto dto = expectedHandoverService.compute(projectUuid.toString());
+        ExpectedHandoverDto dto = expectedHandoverService.computeAt(projectUuid.toString(), FIXED_TODAY);
 
         assertThat(dto.hasMaterialDelay())
                 .as("internal-only material delays must not leak to customer flag")

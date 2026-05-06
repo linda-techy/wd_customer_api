@@ -47,13 +47,19 @@ class ExpectedHandoverControllerIT extends TestcontainersPostgresBase {
         if (cacheManager.getCache("expectedHandover") != null) {
             cacheManager.getCache("expectedHandover").clear();
         }
-        // FK-order cleanup
-        jdbc.update("DELETE FROM delay_logs");
-        jdbc.update("DELETE FROM project_baseline");
-        jdbc.update("DELETE FROM tasks");
-        jdbc.update("DELETE FROM project_members");
-        jdbc.update("DELETE FROM customer_projects");
-        jdbc.update("DELETE FROM customer_users");
+        // Targeted cleanup of just our seeded rows (the shared Postgres
+        // container is populated by many test classes; broad DELETEs trip
+        // unrelated FK constraints like customer_refresh_tokens).
+        jdbc.update("DELETE FROM delay_logs WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name = 'Handover IT')");
+        jdbc.update("DELETE FROM project_baseline WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name = 'Handover IT')");
+        jdbc.update("DELETE FROM tasks WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name = 'Handover IT')");
+        jdbc.update("DELETE FROM project_members WHERE project_id IN "
+                + "(SELECT id FROM customer_projects WHERE name = 'Handover IT')");
+        jdbc.update("DELETE FROM customer_projects WHERE name = 'Handover IT'");
+        jdbc.update("DELETE FROM customer_users WHERE email = 'handover-cust@test.com'");
 
         jdbc.update("INSERT INTO customer_roles (id, name) VALUES (1, 'CUSTOMER') ON CONFLICT DO NOTHING");
         jdbc.update("INSERT INTO customer_users (email, password, first_name, role_id, created_at, enabled) "

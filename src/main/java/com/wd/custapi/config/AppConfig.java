@@ -1,10 +1,6 @@
 package com.wd.custapi.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.time.Clock;
 
 /**
  * Application configuration for the customer API.
@@ -26,21 +22,4 @@ public class AppConfig {
     public static final String ROLE_TABLE = "customer_roles";
     public static final String PERMISSION_TABLE = "customer_permissions";
     public static final String REFRESH_TOKEN_TABLE = "customer_refresh_tokens";
-
-    /**
-     * Wall-clock bean for services that need a deterministic "now" (e.g.
-     * {@code ExpectedHandoverService} computing weeksRemaining).
-     *
-     * <p>{@code @ConditionalOnMissingBean} lets tests register their own
-     * fixed-clock bean (see TestcontainersPostgresBase.FixedClockConfig)
-     * without triggering a BeanDefinitionOverrideException — the production
-     * bean is only registered if no Clock bean already exists in the
-     * application context.
-     */
-    @Bean
-    @ConditionalOnMissingBean(Clock.class)
-    public Clock clock() {
-        return Clock.systemDefaultZone();
-    }
 }
-

@@ -1,17 +1,9 @@
 package com.wd.custapi.testsupport;
 
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 
 /**
  * Shared base class for customer-api integration tests that need a real Postgres.
@@ -26,7 +18,6 @@ import java.time.ZoneOffset;
  * if a specific test needs different values.
  */
 @SpringBootTest
-@Import(TestcontainersPostgresBase.FixedClockConfig.class)
 public abstract class TestcontainersPostgresBase {
 
     protected static final PostgreSQLContainer<?> POSTGRES =
@@ -37,23 +28,6 @@ public abstract class TestcontainersPostgresBase {
 
     static {
         POSTGRES.start();
-    }
-
-    /**
-     * Pins {@code java.time.Clock} to 2026-05-05 00:00 UTC for every test that
-     * extends this base. Production beans the same name with
-     * {@link Clock#systemDefaultZone()} via {@code AppConfig}; this
-     * {@code @Primary @Bean} replaces it for the test ApplicationContext so
-     * services that depend on Clock (e.g. ExpectedHandoverService) see a
-     * deterministic "today".
-     */
-    @TestConfiguration
-    public static class FixedClockConfig {
-        @Bean
-        @Primary
-        public Clock clock() {
-            return Clock.fixed(Instant.parse("2026-05-05T00:00:00Z"), ZoneOffset.UTC);
-        }
     }
 
     @DynamicPropertySource

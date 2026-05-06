@@ -12,7 +12,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -26,12 +25,17 @@ import java.util.UUID;
  *       if the project has an approved baseline.</li>
  *   <li>{@code hasMaterialDelay} — any customer-visible delay log row whose
  *       {@code impact_on_handover='MATERIAL'}.</li>
- *   <li>{@code weeksRemaining} — Mon-Sat working days from "today" (injected
- *       Clock) to {@code projectFinishDate}, divided by 5 and rounded.</li>
+ *   <li>{@code weeksRemaining} — Mon-Sat working days from "today" to
+ *       {@code projectFinishDate}, divided by 5 and rounded.</li>
  * </ul>
  *
  * <p>Cached 5 min via the existing Caffeine CacheManager (cache name
  * {@code expectedHandover}) — see {@link com.wd.custapi.config.CacheConfig}.
+ *
+ * <p>Tests inject "today" via {@link #computeAt(String, LocalDate)}; the
+ * production endpoint calls {@link #compute(String)} which delegates to
+ * {@code computeAt} with {@link LocalDate#now()}. This avoids the need to
+ * fork the test ApplicationContext to swap a Clock bean.
  */
 @Service
 public class ExpectedHandoverService {
@@ -40,24 +44,32 @@ public class ExpectedHandoverService {
     private final TaskRepository taskRepository;
     private final ProjectBaselineRepository projectBaselineRepository;
     private final DelayLogRepository delayLogRepository;
-    private final Clock clock;
 
     public ExpectedHandoverService(
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
             ProjectBaselineRepository projectBaselineRepository,
-            DelayLogRepository delayLogRepository,
-            Clock clock) {
+            DelayLogRepository delayLogRepository) {
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.projectBaselineRepository = projectBaselineRepository;
         this.delayLogRepository = delayLogRepository;
-        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     @Cacheable(value = "expectedHandover", key = "#projectUuid")
     public ExpectedHandoverDto compute(String projectUuid) {
+        return computeAt(projectUuid, LocalDate.now());
+    }
+
+    /**
+     * Test seam — same as {@link #compute(String)} but with an explicit
+     * "today" date so weeksRemaining assertions are deterministic. NOT
+     * cached (caching the test seam would let an unrelated cache eviction
+     * leak the test date into a production response).
+     */
+    @Transactional(readOnly = true)
+    public ExpectedHandoverDto computeAt(String projectUuid, LocalDate today) {
         UUID uuid;
         try {
             uuid = UUID.fromString(projectUuid);
@@ -86,7 +98,7 @@ public class ExpectedHandoverService {
 
         Integer weeksRemaining = null;
         if (projectFinishDate != null) {
-            int days = WorkingDayCalculator.workingDaysBetween(LocalDate.now(clock), projectFinishDate);
+            int days = WorkingDayCalculator.workingDaysBetween(today, projectFinishDate);
             weeksRemaining = (int) Math.round(days / 5.0);
         }
 

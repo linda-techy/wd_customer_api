@@ -68,16 +68,15 @@ class TaskCpmFieldsTest extends TestcontainersPostgresBase {
     }
 
     private long seedCustomerAndProject(String email, String projectName) {
-        jdbc.update("INSERT INTO customer_roles (id, name) VALUES (1, 'CUSTOMER') ON CONFLICT DO NOTHING");
-        jdbc.update("INSERT INTO customer_users (email, password, first_name, role_id, created_at, enabled) "
-                + "VALUES (?, 'x', 'Test', 1, now(), true) ON CONFLICT (email) DO NOTHING", email);
-        Long projectId = jdbc.queryForObject(
+        // The repository tests only need a customer_projects row to satisfy
+        // the FK from tasks. We deliberately avoid inserting customer_users
+        // / customer_roles here — those would risk a customer_roles_pkey
+        // collision with the JPA-driven seeder used by
+        // CommercialCustomerScenarioTest, which IDENTITY-allocates id=1.
+        // The {@code email} parameter is retained only for backward
+        // compatibility of the helper signature.
+        return jdbc.queryForObject(
                 "INSERT INTO customer_projects (name, project_uuid, version) VALUES (?, gen_random_uuid(), 0) RETURNING id",
                 Long.class, projectName);
-        Long customerId = jdbc.queryForObject(
-                "SELECT id FROM customer_users WHERE email = ?", Long.class, email);
-        jdbc.update("INSERT INTO project_members (project_id, customer_user_id) VALUES (?, ?)",
-                projectId, customerId);
-        return projectId;
     }
 }
