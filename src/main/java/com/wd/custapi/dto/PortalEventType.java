@@ -12,5 +12,12 @@ public enum PortalEventType {
     SITE_REPORT_SUBMITTED,
     DOCUMENT_UPLOADED,
     PAYMENT_RECORDED,
-    DELAY_REPORTED
+    DELAY_REPORTED,
+    /**
+     * S3 PR3 — customer's expected handover date moved by more than 3 working
+     * days from the last alerted value (or, on first alert, from the approved
+     * baseline). Metadata: oldDate, newDate, shiftWorkingDays (signed),
+     * direction ("earlier"|"later").
+     */
+    HANDOVER_SHIFT
 }

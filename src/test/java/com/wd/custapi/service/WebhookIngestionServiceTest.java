@@ -147,6 +147,78 @@ class WebhookIngestionServiceTest {
         assertTrue(notifCaptor.getValue().getTitle().contains("MATERIAL"));
     }
 
+    @Test
+    void process_handoverShift_createsNotificationWithHandoverTitleAndScheduleType() throws Exception {
+        PortalWebhookEvent event = new PortalWebhookEvent(
+                PortalEventType.HANDOVER_SHIFT,
+                10L,            // projectId
+                null,           // customerId — null means "all project members"
+                10L,            // referenceId (we use projectId)
+                "Your project's expected handover has shifted from 2026-09-15 to 2026-09-22 "
+              + "(approximately 5 working days later).",
+                Map.of(
+                        "oldDate", "2026-09-15",
+                        "newDate", "2026-09-22",
+                        "shiftWorkingDays", "5",
+                        "direction", "later"),
+                LocalDateTime.now());
+
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class)))
+                .thenReturn(savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING));
+        when(userRepository.findCustomersByProjectId(10L)).thenReturn(List.of(customer));
+
+        webhookIngestionService.process(event);
+
+        ArgumentCaptor<CustomerNotification> notif = ArgumentCaptor.forClass(CustomerNotification.class);
+        verify(notificationRepository).save(notif.capture());
+        assertEquals("SCHEDULE", notif.getValue().getNotificationType());
+        assertTrue(notif.getValue().getTitle().startsWith("Expected Handover Shifted"));
+        assertTrue(notif.getValue().getBody().contains("approximately 5 working days later"));
+        assertEquals(10L, notif.getValue().getProjectId());
+    }
+
+    @Test
+    void process_handoverShift_earlierDirection_titleStillUsesHandoverShifted() throws Exception {
+        PortalWebhookEvent event = new PortalWebhookEvent(
+                PortalEventType.HANDOVER_SHIFT,
+                10L, null, 10L,
+                "Your project's expected handover has shifted from 2026-09-22 to 2026-09-15 "
+              + "(approximately 5 working days earlier).",
+                Map.of("oldDate", "2026-09-22", "newDate", "2026-09-15",
+                       "shiftWorkingDays", "-5", "direction", "earlier"),
+                LocalDateTime.now());
+
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class)))
+                .thenReturn(savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING));
+        when(userRepository.findCustomersByProjectId(10L)).thenReturn(List.of(customer));
+
+        webhookIngestionService.process(event);
+
+        ArgumentCaptor<CustomerNotification> notif = ArgumentCaptor.forClass(CustomerNotification.class);
+        verify(notificationRepository).save(notif.capture());
+        assertTrue(notif.getValue().getBody().contains("5 working days earlier"));
+    }
+
+    @Test
+    void process_handoverShift_pushesFcmWithScheduleNotificationType() throws Exception {
+        PortalWebhookEvent event = new PortalWebhookEvent(
+                PortalEventType.HANDOVER_SHIFT, 10L, null, 10L,
+                "summary",
+                Map.of("oldDate", "2026-09-15", "newDate", "2026-09-22",
+                       "shiftWorkingDays", "5", "direction", "later"),
+                LocalDateTime.now());
+
+        customer.setFcmToken("token-abc");
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class)))
+                .thenReturn(savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING));
+        when(userRepository.findCustomersByProjectId(10L)).thenReturn(List.of(customer));
+
+        webhookIngestionService.process(event);
+
+        verify(pushNotificationService).sendToToken(eq("token-abc"), anyString(), anyString(),
+                argThat(map -> "SCHEDULE".equals(map.get("notificationType"))));
+    }
+
     // ── process — status tracking ─────────────────────────────────────────────
 
     @Test

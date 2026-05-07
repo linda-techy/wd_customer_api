@@ -193,6 +193,7 @@ public class WebhookIngestionService {
             case DOCUMENT_UPLOADED -> "Document Added: " + getOrDefault(meta, "filename", "");
             case PAYMENT_RECORDED  -> "Payment Recorded: ₹" + getOrDefault(meta, "amount", "");
             case DELAY_REPORTED    -> "Delay Reported: " + getOrDefault(meta, "category", "");
+            case HANDOVER_SHIFT    -> "Expected Handover Shifted";
         };
     }
 
@@ -203,6 +204,7 @@ public class WebhookIngestionService {
             case SITE_REPORT_SUBMITTED -> "SITE_REPORT";
             case DOCUMENT_UPLOADED -> "DOCUMENT";
             case DELAY_REPORTED -> "DELAY";
+            case HANDOVER_SHIFT -> "SCHEDULE";
         };
     }
 
