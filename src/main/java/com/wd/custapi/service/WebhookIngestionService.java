@@ -183,6 +183,17 @@ public class WebhookIngestionService {
                        "referenceId", referenceId != null ? referenceId.toString() : ""));
     }
 
+    /**
+     * Resolves a notification title for the given event type.
+     *
+     * <p>The {@code null, default} arm is forward-compat insurance: if portal-API
+     * ships a new {@link PortalEventType} value before customer-API is rebuilt,
+     * the inbound JSON will deserialise to a record with {@code eventType=null}
+     * (Jackson's default for unknown enum names with appropriate config) — or a
+     * future enum value the runtime classfile doesn't know. Falling through to
+     * a generic "Project update" keeps the row PROCESSED rather than letting it
+     * cycle through retries and end ABANDONED.
+     */
     private String resolveTitle(PortalEventType type, Map<String, String> meta) {
         return switch (type) {
             case INVOICE_ISSUED   -> "New Invoice: " + getOrDefault(meta, "invoiceNumber", "");
@@ -193,9 +204,18 @@ public class WebhookIngestionService {
             case DOCUMENT_UPLOADED -> "Document Added: " + getOrDefault(meta, "filename", "");
             case PAYMENT_RECORDED  -> "Payment Recorded: ₹" + getOrDefault(meta, "amount", "");
             case DELAY_REPORTED    -> "Delay Reported: " + getOrDefault(meta, "category", "");
+            case HANDOVER_SHIFT    -> "Expected Handover Shifted";
+            case null, default     -> "Project update";
         };
     }
 
+    /**
+     * Resolves the customer-notification type bucket for the given event type.
+     *
+     * <p>Same forward-compat rationale as {@link #resolveTitle}: unknown / future
+     * event types fall back to {@code "GENERAL"} so the notification record is
+     * still persisted and pushed.
+     */
     private String resolveNotifType(PortalEventType type) {
         return switch (type) {
             case INVOICE_ISSUED, INVOICE_PAID, PAYMENT_RECORDED -> "PAYMENT";
@@ -203,6 +223,8 @@ public class WebhookIngestionService {
             case SITE_REPORT_SUBMITTED -> "SITE_REPORT";
             case DOCUMENT_UPLOADED -> "DOCUMENT";
             case DELAY_REPORTED -> "DELAY";
+            case HANDOVER_SHIFT -> "SCHEDULE";
+            case null, default -> "GENERAL";
         };
     }
 
