@@ -200,6 +200,38 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
+    void process_unknownFutureEventType_doesNotThrow_marksProcessedSilently() throws Exception {
+        // Forward-compat: if portal-API ships a future event type the customer
+        // hasn't deserialised yet, the inbound JSON may land with eventType=null.
+        // The switches must not propagate IllegalStateException/NPE; they should
+        // fall through to the safe default arm and the event must end PROCESSED.
+        PortalWebhookEvent event = new PortalWebhookEvent(
+                null,           // unknown / future event type
+                10L, 1L, 99L,
+                "Some future event we don't recognise yet",
+                Map.of(),
+                LocalDateTime.now());
+
+        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
+
+        webhookIngestionService.process(event);
+
+        // Ends PROCESSED (not FAILED) — graceful fallback
+        ArgumentCaptor<ReceivedWebhookEvent> captor = ArgumentCaptor.forClass(ReceivedWebhookEvent.class);
+        verify(webhookEventRepository, atLeast(2)).save(captor.capture());
+        ReceivedWebhookEvent lastSaved = captor.getAllValues().get(captor.getAllValues().size() - 1);
+        assertEquals(ReceivedWebhookEvent.STATUS_PROCESSED, lastSaved.getStatus());
+
+        // Notification still saved with GENERAL type and "Project update" title
+        ArgumentCaptor<CustomerNotification> notif = ArgumentCaptor.forClass(CustomerNotification.class);
+        verify(notificationRepository).save(notif.capture());
+        assertEquals("GENERAL", notif.getValue().getNotificationType());
+        assertEquals("Project update", notif.getValue().getTitle());
+    }
+
+    @Test
     void process_handoverShift_pushesFcmWithScheduleNotificationType() throws Exception {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.HANDOVER_SHIFT, 10L, null, 10L,
