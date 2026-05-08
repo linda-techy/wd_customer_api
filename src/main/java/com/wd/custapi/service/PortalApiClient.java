@@ -56,6 +56,21 @@ public class PortalApiClient {
         return signedPost("/internal/cr-approve", body);
     }
 
+    /**
+     * Resolve a CR to its owning portal projectId. Used by {@code CrAccessGuard}
+     * to verify a customer owns the project of the CR they're trying to act on.
+     *
+     * @return the projectId of the CR's project
+     * @throws IllegalStateException if portal returns no projectId
+     *                                 (corrupt CR row, or 4xx from portal)
+     */
+    public Long fetchCrProjectId(Long crId) {
+        Map<String, Object> result = signedPost("/internal/cr-project-id", Map.of("crId", crId));
+        Object pid = result.get("projectId");
+        if (pid instanceof Number n) return n.longValue();
+        throw new IllegalStateException("portal-API did not return projectId for crId=" + crId);
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Map<String, Object> signedPost(String path, Map<String, Object> body) {
         String jsonBody;

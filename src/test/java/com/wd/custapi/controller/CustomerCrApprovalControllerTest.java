@@ -3,6 +3,7 @@ package com.wd.custapi.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wd.custapi.model.CustomerUser;
 import com.wd.custapi.repository.CustomerUserRepository;
+import com.wd.custapi.service.CrAccessGuard;
 import com.wd.custapi.service.PortalApiClient;
 import com.wd.custapi.testsupport.TestcontainersPostgresBase;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ class CustomerCrApprovalControllerTest extends TestcontainersPostgresBase {
 
     @MockBean PortalApiClient portalApiClient;
     @MockBean CustomerUserRepository customerUserRepository;
+    @MockBean CrAccessGuard crAccessGuard;
 
     @BeforeEach
     void setUp() {
@@ -114,5 +116,35 @@ class CustomerCrApprovalControllerTest extends TestcontainersPostgresBase {
             .andExpect(status().isTooManyRequests())
             .andExpect(jsonPath("$.error").value("RATE_LIMITED"))
             .andExpect(jsonPath("$.retryAfterSeconds").value(1800));
+    }
+
+    @Test
+    @WithMockUser(username = "ravi@example.com")
+    void requestOtpReturns403WhenCustomerDoesNotOwnCrProject() throws Exception {
+        // Customer A trying to request OTP for customer B's CR — guard throws.
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException(
+                "Access denied: CR not in customer's project"))
+            .when(crAccessGuard).assertCustomerCanAccessCr(7L, "ravi@example.com", 42L);
+
+        mvc.perform(post("/api/customer/cr/42/request-otp").with(csrf()))
+            .andExpect(status().isForbidden());
+
+        // The portal-API must NOT be invoked when ownership check fails.
+        org.mockito.Mockito.verifyNoInteractions(portalApiClient);
+    }
+
+    @Test
+    @WithMockUser(username = "ravi@example.com")
+    void approveReturns403WhenCustomerDoesNotOwnCrProject() throws Exception {
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException(
+                "Access denied: CR not in customer's project"))
+            .when(crAccessGuard).assertCustomerCanAccessCr(7L, "ravi@example.com", 42L);
+
+        mvc.perform(post("/api/customer/cr/42/approve").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("otpCode", "123456"))))
+            .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verifyNoInteractions(portalApiClient);
     }
 }

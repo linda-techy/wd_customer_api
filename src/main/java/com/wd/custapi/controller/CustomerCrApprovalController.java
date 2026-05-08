@@ -2,6 +2,7 @@ package com.wd.custapi.controller;
 
 import com.wd.custapi.model.CustomerUser;
 import com.wd.custapi.repository.CustomerUserRepository;
+import com.wd.custapi.service.CrAccessGuard;
 import com.wd.custapi.service.PortalApiClient;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
@@ -34,11 +35,14 @@ public class CustomerCrApprovalController {
 
     private final PortalApiClient portalApiClient;
     private final CustomerUserRepository customerUserRepository;
+    private final CrAccessGuard crAccessGuard;
 
     public CustomerCrApprovalController(PortalApiClient portalApiClient,
-                                         CustomerUserRepository customerUserRepository) {
+                                         CustomerUserRepository customerUserRepository,
+                                         CrAccessGuard crAccessGuard) {
         this.portalApiClient = portalApiClient;
         this.customerUserRepository = customerUserRepository;
+        this.crAccessGuard = crAccessGuard;
     }
 
     public record ApproveBody(@NotBlank @Pattern(regexp = "\\d{6}") String otpCode) {}
@@ -47,6 +51,11 @@ public class CustomerCrApprovalController {
     public ResponseEntity<Map<String, Object>> requestOtp(@PathVariable Long crId,
                                                            Authentication auth) {
         Long customerUserId = resolveCustomerUserId(auth);
+        // Ownership gate: assert this customer owns the project of this CR
+        // BEFORE forwarding to portal. Closes DoS-against-rate-limits and
+        // audit-pollution holes against arbitrary crId enumeration.
+        crAccessGuard.assertCustomerCanAccessCr(customerUserId, auth.getName(), crId);
+
         try {
             Map<String, Object> result = portalApiClient.requestCrOtp(crId, customerUserId);
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(result);
@@ -64,6 +73,9 @@ public class CustomerCrApprovalController {
                                                         HttpServletRequest request,
                                                         Authentication auth) {
         Long customerUserId = resolveCustomerUserId(auth);
+        // Same ownership gate as request-otp.
+        crAccessGuard.assertCustomerCanAccessCr(customerUserId, auth.getName(), crId);
+
         String customerIp = extractClientIp(request);
 
         Map<String, Object> result = portalApiClient.approveCr(
