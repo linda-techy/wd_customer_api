@@ -61,8 +61,12 @@ public class CustomerNextPaymentService {
         BigDecimal totalPaid = stages.stream()
                 .map(s -> nz(s.getPaidAmount()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Outstanding mirrors the "non-terminal" rule used by next-stage selection:
+        // PAID is settled; ON_HOLD is excluded by product decision (the customer is
+        // not currently expected to pay it, and surfacing it as outstanding would
+        // make the summary inconsistent with the stage list shown above the card).
         BigDecimal totalOutstanding = stages.stream()
-                .filter(s -> s.getStatus() != PaymentStageStatus.PAID)
+                .filter(s -> s.getStatus() != null && !TERMINAL.contains(s.getStatus()))
                 .map(s -> nz(s.getNetPayableAmount()))
                 .filter(a -> a.compareTo(BigDecimal.ZERO) > 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
