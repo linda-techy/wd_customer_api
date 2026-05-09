@@ -8,7 +8,9 @@ import com.wd.custapi.model.Project;
 import com.wd.custapi.repository.BoqDocumentRepository;
 import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.repository.PaymentStageRepository;
+import com.wd.custapi.dto.NextPaymentMilestoneDto;
 import com.wd.custapi.service.CustomerChangeOrderService;
+import com.wd.custapi.service.CustomerNextPaymentService;
 import com.wd.custapi.service.DashboardService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -47,17 +49,20 @@ public class CustomerBoqController {
     private final PaymentStageRepository paymentStageRepository;
     private final CustomerChangeOrderService changeOrderService;
     private final CustomerUserRepository customerUserRepository;
+    private final CustomerNextPaymentService nextPaymentService;
 
     public CustomerBoqController(DashboardService dashboardService,
                                    BoqDocumentRepository boqDocumentRepository,
                                    PaymentStageRepository paymentStageRepository,
                                    CustomerChangeOrderService changeOrderService,
-                                   CustomerUserRepository customerUserRepository) {
+                                   CustomerUserRepository customerUserRepository,
+                                   CustomerNextPaymentService nextPaymentService) {
         this.dashboardService = dashboardService;
         this.boqDocumentRepository = boqDocumentRepository;
         this.paymentStageRepository = paymentStageRepository;
         this.changeOrderService = changeOrderService;
         this.customerUserRepository = customerUserRepository;
+        this.nextPaymentService = nextPaymentService;
     }
 
     // ---- BOQ Document ----
@@ -206,12 +211,18 @@ public class CustomerBoqController {
     // ---- Payment Schedule ----
 
     @GetMapping("/payment-schedule")
-    public ResponseEntity<Map<String, Object>> getPaymentSchedule(
+    public ResponseEntity<?> getPaymentSchedule(
             @PathVariable("projectId") String projectUuid,
+            @RequestParam(value = "nextOnly", required = false, defaultValue = "false") boolean nextOnly,
             Authentication auth) {
         try {
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
+
+            if (nextOnly) {
+                NextPaymentMilestoneDto dto = nextPaymentService.getNextPaymentMilestone(project);
+                return ResponseEntity.ok(dto);
+            }
 
             List<Map<String, Object>> stages = paymentStageRepository
                     .findByProjectIdOrderByStageNumberAsc(project.getId())
