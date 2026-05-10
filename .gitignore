@@ -45,4 +45,10 @@ cust-api.jar
 !.env.staging.example
 !.env.production.example
 
+### Security - Sensitive Configuration ###
+# Profile-specific Spring YAMLs contain DB password / JWT secret in defaults — keep locally only
+src/main/resources/application-local.yml
+src/main/resources/application-staging.yml
+src/main/resources/application-production.yml
+
 
