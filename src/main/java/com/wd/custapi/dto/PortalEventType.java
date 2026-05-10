@@ -19,5 +19,12 @@ public enum PortalEventType {
      * baseline). Metadata: oldDate, newDate, shiftWorkingDays (signed),
      * direction ("earlier"|"later").
      */
-    HANDOVER_SHIFT
+    HANDOVER_SHIFT,
+    /**
+     * S6 PR2 — daily reminder for an upcoming (T-3), due-today, or overdue
+     * payment stage. Metadata: reminderKind ("T_MINUS_3" | "DUE_TODAY" |
+     * "OVERDUE"), stageId, stageNumber, stageName, dueDate (ISO-8601),
+     * netPayableAmount (plain BigDecimal string).
+     */
+    PAYMENT_MILESTONE_DUE
 }
