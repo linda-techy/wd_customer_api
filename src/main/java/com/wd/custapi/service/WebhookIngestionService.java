@@ -140,14 +140,40 @@ public class WebhookIngestionService {
 
     private void doProcess(PortalWebhookEvent event) {
         String title = resolveTitle(event.eventType(), event.metadata());
-        String body = event.summary() != null ? event.summary() : title;
+        String body  = resolveBody(event, title);
         String notifType = resolveNotifType(event.eventType());
 
         List<CustomerUser> recipients = resolveRecipients(event);
         for (CustomerUser user : recipients) {
             saveNotification(user, event.projectId(), event.referenceId(), title, body, notifType);
-            pushIfTokenPresent(user, title, body, event.eventType(), event.referenceId());
+            pushIfTokenPresent(user, title, body, event.eventType(), event.referenceId(), notifType);
         }
+    }
+
+    /**
+     * Body resolution. For PAYMENT_MILESTONE_DUE we render server-side using
+     * ContractValueFormatter (₹X L / ₹Y Cr / Indian-grouped) — the portal-API
+     * webhook only carries the raw plain-string amount, never a pre-formatted
+     * one. For all other event types the historical behaviour stands: use
+     * {@code event.summary()} verbatim, falling back to the title.
+     */
+    private String resolveBody(PortalWebhookEvent event, String title) {
+        if (event.eventType() == PortalEventType.PAYMENT_MILESTONE_DUE) {
+            String stageNumber = getOrDefault(event.metadata(), "stageNumber", "?");
+            String stageName   = getOrDefault(event.metadata(), "stageName", "");
+            String amountRaw   = getOrDefault(event.metadata(), "netPayableAmount", "0");
+            String formatted;
+            try {
+                formatted = com.wd.custapi.util.ContractValueFormatter.formatINR(new java.math.BigDecimal(amountRaw));
+            } catch (IllegalArgumentException ex) {
+                // Catches both NumberFormatException (BigDecimal parse) and the
+                // formatter's own negative-amount IllegalArgumentException.
+                log.warn("PAYMENT_MILESTONE_DUE: bad amount '{}' — falling back to raw", amountRaw);
+                formatted = "\u20B9" + amountRaw;
+            }
+            return "Stage " + stageNumber + " \u2014 " + stageName + " (" + formatted + ")";
+        }
+        return event.summary() != null ? event.summary() : title;
     }
 
     private List<CustomerUser> resolveRecipients(PortalWebhookEvent event) {
@@ -175,12 +201,21 @@ public class WebhookIngestionService {
     }
 
     private void pushIfTokenPresent(CustomerUser user, String title, String body,
-                                     PortalEventType eventType, Long referenceId) {
+                                     PortalEventType eventType, Long referenceId,
+                                     String resolvedNotifType) {
         if (user.getFcmToken() == null || user.getFcmToken().isBlank()) return;
-        pushNotificationService.sendToToken(
-                user.getFcmToken(), title, body,
-                Map.of("notificationType", resolveNotifType(eventType),
-                       "referenceId", referenceId != null ? referenceId.toString() : ""));
+        java.util.Map<String, String> data = new java.util.HashMap<>();
+        // 'type' = the customer-app's switch key in NotificationService._handleTap.
+        // For PAYMENT_MILESTONE_DUE we want the customer-app to match a literal
+        // "PAYMENT_MILESTONE_DUE", so we use the event-type name when available;
+        // null guards against unknown future types.
+        data.put("type", eventType != null ? eventType.name() : "UNKNOWN");
+        data.put("notificationType", resolvedNotifType);
+        data.put("referenceId", referenceId != null ? referenceId.toString() : "");
+        if (eventType == PortalEventType.PAYMENT_MILESTONE_DUE) {
+            data.put("deepLink", "payments");
+        }
+        pushNotificationService.sendToToken(user.getFcmToken(), title, body, data);
     }
 
     /**
@@ -205,6 +240,12 @@ public class WebhookIngestionService {
             case PAYMENT_RECORDED  -> "Payment Recorded: ₹" + getOrDefault(meta, "amount", "");
             case DELAY_REPORTED    -> "Delay Reported: " + getOrDefault(meta, "category", "");
             case HANDOVER_SHIFT    -> "Expected Handover Shifted";
+            case PAYMENT_MILESTONE_DUE -> switch (getOrDefault(meta, "reminderKind", "")) {
+                case "T_MINUS_3" -> "Payment due in 3 days";
+                case "DUE_TODAY" -> "Payment due today";
+                case "OVERDUE"   -> "Payment overdue";
+                default          -> "Payment reminder";
+            };
             case null, default     -> "Project update";
         };
     }
@@ -224,6 +265,7 @@ public class WebhookIngestionService {
             case DOCUMENT_UPLOADED -> "DOCUMENT";
             case DELAY_REPORTED -> "DELAY";
             case HANDOVER_SHIFT -> "SCHEDULE";
+            case PAYMENT_MILESTONE_DUE -> "PAYMENT_MILESTONE_DUE";
             case null, default -> "GENERAL";
         };
     }
