@@ -34,4 +34,6 @@ CREATE INDEX IF NOT EXISTS idx_observations_project_deleted
 -- Safe to run even if the table already has rows — existing plaintext tokens will
 -- no longer match hashed lookups, so all current sessions will be invalidated on
 -- the next refresh attempt (customers must log in once — expected behaviour).
-ALTER TABLE refresh_tokens ALTER COLUMN token TYPE VARCHAR(64);
+-- 2026-05-13 fix: table is customer_refresh_tokens, not refresh_tokens.
+-- No-op when V1000 already created the column with VARCHAR(64).
+ALTER TABLE customer_refresh_tokens ALTER COLUMN token TYPE VARCHAR(64);

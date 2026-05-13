@@ -126,7 +126,6 @@ public class ProjectModuleController {
                 dto.put("endDate", t.getEndDate());
                 dto.put("dueDate", t.getDueDate());
                 dto.put("progressPercent", t.getProgressPercent() != null ? t.getProgressPercent() : 0);
-                dto.put("dependsOnTaskId", t.getDependsOnTaskId());
                 dto.put("overdue", overdue);
                 taskDtos.add(dto);
             }

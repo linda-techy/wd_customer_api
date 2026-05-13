@@ -1,7 +1,9 @@
 package com.wd.custapi.controller;
 
 import com.wd.custapi.model.ProjectDocument;
+import com.wd.custapi.model.SiteReport;
 import com.wd.custapi.repository.ProjectDocumentRepository;
+import com.wd.custapi.repository.SiteReportRepository;
 import com.wd.custapi.service.DashboardService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +49,13 @@ public class FileDownloadController {
     private ProjectDocumentRepository projectDocumentRepository;
 
     @Autowired
+    private SiteReportRepository siteReportRepository;
+
+    @Autowired
     private DashboardService dashboardService;
+
+    private static final java.util.regex.Pattern SITE_REPORT_PATH =
+            java.util.regex.Pattern.compile("^site-reports/(\\d+)/.+");
 
     /**
      * Serve files from storage path
@@ -98,10 +106,11 @@ public class FileDownloadController {
                 // Continue with original path if decoding fails
             }
 
-            // Ownership check — file must be linked to a project the caller owns
+            // Ownership check — file must be linked to a project the caller owns.
+            // Covers both project_documents and site-report photos.
             String authenticatedEmail = currentUserEmail();
-            if (resolveOwnedDocument(requestPath, authenticatedEmail).isEmpty()) {
-                logger.info("Denied file access by {} to {} (no owned ProjectDocument match)", authenticatedEmail, requestPath);
+            if (!isPathOwnedByCustomer(requestPath, authenticatedEmail)) {
+                logger.info("Denied file access by {} to {} (no owned project link)", authenticatedEmail, requestPath);
                 return ResponseEntity.notFound().build();
             }
 
@@ -248,9 +257,10 @@ public class FileDownloadController {
                 logger.warn("Failed to decode path for HEAD request '{}': {}", requestPath, e.getMessage());
             }
 
-            // Ownership check — file must be linked to a project the caller owns
+            // Ownership check — file must be linked to a project the caller owns.
+            // Covers both project_documents and site-report photos.
             String authenticatedEmail = currentUserEmail();
-            if (resolveOwnedDocument(requestPath, authenticatedEmail).isEmpty()) {
+            if (!isPathOwnedByCustomer(requestPath, authenticatedEmail)) {
                 return ResponseEntity.notFound().build();
             }
 
@@ -301,6 +311,39 @@ public class FileDownloadController {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Unified ownership check used by GET and HEAD: a file is accessible if
+     * either (a) it's tracked by a project_documents row whose project the
+     * customer owns, or (b) it's a site-report photo whose report belongs
+     * to a project the customer owns.
+     *
+     * Site-report photos live outside project_documents — they're stored
+     * under {@code site-reports/<reportId>/<uuid>.jpg} and referenced from
+     * the {@code site_report_photos} table. Without this branch the
+     * customer app's report thumbnails 404 even though the customer is
+     * authorized to see the report itself.
+     */
+    private boolean isPathOwnedByCustomer(String requestPath, String authenticatedEmail) {
+        if (resolveOwnedDocument(requestPath, authenticatedEmail).isPresent()) {
+            return true;
+        }
+        java.util.regex.Matcher m = SITE_REPORT_PATH.matcher(requestPath);
+        if (m.matches()) {
+            try {
+                Long reportId = Long.parseLong(m.group(1));
+                Optional<SiteReport> report = siteReportRepository.findById(reportId);
+                if (report.isPresent() && report.get().getProject() != null) {
+                    dashboardService.getProjectByIdAndEmail(
+                            report.get().getProject().getId(), authenticatedEmail);
+                    return true;
+                }
+            } catch (RuntimeException notOwned) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private String currentUserEmail() {

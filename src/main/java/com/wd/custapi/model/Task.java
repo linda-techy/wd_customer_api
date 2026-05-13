@@ -46,9 +46,6 @@ public class Task {
     @Column(name = "end_date", insertable = false, updatable = false)
     private LocalDate endDate;
 
-    @Column(name = "depends_on_task_id", insertable = false, updatable = false)
-    private Long dependsOnTaskId;
-
     @Column(name = "progress_percent", insertable = false, updatable = false)
     private Integer progressPercent;
 
@@ -87,7 +84,6 @@ public class Task {
     public LocalDate getDueDate() { return dueDate; }
     public LocalDate getStartDate() { return startDate; }
     public LocalDate getEndDate() { return endDate; }
-    public Long getDependsOnTaskId() { return dependsOnTaskId; }
     public Integer getProgressPercent() { return progressPercent; }
     public Boolean getCustomerVisible() { return customerVisible; }
     public Long getMilestoneId() { return milestoneId; }

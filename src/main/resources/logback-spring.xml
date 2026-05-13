@@ -223,6 +223,8 @@
         <root level="INFO">
             <appender-ref ref="ASYNC_APP_JSON"/>
             <appender-ref ref="ASYNC_ERROR_JSON"/>
+            <!-- Also emit to stdout so PM2/journald capture startup + crash stacks. -->
+            <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
 

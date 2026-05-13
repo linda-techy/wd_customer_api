@@ -15,9 +15,9 @@ server:
 
 spring:
   datasource:
-    url: ${DB_URL}
+    url: ${DB_URL:jdbc:postgresql://46.202.164.251:5432/wdTestDB}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:Staygether@2025}
     hikari:
       maximum-pool-size: 50          # Up from 15 — prevents connection starvation at load
       minimum-idle: 10
@@ -45,10 +45,10 @@ spring:
 
   mail:
     # Host/port/username/SMTP properties live in application.yml (base).
-    password: ${MAIL_PASSWORD}
+    password: ${MAIL_PASSWORD:Wall.builders2018}
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:6c6f63616c2d6465762d6a77742d7365637265742d6b65792d6e6f742d666f72-production-000000000000}
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
 

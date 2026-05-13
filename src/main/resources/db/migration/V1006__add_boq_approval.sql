@@ -8,7 +8,7 @@
 -- current status (no UPDATE/DELETE — append-only audit trail).
 -- ============================================================================
 
-CREATE TABLE boq_approvals (
+CREATE TABLE IF NOT EXISTS boq_approvals (
     id                 BIGSERIAL    PRIMARY KEY,
     project_id         BIGINT       NOT NULL REFERENCES customer_projects(id),
     customer_user_id   BIGINT       NOT NULL REFERENCES customer_users(id),
@@ -17,6 +17,6 @@ CREATE TABLE boq_approvals (
     created_at         TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_boq_approvals_project    ON boq_approvals(project_id);
-CREATE INDEX idx_boq_approvals_customer   ON boq_approvals(customer_user_id);
-CREATE INDEX idx_boq_approvals_created_at ON boq_approvals(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_boq_approvals_project    ON boq_approvals(project_id);
+CREATE INDEX IF NOT EXISTS idx_boq_approvals_customer   ON boq_approvals(customer_user_id);
+CREATE INDEX IF NOT EXISTS idx_boq_approvals_created_at ON boq_approvals(created_at DESC);
