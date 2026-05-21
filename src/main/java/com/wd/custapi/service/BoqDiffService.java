@@ -140,14 +140,12 @@ public class BoqDiffService {
     private Map<String, Object> buildChanges(BoqItem from, BoqItem to) {
         Map<String, Object> changes = new LinkedHashMap<>();
 
+        // Customer-facing diff: only surface scope-level changes (description).
+        // Quantity, unit, and rate deltas reveal contractor pricing strategy — hidden from customers.
+        // The document-level summary (oldTotal / newTotal / delta) still tells the customer
+        // whether the overall approved value changed, which is what they need to know.
         if (!Objects.equals(trim(from.getDescription()), trim(to.getDescription()))) {
             changes.put("description", changeMap(from.getDescription(), to.getDescription()));
-        }
-        if (notEqual(from.getQuantity(), to.getQuantity())) {
-            changes.put("quantity", changeMap(from.getQuantity(), to.getQuantity()));
-        }
-        if (notEqual(from.getRate(), to.getRate())) {
-            changes.put("rate", changeMap(from.getRate(), to.getRate()));
         }
         return changes;
     }
@@ -157,12 +155,6 @@ public class BoqDiffService {
         m.put("oldValue", oldVal);
         m.put("newValue", newVal);
         return m;
-    }
-
-    private boolean notEqual(BigDecimal a, BigDecimal b) {
-        if (a == null && b == null) return false;
-        if (a == null || b == null) return true;
-        return a.compareTo(b) != 0;
     }
 
     private String trim(String s) {
@@ -192,10 +184,8 @@ public class BoqDiffService {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("itemCode", item.getItemCode());
         m.put("description", item.getDescription());
-        m.put("quantity", item.getQuantity());
-        m.put("unit", item.getUnit());
-        m.put("rate", item.getRate());
-        m.put("amount", item.getAmount());
+        // Customer-facing diff: do NOT expose quantity, unit, rate, or amount.
+        // Scope changes (added / removed items) reveal description only — pricing stays internal.
         return m;
     }
 }

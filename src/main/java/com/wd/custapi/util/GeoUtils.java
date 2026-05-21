@@ -11,8 +11,10 @@ public class GeoUtils {
     /**
      * Maximum allowed distance (in km) between user's GPS coordinates
      * and the project site for check-in/check-out.
+     * 0.2 km = 200 m — keeps customer-api in sync with portal-api so the
+     * geofence rule is identical regardless of which API receives the check-in.
      */
-    public static final double MAX_CHECKIN_DISTANCE_KM = 2.0;
+    public static final double MAX_CHECKIN_DISTANCE_KM = 0.2;
 
     private GeoUtils() {
         // Utility class

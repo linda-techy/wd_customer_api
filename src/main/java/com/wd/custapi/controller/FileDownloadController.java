@@ -67,7 +67,7 @@ public class FileDownloadController {
      * @return File as Resource with appropriate content type
      */
     @GetMapping("/**")
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER', 'CUSTOMER_ADMIN', 'CONTRACTOR', 'BUILDER')")
     public ResponseEntity<Resource> serveFile(HttpServletRequest request,
                                                @RequestParam(required = false) String download,
                                                @RequestHeader(value = "Range", required = false) String rangeHeader) {
@@ -221,7 +221,7 @@ public class FileDownloadController {
      * HEAD /api/storage/projects/1/documents/file.pdf
      */
     @RequestMapping(value = "/**", method = RequestMethod.HEAD)
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER', 'CUSTOMER_ADMIN', 'CONTRACTOR', 'BUILDER')")
     public ResponseEntity<Void> getFileMetadata(HttpServletRequest request) {
         try {
             // Get the full request path (everything after /api/storage/)

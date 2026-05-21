@@ -903,7 +903,9 @@ public class ProjectModuleController {
     /**
      * Role-based BOQ item visibility:
      * - ADMIN              : full list, all statuses, all financial fields
-     * - CUSTOMER / CUSTOMER_ADMIN : full list including DRAFT (needed for review/approval), total amounts visible, unit rate hidden
+     * - CUSTOMER / CUSTOMER_ADMIN : full list including DRAFT (needed for review/approval). Scope, progress %, and item kind visible.
+     *                               Quantity, unit, rate, line-item amount, executed/billed amounts ALL hidden — BoQ takeoff and unit pricing are commercially sensitive contractor IP.
+     *                               Customer approves on the document-level total only (see BoqDocument totals + payment stages).
      * - ARCHITECT / INTERIOR_DESIGNER : non-DRAFT items only; item names/quantities visible, no financial amounts
      * - SITE_ENGINEER / VIEWER / CONTRACTOR / BUILDER : empty list
      */
@@ -936,16 +938,25 @@ public class ProjectModuleController {
                         .filter(i -> i.status() != null && !"DRAFT".equalsIgnoreCase(i.status()))
                         .collect(java.util.stream.Collectors.toList());
             }
-            // CUSTOMER / CUSTOMER_ADMIN see total amounts but NOT unit rates (margin protection)
+            // CUSTOMER / CUSTOMER_ADMIN: hide all commercially sensitive fields.
+            // Customer sees: description, item code, scope/specs/notes, status, progress %, work type/category, item kind.
+            // Customer does NOT see: quantity, unit, rate, line-item amount, executed/billed quantities or amounts.
+            // Per construction-BA rule, contractor BoQ pricing (qty × rate breakdown) is internal IP.
             if ("CUSTOMER".equalsIgnoreCase(role) || "CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
                 items = items.stream().map(i -> new BoqItemDto(
                         i.id(), i.projectId(), i.workTypeId(), i.workTypeName(),
                         i.categoryId(), i.categoryName(), i.itemCode(), i.description(),
-                        i.quantity(), i.unit(),
-                        null,  // rate — hidden from customers
-                        i.amount(), i.executedQuantity(), i.billedQuantity(),
-                        i.remainingQuantity(), i.totalExecutedAmount(), i.totalBilledAmount(),
-                        i.executionPercentage(), i.billingPercentage(),
+                        null,  // quantity — hidden
+                        null,  // unit — hidden
+                        null,  // rate — hidden
+                        null,  // amount — hidden (line-item total reveals qty × rate)
+                        null,  // executedQuantity — hidden
+                        null,  // billedQuantity — hidden
+                        null,  // remainingQuantity — hidden (reveals qty)
+                        null,  // totalExecutedAmount — hidden
+                        null,  // totalBilledAmount — hidden
+                        i.executionPercentage(),  // progress % — OK
+                        i.billingPercentage(),    // progress % — OK
                         i.status(), i.specifications(), i.notes(),
                         i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive(),
                         i.itemKind()

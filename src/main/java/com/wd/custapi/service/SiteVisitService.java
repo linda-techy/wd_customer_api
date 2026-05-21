@@ -62,7 +62,7 @@ public class SiteVisitService {
             throw new RuntimeException("GPS coordinates are required for check-in. Please enable location services.");
         }
 
-        // Validate GPS proximity - must be within 2km of project site
+        // Validate GPS proximity - must be within 200 m of project site (see GeoUtils.MAX_CHECKIN_DISTANCE_KM)
         Double distanceKm = null;
         if (project.hasLocation()) {
             distanceKm = GeoUtils.calculateDistanceKm(
@@ -128,7 +128,7 @@ public class SiteVisitService {
             throw new RuntimeException("GPS coordinates are required for check-out. Please enable location services.");
         }
 
-        // Validate GPS proximity - must be within 2km of project site
+        // Validate GPS proximity - must be within 200 m of project site (see GeoUtils.MAX_CHECKIN_DISTANCE_KM)
         Project project = visit.getProject();
         Double distanceKm = null;
         if (project.hasLocation()) {
