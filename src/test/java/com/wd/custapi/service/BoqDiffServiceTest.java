@@ -112,12 +112,16 @@ class BoqDiffServiceTest {
     // ── getDiff: modified items ───────────────────────────────────────────────
 
     @Test
-    void getDiff_itemQuantityChanged_appearsInModified() {
+    void getDiff_quantityOnlyChange_isHiddenFromCustomerFacingDiff() {
+        // BoqDiffService.buildChanges intentionally surfaces ONLY description (scope)
+        // changes; quantity/unit/rate deltas are hidden because they reveal contractor
+        // pricing strategy. A quantity-only change therefore yields NO modified entry —
+        // the customer still sees the overall value change via the summary delta.
         when(boqDocumentRepository.findById(1L)).thenReturn(Optional.of(fromDoc));
         when(boqDocumentRepository.findById(2L)).thenReturn(Optional.of(toDoc));
 
         BoqItem fromItem = makeItem("ITEM-001", "Foundation", bd("100"), bd("500"));
-        BoqItem toItem   = makeItem("ITEM-001", "Foundation", bd("120"), bd("500")); // qty changed
+        BoqItem toItem   = makeItem("ITEM-001", "Foundation", bd("120"), bd("500")); // qty changed, description same
 
         when(boqItemRepository.findByBoqDocumentId(1L)).thenReturn(List.of(fromItem));
         when(boqItemRepository.findByBoqDocumentId(2L)).thenReturn(List.of(toItem));
@@ -131,14 +135,34 @@ class BoqDiffServiceTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> removed = (List<Map<String, Object>>) diff.get("removed");
 
-        assertEquals(1, modified.size());
-        assertEquals("ITEM-001", modified.get(0).get("itemCode"));
+        assertEquals(0, modified.size(), "quantity-only changes must not surface in the customer-facing diff");
         assertEquals(0, added.size());
         assertEquals(0, removed.size());
+    }
+
+    @Test
+    void getDiff_descriptionChanged_appearsInModified() {
+        // Description (scope) changes ARE customer-visible — the positive counterpart
+        // to the hidden quantity/rate deltas above.
+        when(boqDocumentRepository.findById(1L)).thenReturn(Optional.of(fromDoc));
+        when(boqDocumentRepository.findById(2L)).thenReturn(Optional.of(toDoc));
+
+        BoqItem fromItem = makeItem("ITEM-001", "Foundation", bd("100"), bd("500"));
+        BoqItem toItem   = makeItem("ITEM-001", "Foundation with waterproofing", bd("100"), bd("500"));
+
+        when(boqItemRepository.findByBoqDocumentId(1L)).thenReturn(List.of(fromItem));
+        when(boqItemRepository.findByBoqDocumentId(2L)).thenReturn(List.of(toItem));
+
+        Map<String, Object> diff = boqDiffService.getDiff(10L, 1L, 2L);
 
         @SuppressWarnings("unchecked")
+        List<Map<String, Object>> modified = (List<Map<String, Object>>) diff.get("modified");
+
+        assertEquals(1, modified.size());
+        assertEquals("ITEM-001", modified.get(0).get("itemCode"));
+        @SuppressWarnings("unchecked")
         Map<String, Object> changes = (Map<String, Object>) modified.get(0).get("changes");
-        assertTrue(changes.containsKey("quantity"));
+        assertTrue(changes.containsKey("description"));
     }
 
     // ── getDiff: summary totals ───────────────────────────────────────────────

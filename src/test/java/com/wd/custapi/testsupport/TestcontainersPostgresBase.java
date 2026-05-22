@@ -35,16 +35,20 @@ public abstract class TestcontainersPostgresBase {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
-        // This project's schema was bootstrapped by Hibernate DDL before Flyway was introduced.
-        // The Flyway migrations (V999+) are incremental-only (ALTER TABLE, CREATE INDEX).
-        // On a fresh container we let Hibernate create the full schema from JPA entities, then
-        // mark V998 as the Flyway baseline so all incremental migrations (V999+) run on top.
-        // This mirrors the documented production bootstrap procedure in V1__baseline_schema.sql.
+        // Entities are the source of truth for this project's schema. The Flyway
+        // migrations (V999+) are incremental tweaks (indexes, ALTERs) whose cumulative
+        // effect is already reflected in the current @Entity definitions.
+        //
+        // Spring Boot runs Flyway BEFORE Hibernate, so enabling Flyway here would run
+        // V999 against an empty container ("relation site_reports does not exist") and
+        // fail every @SpringBootTest. Conversely, running the migrations AFTER a full
+        // Hibernate create would collide ("column already exists"), since the current
+        // entities already contain every migration's columns. So for tests we let
+        // Hibernate build the complete current schema from entities and disable Flyway —
+        // the migrations add nothing the entities don't already define. (Production still
+        // uses Flyway against the real shared DB.)
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
-        registry.add("spring.flyway.enabled", () -> "true");
-        registry.add("spring.flyway.baseline-on-migrate", () -> "true");
-        registry.add("spring.flyway.baseline-version", () -> "998");
-        registry.add("spring.flyway.out-of-order", () -> "false");
+        registry.add("spring.flyway.enabled", () -> "false");
         registry.add("jwt.secret", () -> "test-secret-do-not-use-in-prod-0123456789abcdef0123456789abcdef");
         registry.add("jwt.access-token-expiration", () -> "3600000");
         registry.add("jwt.refresh-token-expiration", () -> "604800000");
