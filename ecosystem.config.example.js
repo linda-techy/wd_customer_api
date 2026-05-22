@@ -38,6 +38,7 @@ module.exports = {
       ].join(" "),
       autorestart: true,
       max_restarts: 10,
+      max_memory_restart: "800M",   // graceful PM2 restart before the kernel OOM-killer fires
       env: {
         // Fill with REAL values on the server (the production YAML has dev-ish
         // defaults, so set these explicitly for a real deployment).
