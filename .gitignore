@@ -51,4 +51,8 @@ src/main/resources/application-local.yml
 src/main/resources/application-staging.yml
 src/main/resources/application-production.yml
 
+### PM2 (track only the example; the real ecosystem.config.js holds secrets) ###
+ecosystem.config.js
+!ecosystem.config.example.js
+
 
