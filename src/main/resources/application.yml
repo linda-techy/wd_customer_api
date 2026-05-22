@@ -15,6 +15,7 @@ spring:
 
   # ── JPA / Hibernate ────────────────────────────────────────────
   jpa:
+    open-in-view: false   # release the DB connection after the query, not at request end
     properties:
       hibernate:
         jdbc:
