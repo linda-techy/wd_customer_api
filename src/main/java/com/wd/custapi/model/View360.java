@@ -1,7 +1,6 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,8 +27,11 @@ public class View360 {
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
     
+    // Shared view_360.capture_date is TIMESTAMP (portal V147); map as LocalDateTime
+    // to match the column. The customer API contract still exposes it as a date —
+    // View360Service converts at the boundary.
     @Column(name = "capture_date")
-    private LocalDate captureDate;
+    private LocalDateTime captureDate;
     
     @Column(length = 255)
     private String location;
@@ -99,11 +101,11 @@ public class View360 {
         this.thumbnailUrl = thumbnailUrl;
     }
     
-    public LocalDate getCaptureDate() {
+    public LocalDateTime getCaptureDate() {
         return captureDate;
     }
-    
-    public void setCaptureDate(LocalDate captureDate) {
+
+    public void setCaptureDate(LocalDateTime captureDate) {
         this.captureDate = captureDate;
     }
     

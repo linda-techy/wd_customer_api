@@ -38,7 +38,8 @@ public class View360Service {
         view.setDescription(request.description());
         view.setViewUrl(request.viewUrl());
         view.setThumbnailUrl(request.thumbnailUrl());
-        view.setCaptureDate(request.captureDate());
+        // Request contract is a date; the column is TIMESTAMP — store at start of day.
+        view.setCaptureDate(request.captureDate() == null ? null : request.captureDate().atStartOfDay());
         view.setLocation(request.location());
         view.setUploadedBy(user);
         
@@ -76,7 +77,7 @@ public class View360Service {
             view.getDescription(),
             view.getViewUrl(),
             view.getThumbnailUrl(),
-            view.getCaptureDate(),
+            view.getCaptureDate() == null ? null : view.getCaptureDate().toLocalDate(),
             view.getLocation(),
             view.getUploadedBy().getId(),
             view.getUploadedBy().getFirstName() + " " + view.getUploadedBy().getLastName(),
