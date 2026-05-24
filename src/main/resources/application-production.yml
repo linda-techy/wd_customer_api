@@ -5,6 +5,11 @@
 
 server:
   port: 8081
+  tomcat:
+    threads:
+      max: 40                        # 1-core VPS shared with portal API: cap Tomcat (default 200)
+      min-spare: 4
+    accept-count: 50
   error:
     include-message: never
     include-stacktrace: never
@@ -19,11 +24,12 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:Staygether@2025}
     hikari:
-      maximum-pool-size: 50          # Up from 15 — prevents connection starvation at load
-      minimum-idle: 10
+      maximum-pool-size: 15          # 1-core box shared with portal API + Postgres (was 50)
+      minimum-idle: 3                # was 10
       connection-timeout: 30000      # 30s — gives thread time to wait for a free connection
-      idle-timeout: 600000           # 10 min
-      max-lifetime: 1800000          # 30 min — recycles connections before DB drops them
+      idle-timeout: 240000           # 4 min (was 10 min)
+      max-lifetime: 280000           # ~4.6 min, under infra idle-close (was 30 min; fixes "connection has been closed")
+      keepalive-time: 120000         # 2 min heartbeat so idle conns don't go stale
       leak-detection-threshold: 60000 # Log if a connection is held > 60s
   jpa:
     hibernate:
@@ -32,13 +38,13 @@ spring:
   task:
     execution:
       pool:
-        core-size: 10
-        max-size: 50
+        core-size: 4                 # 1-core box: was 10
+        max-size: 16                 # was 50
         queue-capacity: 500
       thread-name-prefix: async-cust-
     scheduling:
       pool:
-        size: 3
+        size: 2                      # was 3
   servlet:
     encoding:
       enabled: true
