@@ -893,7 +893,8 @@ public class ProjectModuleController {
             Authentication auth) {
         try {
             dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
-            List<FeedbackResponseDto> responses = feedbackService.getFormResponses(formId);
+            Long userId = getUserIdFromAuth(auth);
+            List<FeedbackResponseDto> responses = feedbackService.getFormResponsesForCustomer(formId, userId);
             return ResponseEntity.ok(new ApiResponse<>(true, "Responses retrieved successfully", responses));
         } catch (Exception e) {
             logger.error("Failed to get feedback responses for form {} in project {}: {}", formId, projectUuid, e.getMessage(), e);

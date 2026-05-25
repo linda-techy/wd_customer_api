@@ -97,6 +97,27 @@ public class FeedbackService {
             .map(this::toResponseDto)
             .collect(Collectors.toList());
     }
+
+    /**
+     * Returns the requesting customer's own responses for a given form.
+     *
+     * <p>Scoped to a single customer via {@code findByFormIdAndCustomerId} — this
+     * prevents one customer from reading another customer's feedback responses.
+     *
+     * <p>Used by the customer-facing GET endpoint. Do NOT replace this with
+     * {@link #getFormResponses(Long)} which returns ALL customers' responses.
+     *
+     * @param formId the feedback form id
+     * @param userId the authenticated customer's id
+     * @return a list containing the customer's own response, or an empty list if
+     *         they have not yet submitted a response for this form
+     */
+    public List<FeedbackResponseDto> getFormResponsesForCustomer(Long formId, Long userId) {
+        return feedbackResponseRepository.findByFormIdAndCustomerId(formId, userId)
+            .map(this::toResponseDto)
+            .map(List::of)
+            .orElse(List.of());
+    }
     
     private FeedbackFormDto toFormDto(FeedbackForm form, Boolean isCompleted) {
         return new FeedbackFormDto(
