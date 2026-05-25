@@ -452,9 +452,9 @@ public class ProjectModuleController {
                     .body(new ApiResponse<>(false, "Priority is required", null));
             }
             String email = auth.getName();
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CONTRACTOR", "BUILDER")) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new ApiResponse<>(false, "Observations are not available for your role", null));
+                        .body(new ApiResponse<>(false, "Snags are read-only for your role", null));
             }
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             Long userId = resolveUserId(email);

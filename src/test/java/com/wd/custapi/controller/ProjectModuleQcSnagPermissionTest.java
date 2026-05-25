@@ -101,4 +101,26 @@ class ProjectModuleQcSnagPermissionTest {
         // depending on unstubbed services, but it must NOT be the 403 from the gate.
         assertThat(resp.getStatusCode().value()).isNotEqualTo(403);
     }
+
+    @Test
+    void createObservation_customerRole_isForbidden() {
+        asRole("customer@test.com", "CUSTOMER");
+
+        ResponseEntity<?> resp = controller.createObservation(
+                "proj-50-uuid", "Crack in wall", "Hairline crack near window",
+                null, "HIGH", null, null, auth);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(403);
+    }
+
+    @Test
+    void createObservation_adminRole_isNotForbiddenByRoleGate() {
+        asRole("admin@walldotbuilders.com", "ADMIN");
+
+        ResponseEntity<?> resp = controller.createObservation(
+                "proj-50-uuid", "Crack in wall", "Hairline crack near window",
+                null, "HIGH", null, null, auth);
+
+        assertThat(resp.getStatusCode().value()).isNotEqualTo(403);
+    }
 }
