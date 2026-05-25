@@ -426,7 +426,7 @@ public class ProjectModuleController {
 
     // ===== OBSERVATION (SNAGS) ENDPOINTS =====
     // Allowed roles: CUSTOMER, ADMIN, ARCHITECT, SITE_ENGINEER
-    // INTERIOR_DESIGNER and VIEWER receive empty list / 403 for graceful UX.
+    // For INTERIOR_DESIGNER and VIEWER, reads return an empty list and writes return 403 for graceful UX.
 
     @PostMapping(value = "/observations", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ObservationDto>> createObservation(

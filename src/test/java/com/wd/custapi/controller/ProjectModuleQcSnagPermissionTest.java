@@ -134,6 +134,31 @@ class ProjectModuleQcSnagPermissionTest {
     }
 
     @Test
+    void resolveObservation_customerAdminRole_isForbidden() {
+        asRole("ca@test.com", "CUSTOMER_ADMIN");
+
+        ResponseEntity<?> resp = controller.resolveObservation("proj-50-uuid", 9L, null, auth);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(403);
+    }
+
+    @Test
+    void resolveObservation_adminRole_isNotForbiddenByRoleGate() {
+        asRole("admin@walldotbuilders.com", "ADMIN");
+        // ADMIN is non-numeric email -> getUserIdFromAuth resolves via repository.
+        CustomerUser admin = new CustomerUser();
+        admin.setId(1L);
+        lenient().when(customerUserRepository.findByEmail("admin@walldotbuilders.com"))
+                .thenReturn(Optional.of(admin));
+
+        ResponseEntity<?> resp = controller.resolveObservation("proj-50-uuid", 9L, null, auth);
+
+        // The role gate must let ADMIN through. Downstream may return 200/404/500
+        // depending on unstubbed services, but it must NOT be the 403 from the gate.
+        assertThat(resp.getStatusCode().value()).isNotEqualTo(403);
+    }
+
+    @Test
     void getQualityChecks_customerRole_isNotForbidden() {
         asRole("customer@test.com", "CUSTOMER");
         lenient().when(qualityCheckService.getQualityChecks(50L, null))
