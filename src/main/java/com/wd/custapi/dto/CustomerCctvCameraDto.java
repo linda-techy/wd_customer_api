@@ -2,6 +2,7 @@ package com.wd.custapi.dto;
 
 import com.wd.custapi.model.CctvCamera;
 import com.wd.custapi.model.enums.StreamProtocol;
+import com.wd.custapi.util.StreamUrlSanitizer;
 
 /**
  * Customer-safe CCTV camera projection.
@@ -34,7 +35,7 @@ public record CustomerCctvCameraDto(
                 cam.getLocation(),
                 cam.getProvider(),
                 cam.getStreamProtocol(),
-                cam.getStreamUrl(),       // bare URL, no credentials
+                StreamUrlSanitizer.stripCredentials(cam.getStreamUrl()),  // credentials stripped
                 cam.getSnapshotUrl(),
                 cam.getResolution()
         );

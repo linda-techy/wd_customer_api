@@ -3,6 +3,7 @@ package com.wd.custapi.service;
 import com.wd.custapi.dto.ProjectModuleDtos.*;
 import com.wd.custapi.model.*;
 import com.wd.custapi.repository.*;
+import com.wd.custapi.util.StreamUrlSanitizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,7 @@ public class CctvService {
             camera.getLocation(),
             camera.getProvider(),
             camera.getStreamProtocol() != null ? camera.getStreamProtocol().name() : null,
-            camera.getStreamUrl(),
+            StreamUrlSanitizer.stripCredentials(camera.getStreamUrl()),
             camera.getSnapshotUrl(),
             camera.getIsActive(),
             camera.getInstallationDate(),
