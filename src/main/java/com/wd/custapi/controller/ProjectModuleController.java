@@ -563,6 +563,10 @@ public class ProjectModuleController {
             @RequestBody ObservationResolveRequest request,
             Authentication auth) {
         try {
+            if (!canAccessFeature(auth, "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CONTRACTOR", "BUILDER")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "Snags are read-only for your role", null));
+            }
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             Long userId = resolveUserId(email);

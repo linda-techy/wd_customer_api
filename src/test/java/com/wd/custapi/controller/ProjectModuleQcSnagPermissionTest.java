@@ -123,4 +123,13 @@ class ProjectModuleQcSnagPermissionTest {
 
         assertThat(resp.getStatusCode().value()).isNotEqualTo(403);
     }
+
+    @Test
+    void resolveObservation_customerRole_isForbidden() {
+        asRole("customer@test.com", "CUSTOMER");
+
+        ResponseEntity<?> resp = controller.resolveObservation("proj-50-uuid", 9L, null, auth);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(403);
+    }
 }
