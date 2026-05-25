@@ -132,4 +132,26 @@ class ProjectModuleQcSnagPermissionTest {
 
         assertThat(resp.getStatusCode().value()).isEqualTo(403);
     }
+
+    @Test
+    void getQualityChecks_customerRole_isNotForbidden() {
+        asRole("customer@test.com", "CUSTOMER");
+        lenient().when(qualityCheckService.getQualityChecks(50L, null))
+                .thenReturn(java.util.List.of());
+
+        ResponseEntity<?> resp = controller.getQualityChecks("proj-50-uuid", null, auth);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+    }
+
+    @Test
+    void getObservations_customerRole_isNotForbidden() {
+        asRole("customer@test.com", "CUSTOMER");
+        lenient().when(observationService.getObservations(50L, null))
+                .thenReturn(java.util.List.of());
+
+        ResponseEntity<?> resp = controller.getObservations("proj-50-uuid", null, auth);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+    }
 }
