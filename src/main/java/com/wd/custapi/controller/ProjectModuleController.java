@@ -241,9 +241,9 @@ public class ProjectModuleController {
             @RequestBody @jakarta.validation.Valid QualityCheckUpdateRequest request,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CONTRACTOR", "BUILDER")) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new ApiResponse<>(false, "Quality checks are not available for your role", null));
+                        .body(new ApiResponse<>(false, "Quality checks are read-only for your role", null));
             }
             Long userId = getUserIdFromAuth(auth);
             QualityCheckDto qc = qualityCheckService.resolveQualityCheck(qcId, request, userId);
