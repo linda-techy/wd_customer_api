@@ -211,6 +211,49 @@ class SupportTicketModuleTest extends TestcontainersPostgresBase {
         assertThat(response.getBody()).containsKey("status");
     }
 
+    // ---- List by Project ----
+
+    @Test
+    @Order(8)
+    void listTicketsByProject_authenticated_returnsOkWithTicketsKey() {
+        if (createdTicketId == null) {
+            createTicketForTest();
+        }
+
+        String token = auth.loginAsCustomerA();
+        HttpHeaders headers = auth.authHeaders(token);
+
+        // Fetch the created ticket to find its projectId (may be null for general tickets)
+        ResponseEntity<Map> detail = restTemplate.exchange(
+                baseUrl() + "/api/support/tickets/" + createdTicketId,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                Map.class);
+        assertThat(detail.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Use project 1 (seeded) — even if no tickets exist for it, response must be 200 + tickets key
+        ResponseEntity<Map> response = restTemplate.exchange(
+                baseUrl() + "/api/support/tickets/by-project/1",
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsKey("tickets");
+    }
+
+    @Test
+    @Order(9)
+    void listTicketsByProject_unauthenticated_returnsUnauthorized() {
+        ResponseEntity<Map> response = restTemplate.exchange(
+                baseUrl() + "/api/support/tickets/by-project/1",
+                HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                Map.class);
+
+        assertThat(response.getStatusCode().value()).isIn(401, 403);
+    }
+
     // ---- Helper ----
 
     @SuppressWarnings("unchecked")

@@ -138,6 +138,12 @@ public class SupportTicketService {
                 .collect(Collectors.toList());
     }
 
+    public List<Map<String, Object>> listByProjectForCustomer(Long projectId, String email) {
+        CustomerUser user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+        return listByProjectForCustomer(projectId, user.getId());
+    }
+
     @Transactional
     public Map<String, Object> closeTicket(String email, Long ticketId) {
         CustomerUser user = userRepository.findByEmail(email)

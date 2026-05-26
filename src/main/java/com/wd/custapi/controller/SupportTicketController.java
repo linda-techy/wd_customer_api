@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -101,6 +102,22 @@ public class SupportTicketController {
         } catch (Exception e) {
             logger.error("Error adding reply to ticket {}", id, e);
             return ResponseEntity.status(500).body(Map.of("error", "Failed to add reply"));
+        }
+    }
+
+    @GetMapping("/by-project/{projectId}")
+    public ResponseEntity<?> getTicketsByProject(@PathVariable Long projectId,
+                                                 Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            List<?> tickets = supportTicketService.listByProjectForCustomer(projectId, email);
+            return ResponseEntity.ok(Map.of("tickets", tickets));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Bad request listing tickets for project {}: {}", projectId, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error listing tickets for project {}", projectId, e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to list tickets for project"));
         }
     }
 

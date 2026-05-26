@@ -347,4 +347,40 @@ class SupportTicketServiceTest {
         verify(ticketRepository).findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(1L, 99L);
         assertTrue(results.isEmpty());
     }
+
+    // ── project-scoped list (email overload) ─────────────────────────────────
+
+    @Test
+    void listByProjectForCustomer_byEmail_resolvesUserAndDelegatesToProjectAndOwnerFinder() {
+        SupportTicket t = new SupportTicket();
+        t.setId(2L);
+        t.setCustomerUser(user);
+        t.setProjectId(7L);
+        t.setSubject("Window query");
+        t.setDescription("Gap in frame");
+        t.setCategory("CONSTRUCTION");
+        t.setPriority("MEDIUM");
+        t.setStatus("OPEN");
+
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+        when(ticketRepository.findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(1L, 7L))
+                .thenReturn(List.of(t));
+
+        List<Map<String, Object>> results =
+                supportTicketService.listByProjectForCustomer(7L, "john@example.com");
+
+        verify(userRepository).findByEmail("john@example.com");
+        verify(ticketRepository).findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(1L, 7L);
+        assertEquals(1, results.size());
+        assertEquals(7L, results.get(0).get("projectId"));
+    }
+
+    @Test
+    void listByProjectForCustomer_byEmail_unknownUser_throwsIllegalArgumentException() {
+        when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> supportTicketService.listByProjectForCustomer(7L, "ghost@example.com"));
+        verify(ticketRepository, never()).findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(any(), any());
+    }
 }
