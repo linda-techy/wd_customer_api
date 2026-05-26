@@ -13,6 +13,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true) // OSIV is off (application.yml): read methods must hold a
+                                // session through toDto or lazy uploadedBy/project/siteReport
+                                // throw LazyInitializationException -> 500 (the try/catch only
+                                // traps EntityNotFoundException). uploadImage overrides with its
+                                // own @Transactional. (Audit Card 4.1, 2026-05-26)
 public class GalleryService {
     
     private final GalleryImageRepository galleryImageRepository;

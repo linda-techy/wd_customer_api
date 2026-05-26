@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true) // OSIV is off (application.yml): read methods must hold a
+                                // session through toDto or lazy visitor/visitorRole/project
+                                // throw LazyInitializationException -> 500. checkIn/checkOut
+                                // override with their own @Transactional. (Audit Card 4.1, 2026-05-26)
 public class SiteVisitService {
 
     private static final Logger logger = LoggerFactory.getLogger(SiteVisitService.class);

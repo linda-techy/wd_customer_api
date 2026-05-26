@@ -13,6 +13,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Transactional(readOnly = true) // OSIV is off (application.yml): read methods must hold a
+                                // session through DTO mapping or lazy authors (CustomerUser)
+                                // throw LazyInitializationException -> 500. Write methods below
+                                // override with their own @Transactional. (Audit Card 4.1, 2026-05-26)
 public class ActivityFeedService {
     
     private final ActivityFeedRepository activityFeedRepository;
