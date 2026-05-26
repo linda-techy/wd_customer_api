@@ -7,12 +7,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface SupportTicketRepository extends JpaRepository<SupportTicket, Long> {
 
     Page<SupportTicket> findByCustomerUser_IdOrderByUpdatedAtDesc(Long userId, Pageable pageable);
 
     Page<SupportTicket> findByCustomerUser_IdAndStatusOrderByUpdatedAtDesc(Long userId, String status, Pageable pageable);
+
+    List<SupportTicket> findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(Long customerUserId, Long projectId);
 
     // Portable "next id" that works without a Postgres sequence object —
     // critical for test environments using Hibernate create-drop where the

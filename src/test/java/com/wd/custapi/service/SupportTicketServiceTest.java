@@ -246,4 +246,105 @@ class SupportTicketServiceTest {
         verify(ticketRepository).save(ticket);
         assertEquals("OPEN", ticket.getStatus());
     }
+
+    // ── project-scoped create ────────────────────────────────────────────────
+
+    @Test
+    void createTicket_withProjectId_persistsProjectId() {
+        SupportTicketRequest request = new SupportTicketRequest();
+        request.setSubject("Site query");
+        request.setDescription("Concrete slab issue");
+        request.setProjectId(42L);
+
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+        when(ticketRepository.getNextTicketSequence()).thenReturn(10L);
+
+        SupportTicket saved = new SupportTicket();
+        saved.setId(100L);
+        saved.setTicketNumber("TKT-00010");
+        saved.setSubject("Site query");
+        saved.setDescription("Concrete slab issue");
+        saved.setCategory("GENERAL");
+        saved.setPriority("MEDIUM");
+        saved.setStatus("OPEN");
+        saved.setCustomerUser(user);
+        saved.setProjectId(42L);
+        when(ticketRepository.save(any(SupportTicket.class))).thenReturn(saved);
+
+        Map<String, Object> result = supportTicketService.createTicket("john@example.com", request);
+
+        ArgumentCaptor<SupportTicket> captor = ArgumentCaptor.forClass(SupportTicket.class);
+        verify(ticketRepository).save(captor.capture());
+        assertEquals(42L, captor.getValue().getProjectId());
+        assertEquals(42L, result.get("projectId"));
+    }
+
+    @Test
+    void createTicket_withoutProjectId_persistsNullProjectId() {
+        SupportTicketRequest request = new SupportTicketRequest();
+        request.setSubject("General question");
+        request.setDescription("Need help");
+        // projectId intentionally left null
+
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+        when(ticketRepository.getNextTicketSequence()).thenReturn(5L);
+
+        SupportTicket saved = new SupportTicket();
+        saved.setId(50L);
+        saved.setTicketNumber("TKT-00005");
+        saved.setSubject("General question");
+        saved.setDescription("Need help");
+        saved.setCategory("GENERAL");
+        saved.setPriority("MEDIUM");
+        saved.setStatus("OPEN");
+        saved.setCustomerUser(user);
+        saved.setProjectId(null);
+        when(ticketRepository.save(any(SupportTicket.class))).thenReturn(saved);
+
+        supportTicketService.createTicket("john@example.com", request);
+
+        ArgumentCaptor<SupportTicket> captor = ArgumentCaptor.forClass(SupportTicket.class);
+        verify(ticketRepository).save(captor.capture());
+        assertNull(captor.getValue().getProjectId());
+    }
+
+    // ── project-scoped list ──────────────────────────────────────────────────
+
+    @Test
+    void listByProjectForCustomer_callsProjectAndOwnerFinder_neverOwnerOnlyFinder() {
+        SupportTicket t = new SupportTicket();
+        t.setId(1L);
+        t.setCustomerUser(user);
+        t.setProjectId(7L);
+        t.setSubject("Query about wall");
+        t.setDescription("Wall cracking");
+        t.setCategory("CONSTRUCTION");
+        t.setPriority("HIGH");
+        t.setStatus("OPEN");
+
+        when(ticketRepository.findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(1L, 7L))
+                .thenReturn(List.of(t));
+
+        List<Map<String, Object>> results = supportTicketService.listByProjectForCustomer(7L, 1L);
+
+        // Must use the project+owner filtered query
+        verify(ticketRepository).findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(1L, 7L);
+        // Must NEVER fall back to the unfiltered owner-only query
+        verify(ticketRepository, never()).findByCustomerUser_IdOrderByUpdatedAtDesc(any(), any());
+        verify(ticketRepository, never()).findByCustomerUser_IdAndStatusOrderByUpdatedAtDesc(any(), any(), any());
+
+        assertEquals(1, results.size());
+        assertEquals(7L, results.get(0).get("projectId"));
+    }
+
+    @Test
+    void listByProjectForCustomer_emptyResult_returnsEmptyList() {
+        when(ticketRepository.findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(1L, 99L))
+                .thenReturn(List.of());
+
+        List<Map<String, Object>> results = supportTicketService.listByProjectForCustomer(99L, 1L);
+
+        verify(ticketRepository).findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(1L, 99L);
+        assertTrue(results.isEmpty());
+    }
 }

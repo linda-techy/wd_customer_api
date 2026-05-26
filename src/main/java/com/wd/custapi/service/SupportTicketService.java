@@ -130,6 +130,14 @@ public class SupportTicketService {
         return toReplyDto(reply);
     }
 
+    public List<Map<String, Object>> listByProjectForCustomer(Long projectId, Long customerUserId) {
+        return ticketRepository
+                .findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(customerUserId, projectId)
+                .stream()
+                .map(this::toTicketDto)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public Map<String, Object> closeTicket(String email, Long ticketId) {
         CustomerUser user = userRepository.findByEmail(email)
