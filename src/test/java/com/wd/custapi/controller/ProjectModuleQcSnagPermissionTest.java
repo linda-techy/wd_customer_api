@@ -37,7 +37,6 @@ class ProjectModuleQcSnagPermissionTest {
     @Mock private ActivityFeedService activityFeedService;
     @Mock private GalleryService galleryService;
     @Mock private ObservationService observationService;
-    @Mock private ProjectQueryService queryService;
     @Mock private CctvService cctvService;
     @Mock private View360Service view360Service;
     @Mock private SiteVisitService siteVisitService;

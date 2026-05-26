@@ -21,7 +21,6 @@ import java.util.List;
  *
  * <ul>
  *   <li>Payment due 3-day reminder (scheduled daily job)</li>
- *   <li>Query replied (called by ProjectQueryService)</li>
  *   <li>Observation resolved (called by ObservationService)</li>
  * </ul>
  *
@@ -83,7 +82,7 @@ public class NotificationTriggerService {
     // ─── Triggered: Query Replied ─────────────────────────────────────────────────
 
     /**
-     * Call this from {@code ProjectQueryService} when an engineer replies to a query.
+     * Notify the customer when a support query has been replied to.
      * Never throws — catches all exceptions internally.
      */
     public void notifyQueryReplied(Long customerId, Long projectId, Long queryId, String queryTitle) {

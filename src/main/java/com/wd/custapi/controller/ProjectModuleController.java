@@ -39,7 +39,6 @@ public class ProjectModuleController {
     private final ActivityFeedService activityFeedService;
     private final GalleryService galleryService;
     private final ObservationService observationService;
-    private final ProjectQueryService queryService;
     private final CctvService cctvService;
     private final View360Service view360Service;
     private final SiteVisitService siteVisitService;
@@ -56,7 +55,6 @@ public class ProjectModuleController {
                                    ActivityFeedService activityFeedService,
                                    GalleryService galleryService,
                                    ObservationService observationService,
-                                   ProjectQueryService queryService,
                                    CctvService cctvService,
                                    View360Service view360Service,
                                    SiteVisitService siteVisitService,
@@ -72,7 +70,6 @@ public class ProjectModuleController {
         this.activityFeedService = activityFeedService;
         this.galleryService = galleryService;
         this.observationService = observationService;
-        this.queryService = queryService;
         this.cctvService = cctvService;
         this.view360Service = view360Service;
         this.siteVisitService = siteVisitService;
@@ -578,76 +575,6 @@ public class ProjectModuleController {
             logger.error("Failed to resolve observation {} for project {}: {}", obsId, projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "Failed to resolve observation", null));
-        }
-    }
-
-    // ===== QUERY ENDPOINTS =====
-    // Allowed roles: CUSTOMER, ADMIN, ARCHITECT, INTERIOR_DESIGNER, SITE_ENGINEER
-    // VIEWER gets empty list for graceful UX.
-
-    @PostMapping("/queries")
-    public ResponseEntity<ApiResponse<ProjectQueryDto>> createQuery(
-            @PathVariable("projectId") String projectUuid,
-            @RequestBody @jakarta.validation.Valid ProjectQueryRequest request,
-            Authentication auth) {
-        try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "INTERIOR_DESIGNER", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new ApiResponse<>(false, "Queries are not available for your role", null));
-            }
-            String email = auth.getName();
-            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-            Long projectId = project.getId();
-            Long userId = getUserIdFromAuth(auth);
-            ProjectQueryDto query = queryService.createQuery(projectId, request, userId);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Query created successfully", query));
-        } catch (Exception e) {
-            logger.error("Failed to create query for project {}: {}", projectUuid, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to create query", null));
-        }
-    }
-
-    @GetMapping("/queries")
-    public ResponseEntity<ApiResponse<List<ProjectQueryDto>>> getQueries(
-            @PathVariable("projectId") String projectUuid,
-            @RequestParam(required = false) String status,
-            Authentication auth) {
-        try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "INTERIOR_DESIGNER", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
-                return ResponseEntity.ok(new ApiResponse<>(true, "Queries retrieved successfully", java.util.List.of()));
-            }
-            String email = auth.getName();
-            Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
-            Long projectId = project.getId();
-            List<ProjectQueryDto> queries = queryService.getQueries(projectId, status);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Queries retrieved successfully", queries));
-        } catch (Exception e) {
-            logger.error("Failed to get queries for project {}: {}", projectUuid, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to retrieve queries", null));
-        }
-    }
-
-    @PutMapping("/queries/{queryId}")
-    public ResponseEntity<ApiResponse<ProjectQueryDto>> resolveQuery(
-            @PathVariable("projectId") String projectUuid,
-            @PathVariable Long queryId,
-            @RequestBody ProjectQueryResolveRequest request,
-            Authentication auth) {
-        try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "INTERIOR_DESIGNER", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new ApiResponse<>(false, "Queries are not available for your role", null));
-            }
-            Long userId = getUserIdFromAuth(auth);
-            ProjectQueryDto query = queryService.resolveQuery(queryId, request, userId);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Query resolved successfully", query));
-        } catch (Exception e) {
-            logger.error("Failed to resolve query {} for project {}: {}", queryId, projectUuid, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(false, "Failed to resolve query", null));
         }
     }
 

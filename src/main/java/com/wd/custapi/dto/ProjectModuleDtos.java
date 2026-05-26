@@ -182,42 +182,6 @@ public class ProjectModuleDtos {
         String resolutionNotes
     ) {}
     
-    // ===== QUERY MODULE DTOs =====
-    
-    public record ProjectQueryDto(
-        Long id,
-        Long projectId,
-        String title,
-        String description,
-        @JsonIgnore Long raisedById,
-        @JsonIgnore String raisedByName,
-        Long raisedByRoleId,
-        String raisedByRoleName,
-        LocalDateTime raisedDate,
-        String status,
-        String priority,
-        String category,
-        @JsonIgnore Long assignedToId,
-        @JsonIgnore String assignedToName,
-        LocalDateTime resolvedDate,
-        @JsonIgnore Long resolvedById,
-        @JsonIgnore String resolvedByName,
-        String resolution
-    ) {}
-    
-    public record ProjectQueryRequest(
-        @NotBlank(message = "Title is required") String title,
-        @NotBlank(message = "Description is required") String description,
-        Long raisedByRoleId,
-        @NotBlank(message = "Priority is required") String priority,
-        String category,
-        Long assignedToId
-    ) {}
-    
-    public record ProjectQueryResolveRequest(
-        String resolution
-    ) {}
-    
     // ===== CCTV MODULE DTOs =====
 
     public record CctvCameraDto(

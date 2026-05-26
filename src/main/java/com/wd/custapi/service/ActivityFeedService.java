@@ -20,7 +20,6 @@ public class ActivityFeedService {
     private final ProjectRepository projectRepository;
     private final CustomerUserRepository userRepository;
     private final SiteReportRepository siteReportRepository;
-    private final ProjectQueryRepository projectQueryRepository;
     private final ObservationRepository observationRepository;
     private final QualityCheckRepository qualityCheckRepository;
     private final GalleryImageRepository galleryImageRepository;
@@ -31,7 +30,6 @@ public class ActivityFeedService {
                                ProjectRepository projectRepository,
                                CustomerUserRepository userRepository,
                                SiteReportRepository siteReportRepository,
-                               ProjectQueryRepository projectQueryRepository,
                                ObservationRepository observationRepository,
                                QualityCheckRepository qualityCheckRepository,
                                GalleryImageRepository galleryImageRepository,
@@ -41,7 +39,6 @@ public class ActivityFeedService {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.siteReportRepository = siteReportRepository;
-        this.projectQueryRepository = projectQueryRepository;
         this.observationRepository = observationRepository;
         this.qualityCheckRepository = qualityCheckRepository;
         this.galleryImageRepository = galleryImageRepository;
@@ -115,11 +112,11 @@ public class ActivityFeedService {
     
     /**
      * Combined activity item for timeline display.
-     * Merges site reports and queries into a single chronological feed.
+     * Merges site reports, observations, quality checks, gallery, and site visits into a single chronological feed.
      */
     public record CombinedActivityItem(
         Long id,
-        String type, // "SITE_REPORT" or "QUERY"
+        String type, // e.g. "SITE_REPORT", "OBSERVATION", "QUALITY_CHECK", "GALLERY", "SITE_VISIT"
         String title,
         String description,
         LocalDateTime timestamp,
@@ -135,39 +132,34 @@ public class ActivityFeedService {
      */
     public List<CombinedActivityItem> getCombinedActivityFeed(Long projectId) {
         List<SiteReport> siteReports = siteReportRepository.findByProjectIdOrderByReportDateDesc(projectId);
-        List<ProjectQuery> queries = projectQueryRepository.findByProjectIdOrderByRaisedDateDesc(projectId);
         List<Observation> observations = observationRepository.findByProjectIdOrderByReportedDateDesc(projectId);
         List<QualityCheck> checks = qualityCheckRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
         List<GalleryImage> images = galleryImageRepository.findByProjectIdOrderByTakenDateDesc(projectId);
         List<SiteVisit> visits = siteVisitRepository.findByProjectIdOrderByCheckInTimeDesc(projectId);
-        
+
         List<CombinedActivityItem> siteReportItems = siteReports.stream()
             .filter(r -> r.getStatus() == null || !"DRAFT".equalsIgnoreCase(r.getStatus()))
             .map(this::toActivityItem)
             .collect(Collectors.toList());
-        
-        List<CombinedActivityItem> queryItems = queries.stream()
-            .map(this::toActivityItem)
-            .collect(Collectors.toList());
-            
+
         List<CombinedActivityItem> obsItems = observations.stream()
             .map(this::toActivityItem)
             .collect(Collectors.toList());
-            
+
         List<CombinedActivityItem> qcItems = checks.stream()
             .map(this::toActivityItem)
             .collect(Collectors.toList());
-            
+
         List<CombinedActivityItem> galleryItems = images.stream()
             .map(this::toActivityItem)
             .collect(Collectors.toList());
-            
+
         List<CombinedActivityItem> visitItems = visits.stream()
             .map(this::toActivityItem)
             .collect(Collectors.toList());
-        
+
         // Merge and sort by timestamp descending
-        return Stream.of(siteReportItems, queryItems, obsItems, qcItems, galleryItems, visitItems)
+        return Stream.of(siteReportItems, obsItems, qcItems, galleryItems, visitItems)
             .flatMap(List::stream)
             .sorted(Comparator.comparing(CombinedActivityItem::timestamp).reversed())
             .collect(Collectors.toList());
@@ -225,30 +217,6 @@ public class ActivityFeedService {
             timestamp,
             date,
             report.getStatus(),
-            createdByName,
-            metadata
-        );
-    }
-    
-    private CombinedActivityItem toActivityItem(ProjectQuery query) {
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("category", query.getCategory());
-        metadata.put("priority", query.getPriority() != null ? query.getPriority().name() : null);
-        metadata.put("resolution", query.getResolution());
-        
-        String createdByName = "Customer";
-        if (query.getRaisedBy() != null) {
-            createdByName = query.getRaisedBy().getFirstName() + " " + query.getRaisedBy().getLastName();
-        }
-        
-        return new CombinedActivityItem(
-            query.getId(),
-            "QUERY",
-            query.getTitle(),
-            query.getDescription(),
-            query.getRaisedDate(),
-            query.getRaisedDate() != null ? query.getRaisedDate().toLocalDate() : LocalDate.now(),
-            query.getStatus() != null ? query.getStatus().name() : null,
             createdByName,
             metadata
         );
