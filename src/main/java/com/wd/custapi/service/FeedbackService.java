@@ -146,7 +146,9 @@ public class FeedbackService {
             response.getComments(),
             response.getResponseData(),
             response.getSubmittedAt(),
-            response.getIsCompleted()
+            response.getIsCompleted(),
+            response.getAdminResponse(),
+            response.getAdminRespondedAt()
         );
     }
 }

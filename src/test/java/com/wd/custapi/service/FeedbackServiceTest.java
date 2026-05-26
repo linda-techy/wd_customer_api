@@ -117,6 +117,86 @@ class FeedbackServiceTest {
         assertThat(dto.comments()).isEqualTo("Great job");
     }
 
+    // ─── admin reply fields are propagated to the DTO ───────────────────────────
+
+    @Test
+    void getFormResponsesForCustomer_adminReplyFieldsPopulatedInDto_whenAdminHasReplied() {
+        Project project = new Project();
+        project.setId(5L);
+
+        CustomerUser customer = new CustomerUser();
+        customer.setId(USER_ID);
+        customer.setFirstName("Bob");
+        customer.setLastName("Jones");
+
+        FeedbackForm form = new FeedbackForm();
+        form.setId(FORM_ID);
+        form.setTitle("Post-Handover Survey");
+        form.setProject(project);
+        form.setCreatedBy(customer);
+
+        LocalDateTime repliedAt = LocalDateTime.of(2026, 5, 26, 10, 0, 0);
+
+        FeedbackResponse response = new FeedbackResponse();
+        response.setId(77L);
+        response.setForm(form);
+        response.setProject(project);
+        response.setCustomer(customer);
+        response.setRating(4);
+        response.setComments("Good work");
+        response.setSubmittedAt(LocalDateTime.now().minusDays(1));
+        // Admin has replied
+        response.setAdminResponse("Thank you for your feedback!");
+        response.setAdminRespondedAt(repliedAt);
+
+        when(feedbackResponseRepository.findByFormIdAndCustomerId(FORM_ID, USER_ID))
+                .thenReturn(Optional.of(response));
+
+        List<FeedbackResponseDto> result = feedbackService.getFormResponsesForCustomer(FORM_ID, USER_ID);
+
+        assertThat(result).hasSize(1);
+        FeedbackResponseDto dto = result.get(0);
+        assertThat(dto.adminResponse()).isEqualTo("Thank you for your feedback!");
+        assertThat(dto.adminRespondedAt()).isEqualTo(repliedAt);
+    }
+
+    @Test
+    void getFormResponsesForCustomer_adminReplyFieldsNull_whenNoReplyYet() {
+        Project project = new Project();
+        project.setId(5L);
+
+        CustomerUser customer = new CustomerUser();
+        customer.setId(USER_ID);
+        customer.setFirstName("Carol");
+        customer.setLastName("White");
+
+        FeedbackForm form = new FeedbackForm();
+        form.setId(FORM_ID);
+        form.setTitle("Q2 Survey");
+        form.setProject(project);
+        form.setCreatedBy(customer);
+
+        FeedbackResponse response = new FeedbackResponse();
+        response.setId(88L);
+        response.setForm(form);
+        response.setProject(project);
+        response.setCustomer(customer);
+        response.setRating(3);
+        response.setComments("OK");
+        response.setSubmittedAt(LocalDateTime.now());
+        // No admin reply set — fields remain null
+
+        when(feedbackResponseRepository.findByFormIdAndCustomerId(FORM_ID, USER_ID))
+                .thenReturn(Optional.of(response));
+
+        List<FeedbackResponseDto> result = feedbackService.getFormResponsesForCustomer(FORM_ID, USER_ID);
+
+        assertThat(result).hasSize(1);
+        FeedbackResponseDto dto = result.get(0);
+        assertThat(dto.adminResponse()).isNull();
+        assertThat(dto.adminRespondedAt()).isNull();
+    }
+
     // ─── Isolation: other customer's responses are NOT returned ─────────────────
 
     @Test

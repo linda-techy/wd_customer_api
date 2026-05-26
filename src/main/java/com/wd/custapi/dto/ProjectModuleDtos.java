@@ -342,7 +342,9 @@ public class ProjectModuleDtos {
         String comments,
         Map<String, Object> responseData,
         LocalDateTime submittedAt,
-        Boolean isCompleted
+        Boolean isCompleted,
+        String adminResponse,
+        LocalDateTime adminRespondedAt
     ) {}
     
     public record FeedbackResponseRequest(

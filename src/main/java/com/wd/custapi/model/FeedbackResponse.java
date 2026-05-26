@@ -41,7 +41,16 @@ public class FeedbackResponse {
     
     @Column(name = "is_completed")
     private Boolean isCompleted = true;
-    
+
+    @Column(name = "admin_response", columnDefinition = "TEXT")
+    private String adminResponse;
+
+    @Column(name = "admin_responded_at")
+    private LocalDateTime adminRespondedAt;
+
+    @Column(name = "admin_responded_by_id")
+    private Long adminRespondedById;
+
     // Constructors
     public FeedbackResponse() {}
     
@@ -113,9 +122,33 @@ public class FeedbackResponse {
     public Boolean getIsCompleted() {
         return isCompleted;
     }
-    
+
     public void setIsCompleted(Boolean isCompleted) {
         this.isCompleted = isCompleted;
+    }
+
+    public String getAdminResponse() {
+        return adminResponse;
+    }
+
+    public void setAdminResponse(String adminResponse) {
+        this.adminResponse = adminResponse;
+    }
+
+    public LocalDateTime getAdminRespondedAt() {
+        return adminRespondedAt;
+    }
+
+    public void setAdminRespondedAt(LocalDateTime adminRespondedAt) {
+        this.adminRespondedAt = adminRespondedAt;
+    }
+
+    public Long getAdminRespondedById() {
+        return adminRespondedById;
+    }
+
+    public void setAdminRespondedById(Long adminRespondedById) {
+        this.adminRespondedById = adminRespondedById;
     }
 }
 
