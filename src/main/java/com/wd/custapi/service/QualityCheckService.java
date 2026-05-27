@@ -81,6 +81,7 @@ public class QualityCheckService {
         return toDto(qc);
     }
     
+    @Transactional(readOnly = true)
     public List<QualityCheckDto> getQualityChecks(Long projectId, String status) {
         List<QualityCheck> checks;
         if (status != null) {
@@ -93,18 +94,32 @@ public class QualityCheckService {
     }
     
     private QualityCheckDto toDto(QualityCheck qc) {
+        // QC is authored by site engineers (portal staff), which are not mirrored
+        // into customer_users — so createdBy may be a dangling proxy. Resolve it
+        // defensively (orphan/null -> "Site Engineer") and tolerate null
+        // status/priority, so a staff-authored QC never 500s the customer list.
+        Long createdById = null;
+        String createdByName = "Site Engineer";
+        try {
+            if (qc.getCreatedBy() != null) {
+                createdById = qc.getCreatedBy().getId();
+                createdByName = qc.getCreatedBy().getFirstName() + " " + qc.getCreatedBy().getLastName();
+            }
+        } catch (RuntimeException ex) {
+            createdByName = "Site Engineer";
+        }
         return new QualityCheckDto(
             qc.getId(),
-            qc.getProject().getId(),
+            qc.getProject() != null ? qc.getProject().getId() : null,
             qc.getTitle(),
             qc.getDescription(),
             qc.getSopReference(),
-            qc.getStatus().name(),
-            qc.getPriority().name(),
+            qc.getStatus() != null ? qc.getStatus().name() : "ACTIVE",
+            qc.getPriority() != null ? qc.getPriority().name() : "MEDIUM",
             qc.getAssignedTo() != null ? qc.getAssignedTo().getId() : null,
             qc.getAssignedTo() != null ? qc.getAssignedTo().getFirstName() + " " + qc.getAssignedTo().getLastName() : null,
-            qc.getCreatedBy().getId(),
-            qc.getCreatedBy().getFirstName() + " " + qc.getCreatedBy().getLastName(),
+            createdById,
+            createdByName,
             qc.getCreatedAt(),
             qc.getResolvedAt(),
             qc.getResolvedBy() != null ? qc.getResolvedBy().getId() : null,
