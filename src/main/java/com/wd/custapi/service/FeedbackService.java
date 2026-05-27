@@ -80,6 +80,7 @@ public class FeedbackService {
         return toResponseDto(response);
     }
     
+    @Transactional(readOnly = true)
     public List<FeedbackFormDto> getProjectForms(Long projectId, Long userId) {
         List<FeedbackForm> forms = feedbackFormRepository.findByProjectIdAndIsActiveTrue(projectId);
         
@@ -91,6 +92,7 @@ public class FeedbackService {
         }).collect(Collectors.toList());
     }
     
+    @Transactional(readOnly = true)
     public List<FeedbackResponseDto> getFormResponses(Long formId) {
         return feedbackResponseRepository.findByFormId(formId)
             .stream()
@@ -112,6 +114,7 @@ public class FeedbackService {
      * @return a list containing the customer's own response, or an empty list if
      *         they have not yet submitted a response for this form
      */
+    @Transactional(readOnly = true)
     public List<FeedbackResponseDto> getFormResponsesForCustomer(Long formId, Long userId) {
         return feedbackResponseRepository.findByFormIdAndCustomerId(formId, userId)
             .map(this::toResponseDto)
