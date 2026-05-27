@@ -239,10 +239,21 @@ public class CustomerBoqController {
                     .map(s -> (BigDecimal) s.get("paidAmount"))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            // Outstanding = what is still owed = Σ (netPayable − paid) per stage,
+            // clamped at 0. The previous version filtered on
+            // !"PAID".equals(s.get("status")), but the map stores the status ENUM,
+            // not a String, so the comparison was always true → no stage was ever
+            // excluded and totalOutstanding equalled the full contract value.
+            // Computing from amounts avoids the enum/String pitfall and also
+            // handles partial payments correctly.
             BigDecimal totalOutstanding = stages.stream()
-                    .filter(s -> !"PAID".equals(s.get("status")))
-                    .map(s -> (BigDecimal) s.get("netPayableAmount"))
-                    .filter(a -> a.compareTo(BigDecimal.ZERO) > 0)
+                    .map(s -> {
+                        BigDecimal net = (BigDecimal) s.get("netPayableAmount");
+                        BigDecimal paid = (BigDecimal) s.get("paidAmount");
+                        BigDecimal owed = (net == null ? BigDecimal.ZERO : net)
+                                .subtract(paid == null ? BigDecimal.ZERO : paid);
+                        return owed.compareTo(BigDecimal.ZERO) > 0 ? owed : BigDecimal.ZERO;
+                    })
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             return ResponseEntity.ok(Map.of(
