@@ -51,26 +51,30 @@ public class ActivityFeedService {
     }
     
     @Transactional
-    public ActivityFeedDto createActivity(Long projectId, String activityTypeName, 
+    public ActivityFeedDto createActivity(Long projectId, String activityTypeName,
                                           String title, Long referenceId, Long userId) {
-        Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new RuntimeException("Project not found"));
-        
-        ActivityType activityType = activityTypeRepository.findByName(activityTypeName)
-            .orElseThrow(() -> new RuntimeException("Activity type not found"));
-        
-        CustomerUser user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        ActivityFeed activity = new ActivityFeed();
-        activity.setProject(project);
-        activity.setActivityType(activityType);
-        activity.setTitle(title);
-        activity.setReferenceId(referenceId);
-        activity.setCreatedBy(user);
-        
-        activity = activityFeedRepository.save(activity);
-        return toDto(activity);
+        // Best-effort activity logging: a missing activity_type seed row (e.g.
+        // FEEDBACK_SUBMITTED / QUALITY_CHECK_ADDED) or any logging error must NOT
+        // roll back / 500 the caller's real write (feedback submit, QC create). The
+        // feed entry is a side effect — return null instead of throwing.
+        try {
+            ActivityType activityType = activityTypeRepository.findByName(activityTypeName).orElse(null);
+            Project project = projectRepository.findById(projectId).orElse(null);
+            if (activityType == null || project == null) {
+                return null;
+            }
+            CustomerUser user = userRepository.findById(userId).orElse(null);
+            ActivityFeed activity = new ActivityFeed();
+            activity.setProject(project);
+            activity.setActivityType(activityType);
+            activity.setTitle(title);
+            activity.setReferenceId(referenceId);
+            activity.setCreatedBy(user);
+            activity = activityFeedRepository.save(activity);
+            return toDto(activity);
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
     
     public List<ActivityFeedDto> getProjectActivities(Long projectId) {
