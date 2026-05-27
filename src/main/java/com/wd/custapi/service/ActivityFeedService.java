@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -195,6 +196,21 @@ public class ActivityFeedService {
             .collect(Collectors.toList());
     }
     
+    /**
+     * Resolve a display name defensively. A dangling author FK (e.g. a portal/staff
+     * user id not mirrored into customer_users) makes the lazy proxy throw
+     * EntityNotFoundException / LazyInitializationException on property access; one
+     * orphaned author must not 500 the whole feed. (Wave 0, 2026-05-27)
+     */
+    private static String safeName(Supplier<String> nameSupplier, String fallback) {
+        try {
+            String name = nameSupplier.get();
+            return (name == null || name.isBlank()) ? fallback : name;
+        } catch (RuntimeException ex) {
+            return fallback;
+        }
+    }
+
     private CombinedActivityItem toActivityItem(SiteReport report) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("reportType", report.getReportType());
@@ -231,10 +247,10 @@ public class ActivityFeedService {
         metadata.put("priority", obs.getPriority() != null ? obs.getPriority().name() : null);
         metadata.put("location", obs.getLocation());
         
-        String createdByName = "Staff";
-        if (obs.getReportedBy() != null) {
-            createdByName = obs.getReportedBy().getFirstName() + " " + obs.getReportedBy().getLastName();
-        }
+        String createdByName = safeName(
+                () -> obs.getReportedBy() == null ? null
+                        : obs.getReportedBy().getFirstName() + " " + obs.getReportedBy().getLastName(),
+                "Staff");
         
         return new CombinedActivityItem(
             obs.getId(),
@@ -254,10 +270,10 @@ public class ActivityFeedService {
         metadata.put("priority", qc.getPriority() != null ? qc.getPriority().name() : null);
         metadata.put("sopReference", qc.getSopReference());
         
-        String createdByName = "Staff";
-        if (qc.getCreatedBy() != null) {
-            createdByName = qc.getCreatedBy().getFirstName() + " " + qc.getCreatedBy().getLastName();
-        }
+        String createdByName = safeName(
+                () -> qc.getCreatedBy() == null ? null
+                        : qc.getCreatedBy().getFirstName() + " " + qc.getCreatedBy().getLastName(),
+                "Staff");
         
         return new CombinedActivityItem(
             qc.getId(),
@@ -277,10 +293,10 @@ public class ActivityFeedService {
         metadata.put("imagePath", img.getImagePath());
         metadata.put("locationTag", img.getLocationTag());
         
-        String createdByName = "Staff";
-        if (img.getUploadedBy() != null) {
-            createdByName = img.getUploadedBy().getFirstName() + " " + img.getUploadedBy().getLastName();
-        }
+        String createdByName = safeName(
+                () -> img.getUploadedBy() == null ? null
+                        : img.getUploadedBy().getFirstName() + " " + img.getUploadedBy().getLastName(),
+                "Staff");
         
         return new CombinedActivityItem(
             img.getId(),
@@ -300,10 +316,10 @@ public class ActivityFeedService {
         metadata.put("purpose", visit.getPurpose());
         metadata.put("location", visit.getLocation());
         
-        String createdByName = "Staff";
-        if (visit.getVisitor() != null) {
-            createdByName = visit.getVisitor().getFirstName() + " " + visit.getVisitor().getLastName();
-        }
+        String createdByName = safeName(
+                () -> visit.getVisitor() == null ? null
+                        : visit.getVisitor().getFirstName() + " " + visit.getVisitor().getLastName(),
+                "Staff");
         
         return new CombinedActivityItem(
             visit.getId(),
