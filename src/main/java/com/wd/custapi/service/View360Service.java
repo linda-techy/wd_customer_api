@@ -62,6 +62,7 @@ public class View360Service {
         return toDto(view);
     }
     
+    @Transactional(readOnly = true)
     public List<View360Dto> getProjectViews(Long projectId) {
         return view360Repository.findByProjectIdAndIsActiveTrue(projectId)
             .stream()
