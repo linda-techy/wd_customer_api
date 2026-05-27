@@ -14,7 +14,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "LEFT JOIN project_members cpm ON p.id = cpm.project_id " +
                         "LEFT JOIN customer_users c_mem ON cpm.customer_user_id = c_mem.id " +
                         "LEFT JOIN customer_users c_owner ON p.customer_id = c_owner.id " +
-                        "WHERE c_mem.email = :email OR c_owner.email = :email " +
+                        "WHERE (c_mem.email = :email OR c_owner.email = :email) AND p.deleted_at IS NULL " +
                         "ORDER BY p.id DESC", nativeQuery = true)
         List<Project> findAllByCustomerEmail(@Param("email") String email);
 
@@ -23,7 +23,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "LEFT JOIN project_members cpm ON p.id = cpm.project_id " +
                         "LEFT JOIN customer_users c_mem ON cpm.customer_user_id = c_mem.id " +
                         "LEFT JOIN customer_users c_owner ON p.customer_id = c_owner.id " +
-                        "WHERE (c_mem.email = :email OR c_owner.email = :email) " +
+                        "WHERE (c_mem.email = :email OR c_owner.email = :email) AND p.deleted_at IS NULL " +
                         "ORDER BY p.id DESC LIMIT :limit", nativeQuery = true)
         List<Project> findRecentByCustomerEmail(@Param("email") String email, @Param("limit") int limit);
 
@@ -32,7 +32,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "LEFT JOIN project_members cpm ON p.id = cpm.project_id " +
                         "LEFT JOIN customer_users c_mem ON cpm.customer_user_id = c_mem.id " +
                         "LEFT JOIN customer_users c_owner ON p.customer_id = c_owner.id " +
-                        "WHERE (c_mem.email = :email OR c_owner.email = :email) " +
+                        "WHERE (c_mem.email = :email OR c_owner.email = :email) AND p.deleted_at IS NULL " +
                         "AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                         "OR LOWER(p.code) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                         "OR LOWER(p.location) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
@@ -42,7 +42,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
         @Query(value = "SELECT COUNT(p.id) FROM customer_projects p " +
                         "INNER JOIN project_members cpm ON p.id = cpm.project_id " +
-                        "WHERE cpm.customer_user_id = :customerId", nativeQuery = true)
+                        "WHERE cpm.customer_user_id = :customerId AND p.deleted_at IS NULL", nativeQuery = true)
         long countByCustomerId(@Param("customerId") Long customerId);
 
         // Get specific project by ID for a customer. Customer can own a project
@@ -55,7 +55,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "LEFT JOIN project_members cpm ON p.id = cpm.project_id " +
                         "LEFT JOIN customer_users c_mem ON cpm.customer_user_id = c_mem.id " +
                         "LEFT JOIN customer_users c_owner ON p.customer_id = c_owner.id " +
-                        "WHERE p.id = :projectId AND (c_mem.email = :email OR c_owner.email = :email)", nativeQuery = true)
+                        "WHERE p.id = :projectId AND (c_mem.email = :email OR c_owner.email = :email) AND p.deleted_at IS NULL", nativeQuery = true)
         Project findByIdAndCustomerEmail(@Param("projectId") Long projectId, @Param("email") String email);
 
         // Get specific project by Project UUID for a customer
@@ -63,7 +63,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         "LEFT JOIN project_members cpm ON p.id = cpm.project_id " +
                         "LEFT JOIN customer_users c_mem ON cpm.customer_user_id = c_mem.id " +
                         "LEFT JOIN customer_users c_owner ON p.customer_id = c_owner.id " +
-                        "WHERE p.project_uuid = :projectUuid AND (c_mem.email = :email OR c_owner.email = :email)", nativeQuery = true)
+                        "WHERE p.project_uuid = :projectUuid AND (c_mem.email = :email OR c_owner.email = :email) AND p.deleted_at IS NULL", nativeQuery = true)
         Project findByProjectUuidAndCustomerEmail(@Param("projectUuid") java.util.UUID projectUuid,
                         @Param("email") String email);
 
