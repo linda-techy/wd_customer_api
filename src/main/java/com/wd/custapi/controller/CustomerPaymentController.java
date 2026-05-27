@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -54,6 +55,7 @@ public class CustomerPaymentController {
      * Get all payment schedules for the current customer's projects.
      */
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Page<CustomerPaymentScheduleDto>>> getCustomerPayments(
             @RequestParam(required = false) Long projectId,
             @RequestParam(defaultValue = "0") int page,
@@ -105,6 +107,7 @@ public class CustomerPaymentController {
      * Verifies the customer has access to the project.
      */
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<CustomerPaymentScheduleDto>> getPaymentScheduleById(
             @PathVariable Long id,
             Authentication auth) {
