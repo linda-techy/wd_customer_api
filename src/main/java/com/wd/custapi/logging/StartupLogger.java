@@ -97,7 +97,16 @@ public class StartupLogger implements ApplicationRunner {
         log.info("╚══════════════════════════════════════════════════════════╝");
     }
 
-    /** Mask password from JDBC URL if it somehow appears in the URL string */
+    /**
+     * Mask password from JDBC URL if it somehow appears in the URL string.
+     *
+     * <p>The literal {@code "password="} below is a redaction pattern, not a
+     * credential — it matches and replaces any password in the URL with
+     * {@code ****} before the URL is logged. SonarQube java:S2068 flags the
+     * literal as a hard-coded password (false positive); suppressed here because
+     * removing it would defeat the masking and leak the real password to logs.
+     */
+    @SuppressWarnings("java:S2068")
     private String maskDbUrl(String url) {
         if (url == null) return "NOT_CONFIGURED";
         return url.replaceAll("(?i)(password=)[^&;]+", "$1****");

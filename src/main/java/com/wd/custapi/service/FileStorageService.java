@@ -26,6 +26,9 @@ public class FileStorageService {
     // needs read+execute on each path under the shared storage root; without it,
     // documents/site-reports uploaded by the Java process under a restrictive
     // umask come back as 403 to the customer/portal web apps.
+    // java:S2612 ("others" read+execute) is intentional and required for static
+    // file serving — accepted as safe; tightening to 0750 would 403 the web apps.
+    @SuppressWarnings("java:S2612")
     private static final Set<PosixFilePermission> STORAGE_PERMS =
             PosixFilePermissions.fromString("rwxr-xr-x");
 
