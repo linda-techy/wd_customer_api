@@ -51,7 +51,7 @@ public class DashboardController {
             return ResponseEntity.ok(dashboard);
         } catch (Exception e) {
             logger.error("Failed to load dashboard for user {}: {}",
-                    authentication != null ? authentication.getName() : "unknown", e.getMessage(), e);
+                    authentication.getName(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to load dashboard: " + e.getMessage()));
         }

@@ -1,6 +1,5 @@
 package com.wd.custapi.security;
 
-import com.wd.custapi.security.JwtConstants;
 import com.wd.custapi.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -57,18 +56,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Extract token type and subject
-        String tokenType = jwtService.extractTokenType(jwt);
+        // Extract subject
         String actualSubject = jwtService.extractActualSubject(jwt);
 
-        // Handle different token types
-        if (JwtConstants.TOKEN_TYPE_CUSTOMER.equals(tokenType)) {
-            // Customer user authentication
-            handleCustomerAuthentication(jwt, actualSubject, request);
-        } else {
-            // Default customer user authentication
-            handleCustomerAuthentication(jwt, actualSubject, request);
-        }
+        // All token types currently resolve to customer-user authentication.
+        handleCustomerAuthentication(jwt, actualSubject, request);
 
         filterChain.doFilter(request, response);
     }

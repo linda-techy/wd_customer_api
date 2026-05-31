@@ -66,6 +66,9 @@ public class PortalApiClient {
      */
     public Long fetchCrProjectId(Long crId) {
         Map<String, Object> result = signedPost("/internal/cr-project-id", Map.of("crId", crId));
+        if (result == null) {
+            throw new IllegalStateException("portal-API did not return projectId for crId=" + crId);
+        }
         Object pid = result.get("projectId");
         if (pid instanceof Number n) return n.longValue();
         throw new IllegalStateException("portal-API did not return projectId for crId=" + crId);

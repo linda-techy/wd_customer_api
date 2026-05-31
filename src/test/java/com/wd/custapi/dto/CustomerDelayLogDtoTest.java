@@ -70,7 +70,7 @@ class CustomerDelayLogDtoTest {
         var componentNames = java.util.Arrays.stream(CustomerDelayLogDto.class.getRecordComponents())
                 .map(java.lang.reflect.RecordComponent::getName)
                 .toList();
-        assertThat(componentNames).doesNotContain(
+        assertThat(componentNames).isNotEmpty().doesNotContain(
                 "reasonText", "responsibleParty", "impactDescription");
     }
 

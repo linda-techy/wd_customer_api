@@ -143,7 +143,7 @@ public class NotificationTriggerService {
 
     // ─── Internal helpers ─────────────────────────────────────────────────────────
 
-    @Transactional
+    // @Transactional removed: ineffective on private/self-invoked method (S2230)
     private void saveAndPush(CustomerUser user, Long projectId, Long referenceId,
             String notificationType, String title, String body) {
         // 1. Persist in-app notification

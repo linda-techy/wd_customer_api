@@ -137,7 +137,28 @@ public class CctvStreamProxyService {
     // ── Upstream fetch (relay) ──────────────────────────────────────────────
 
     /** Result of a proxied upstream fetch. */
-    public record UpstreamResponse(int status, String contentType, byte[] body) {}
+    public record UpstreamResponse(int status, String contentType, byte[] body) {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof UpstreamResponse other)) return false;
+            return status == other.status
+                    && java.util.Objects.equals(contentType, other.contentType)
+                    && java.util.Arrays.equals(body, other.body);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * java.util.Objects.hash(status, contentType) + java.util.Arrays.hashCode(body);
+        }
+
+        @Override
+        public String toString() {
+            return "UpstreamResponse[status=" + status
+                    + ", contentType=" + contentType
+                    + ", body=" + java.util.Arrays.toString(body) + "]";
+        }
+    }
 
     /**
      * Fetches an upstream URL server-side, optionally with a Basic-auth header.

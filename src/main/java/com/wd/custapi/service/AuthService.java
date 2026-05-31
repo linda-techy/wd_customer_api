@@ -257,13 +257,8 @@ public class AuthService {
     }
 
     private String determineRedirectUrl(long projectCount) {
-        if (projectCount == 0) {
-            return "/dashboard"; // No projects, go to dashboard (empty state)
-        } else if (projectCount == 1) {
-            return "/dashboard"; // Single project, go to dashboard (will show the project)
-        } else {
-            return "/dashboard"; // Multiple projects, go to dashboard (will show project list)
-        }
+        // All cases currently redirect to the dashboard regardless of project count.
+        return "/dashboard";
     }
 
     // ===== REGISTRATION =====
