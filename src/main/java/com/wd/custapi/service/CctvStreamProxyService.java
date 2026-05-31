@@ -140,11 +140,10 @@ public class CctvStreamProxyService {
     public record UpstreamResponse(int status, String contentType, byte[] body) {
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof UpstreamResponse other)) return false;
-            return status == other.status
-                    && java.util.Objects.equals(contentType, other.contentType)
-                    && java.util.Arrays.equals(body, other.body);
+            return o instanceof UpstreamResponse(int s, String ct, byte[] b)
+                    && status == s
+                    && java.util.Objects.equals(contentType, ct)
+                    && java.util.Arrays.equals(body, b);
         }
 
         @Override

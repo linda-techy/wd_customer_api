@@ -92,7 +92,7 @@ public class AuthService {
 
         // Get actual project count for the user from the authentication principal
         long projectCount = user.getAuthorities().size(); // placeholder — replace with real repo call if needed
-        String redirectUrl = determineRedirectUrl(projectCount);
+        String redirectUrl = "/dashboard"; // all roles currently land on the dashboard
 
         return new LoginResponse(accessToken, refreshToken, jwtService.getAccessTokenExpiration(), userInfo,
                 permissions, projectCount, redirectUrl);
@@ -254,11 +254,6 @@ public class AuthService {
         } catch (Exception e) {
             log.error("Error during nightly refresh token cleanup", e);
         }
-    }
-
-    private String determineRedirectUrl(long projectCount) {
-        // All cases currently redirect to the dashboard regardless of project count.
-        return "/dashboard";
     }
 
     // ===== REGISTRATION =====
