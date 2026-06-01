@@ -63,6 +63,7 @@ public final class CustomerTestFactory {
      * Creates a detached {@link BoqDocument} in DRAFT status linked to the given project.
      * Amounts are set to representative test values.
      */
+    @SuppressWarnings("java:S125") // explanatory prose comments, not commented-out code
     public static BoqDocument createBoqDocument(Project project) {
         BoqDocument doc = new BoqDocument();
         // BoqDocument setters are package-private or via reflection in tests;

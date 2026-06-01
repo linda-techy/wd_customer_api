@@ -45,6 +45,11 @@ public class DashboardService {
 
     private final com.wd.custapi.repository.ProjectMilestoneRepository projectMilestoneRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    @SuppressWarnings("java:S6813")   // self-injection requires field injection (constructor would cycle)
+    private DashboardService self;
+
     public DashboardService(CustomerUserRepository customerUserRepository,
                             ProjectRepository projectRepository,
                             ProjectDocumentRepository projectDocumentRepository,
@@ -381,7 +386,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public List<DashboardDto.ProjectCard> searchProjects(String email, String searchTerm) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            return getRecentProjects(email, 5);
+            return (self != null ? self : this).getRecentProjects(email, 5);
         }
         String term = searchTerm.trim();
         List<Project> projects = isAdminByEmail(email)
@@ -498,9 +503,12 @@ public class DashboardService {
         projectRepository.save(project);
 
         // Return updated project details
-        return getProjectDetails(projectUuidStr, email);
+        return (self != null ? self : this).getProjectDetails(projectUuidStr, email);
     }
 
+    // S125: the block below is genuine explanatory prose about polymorphic
+    // uploader-id resolution, not commented-out code.
+    @SuppressWarnings("java:S125")
     private DashboardDto.ProjectDocumentSummary toDocumentSummary(ProjectDocument doc) {
         String downloadUrl = "/api/storage/" + doc.getFilePath();
         // Uploader id is polymorphic (customer_users.id or portal_users.id);
@@ -525,63 +533,82 @@ public class DashboardService {
         DashboardDto.ProgressData progressData = new DashboardDto.ProgressData();
         progressData.setOverallProgress(project.getProgress() != null ? project.getProgress().doubleValue() : 0.0);
 
-        // Calculate days
-        LocalDate now = LocalDate.now();
+        populateScheduleProgress(progressData, project);
+        progressData.setMilestones(loadProgressMilestones(project.getId()));
+
+        return progressData;
+    }
+
+    /**
+     * Fills total/elapsed/remaining day counts and the derived progress status.
+     * When start or end date is missing, everything is zeroed and status is UNKNOWN.
+     */
+    private void populateScheduleProgress(DashboardDto.ProgressData progressData, Project project) {
         LocalDate startDate = project.getStartDate();
         LocalDate endDate = project.getEndDate();
 
-        if (startDate != null && endDate != null) {
-            long totalDays = ChronoUnit.DAYS.between(startDate, endDate);
-            long daysElapsed = ChronoUnit.DAYS.between(startDate, now);
-            long daysRemaining = ChronoUnit.DAYS.between(now, endDate);
-
-            progressData.setTotalDays((int) totalDays);
-            progressData.setDaysElapsed((int) Math.max(0, daysElapsed));
-            progressData.setDaysRemaining((int) Math.max(0, daysRemaining));
-
-            // Determine progress status
-            if (daysRemaining < 0) {
-                progressData.setProgressStatus("DELAYED");
-            } else {
-                double expectedProgress = (double) daysElapsed / totalDays * 100;
-                double actualProgress = project.getProgress() != null ? project.getProgress().doubleValue() : 0;
-
-                if (actualProgress >= expectedProgress + 5) {
-                    progressData.setProgressStatus("AHEAD");
-                } else if (actualProgress < expectedProgress - 10) {
-                    progressData.setProgressStatus("DELAYED");
-                } else {
-                    progressData.setProgressStatus("ON_TRACK");
-                }
-            }
-        } else {
+        if (startDate == null || endDate == null) {
             progressData.setTotalDays(0);
             progressData.setDaysElapsed(0);
             progressData.setDaysRemaining(0);
             progressData.setProgressStatus("UNKNOWN");
+            return;
         }
 
-        // Load real milestones from project_milestones table (written by portal API, shared DB).
-        // Sorted by due date ascending so the customer app's ScheduleScreen shows them in order.
+        LocalDate now = LocalDate.now();
+        long totalDays = ChronoUnit.DAYS.between(startDate, endDate);
+        long daysElapsed = ChronoUnit.DAYS.between(startDate, now);
+        long daysRemaining = ChronoUnit.DAYS.between(now, endDate);
+
+        progressData.setTotalDays((int) totalDays);
+        progressData.setDaysElapsed((int) Math.max(0, daysElapsed));
+        progressData.setDaysRemaining((int) Math.max(0, daysRemaining));
+
+        double actualProgress = project.getProgress() != null ? project.getProgress().doubleValue() : 0;
+        progressData.setProgressStatus(determineProgressStatus(totalDays, daysElapsed, daysRemaining, actualProgress));
+    }
+
+    /**
+     * Derives the schedule status (DELAYED / AHEAD / ON_TRACK) by comparing actual
+     * progress against the linear expected progress for the elapsed time.
+     */
+    private String determineProgressStatus(long totalDays, long daysElapsed, long daysRemaining, double actualProgress) {
+        if (daysRemaining < 0) {
+            return "DELAYED";
+        }
+        double expectedProgress = (double) daysElapsed / totalDays * 100;
+        if (actualProgress >= expectedProgress + 5) {
+            return "AHEAD";
+        }
+        if (actualProgress < expectedProgress - 10) {
+            return "DELAYED";
+        }
+        return "ON_TRACK";
+    }
+
+    /**
+     * Loads real milestones from project_milestones table (written by portal API, shared DB).
+     * Sorted by due date ascending so the customer app's ScheduleScreen shows them in order.
+     */
+    private List<DashboardDto.ProgressMilestone> loadProgressMilestones(Long projectId) {
         List<com.wd.custapi.model.ProjectMilestone> dbMilestones =
-                projectMilestoneRepository.findByProjectIdOrderByDueDateAsc(project.getId());
+                projectMilestoneRepository.findByProjectIdOrderByDueDateAsc(projectId);
 
-        List<DashboardDto.ProgressMilestone> milestones = dbMilestones.stream()
-                .map(m -> {
-                    DashboardDto.ProgressMilestone pm = new DashboardDto.ProgressMilestone();
-                    pm.setName(m.getName());
-                    pm.setProgressPercentage(
-                            m.getCompletionPercentage() != null
-                                    ? m.getCompletionPercentage().doubleValue()
-                                    : 0.0);
-                    pm.setTargetDate(m.getDueDate());
-                    pm.setCompletedDate(m.getCompletedDate());
-                    pm.setStatus(m.getStatus() != null ? m.getStatus() : "PENDING");
-                    return pm;
-                })
+        return dbMilestones.stream()
+                .map(this::toProgressMilestone)
                 .toList();
-        progressData.setMilestones(milestones);
+    }
 
-        return progressData;
+    private DashboardDto.ProgressMilestone toProgressMilestone(com.wd.custapi.model.ProjectMilestone m) {
+        DashboardDto.ProgressMilestone pm = new DashboardDto.ProgressMilestone();
+        pm.setName(m.getName());
+        pm.setProgressPercentage(
+                m.getCompletionPercentage() != null
+                        ? m.getCompletionPercentage().doubleValue()
+                        : 0.0);
+        pm.setTargetDate(m.getDueDate());
+        pm.setCompletedDate(m.getCompletedDate());
+        pm.setStatus(m.getStatus() != null ? m.getStatus() : "PENDING");
+        return pm;
     }
 }

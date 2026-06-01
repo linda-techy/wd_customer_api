@@ -79,29 +79,15 @@ public class FileDownloadController {
                                                @RequestParam(required = false) String download,
                                                @RequestHeader(value = "Range", required = false) String rangeHeader) {
         try {
-            // Get the full request path (everything after /api/storage/)
             String requestURI = request.getRequestURI();
-            String requestPath;
-            
-            if (requestURI.startsWith(STORAGE_PREFIX_SLASH)) {
-                requestPath = requestURI.substring(STORAGE_PREFIX_SLASH.length());
-            } else if (requestURI.startsWith(STORAGE_PREFIX)) {
-                requestPath = requestURI.substring(STORAGE_PREFIX.length());
-                // Remove leading slash if present
-                if (requestPath.startsWith("/")) {
-                    requestPath = requestPath.substring(1);
-                }
-            } else {
-                // Fallback: try to extract from path info
-                requestPath = extractPathInfoFallback(request.getPathInfo());
-            }
+            String requestPath = resolveRequestPath(requestURI, request);
 
             // Validate request path is not empty
             if (requestPath == null || requestPath.isEmpty()) {
                 logger.warn("Empty request path for URI: {}", requestURI);
                 return ResponseEntity.badRequest().build();
             }
-            
+
             // URL decode the path to handle special characters
             requestPath = decodeRequestPath(requestPath, "Failed to decode request path '{}': {}");
 
@@ -119,10 +105,9 @@ public class FileDownloadController {
             Path filePath = Paths.get(storageBasePath).resolve(requestPath).normalize();
 
             // Security check - ensure file is within storage directory
-            Path basePath = Paths.get(storageBasePath).toAbsolutePath().normalize();
-            Path normalizedFilePath = filePath.toAbsolutePath().normalize();
-            if (!normalizedFilePath.startsWith(basePath)) {
-                logger.warn("Path traversal attempt blocked: {} (resolved to {})", requestPath, normalizedFilePath);
+            if (!isWithinStorage(filePath)) {
+                logger.warn("Path traversal attempt blocked: {} (resolved to {})",
+                        requestPath, filePath.toAbsolutePath().normalize());
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
@@ -139,19 +124,7 @@ public class FileDownloadController {
                 contentType = "application/octet-stream";
             }
 
-            // Build response headers
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
-            
-            // Handle download vs inline display
-            if ("true".equals(download)) {
-                headers.setContentDispositionFormData("attachment", resource.getFilename());
-            } else {
-                headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"");
-            }
-
-            // Private files — prevent caching in proxies, CDNs, and shared environments
-            headers.setCacheControl("private, no-store, max-age=0");
+            HttpHeaders headers = buildDownloadHeaders(resource, contentType, download);
 
             // Handle range requests for video/audio streaming
             if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
@@ -216,10 +189,56 @@ public class FileDownloadController {
     }
 
     /**
-     * URL-decodes the request path. If decoding fails, logs a warning using the
-     * supplied SLF4J template and returns the original (undecoded) path so the
-     * caller can continue.
+     * Resolve the storage-relative request path from the request URI, stripping the
+     * {@code /api/storage} prefix. Falls back to {@code pathInfo} when the URI does
+     * not start with the expected prefix.
      */
+    private String resolveRequestPath(String requestURI, HttpServletRequest request) {
+        if (requestURI.startsWith(STORAGE_PREFIX_SLASH)) {
+            return requestURI.substring(STORAGE_PREFIX_SLASH.length());
+        }
+        if (requestURI.startsWith(STORAGE_PREFIX)) {
+            String requestPath = requestURI.substring(STORAGE_PREFIX.length());
+            // Remove leading slash if present
+            if (requestPath.startsWith("/")) {
+                requestPath = requestPath.substring(1);
+            }
+            return requestPath;
+        }
+        // Fallback: try to extract from path info
+        return extractPathInfoFallback(request.getPathInfo());
+    }
+
+    /**
+     * Security check — ensure the resolved file path stays within the configured
+     * storage directory (blocks path-traversal attempts).
+     */
+    private boolean isWithinStorage(Path filePath) {
+        Path basePath = Paths.get(storageBasePath).toAbsolutePath().normalize();
+        Path normalizedFilePath = filePath.toAbsolutePath().normalize();
+        return normalizedFilePath.startsWith(basePath);
+    }
+
+    /**
+     * Build the response headers for a (non-range) file download: content type,
+     * content disposition (attachment vs inline) and a private no-store cache policy.
+     */
+    private HttpHeaders buildDownloadHeaders(Resource resource, String contentType, String download) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(contentType));
+
+        // Handle download vs inline display
+        if ("true".equals(download)) {
+            headers.setContentDispositionFormData("attachment", resource.getFilename());
+        } else {
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"");
+        }
+
+        // Private files — prevent caching in proxies, CDNs, and shared environments
+        headers.setCacheControl("private, no-store, max-age=0");
+        return headers;
+    }
+
     /**
      * Fallback extraction of the request path from {@code pathInfo} when the URI
      * doesn't match the expected storage prefix. Strips a leading slash if present.
@@ -231,6 +250,11 @@ public class FileDownloadController {
         return pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo;
     }
 
+    /**
+     * URL-decodes the request path. If decoding fails, logs a warning using the
+     * supplied SLF4J template and returns the original (undecoded) path so the
+     * caller can continue.
+     */
     private String decodeRequestPath(String requestPath, String warnTemplate) {
         try {
             return URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
@@ -249,29 +273,15 @@ public class FileDownloadController {
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'ARCHITECT', 'INTERIOR_DESIGNER', 'SITE_ENGINEER', 'VIEWER', 'CUSTOMER_ADMIN', 'CONTRACTOR', 'BUILDER')")
     public ResponseEntity<Void> getFileMetadata(HttpServletRequest request) {
         try {
-            // Get the full request path (everything after /api/storage/)
             String requestURI = request.getRequestURI();
-            String requestPath;
-            
-            if (requestURI.startsWith(STORAGE_PREFIX_SLASH)) {
-                requestPath = requestURI.substring(STORAGE_PREFIX_SLASH.length());
-            } else if (requestURI.startsWith(STORAGE_PREFIX)) {
-                requestPath = requestURI.substring(STORAGE_PREFIX.length());
-                // Remove leading slash if present
-                if (requestPath.startsWith("/")) {
-                    requestPath = requestPath.substring(1);
-                }
-            } else {
-                // Fallback: try to extract from path info
-                requestPath = extractPathInfoFallback(request.getPathInfo());
-            }
+            String requestPath = resolveRequestPath(requestURI, request);
 
             // Validate request path is not empty
             if (requestPath == null || requestPath.isEmpty()) {
                 logger.warn("Empty request path for HEAD request: {}", requestURI);
                 return ResponseEntity.badRequest().build();
             }
-            
+
             // URL decode the path to handle special characters
             requestPath = decodeRequestPath(requestPath, "Failed to decode path for HEAD request '{}': {}");
 
@@ -285,10 +295,9 @@ public class FileDownloadController {
             Path filePath = Paths.get(storageBasePath).resolve(requestPath).normalize();
 
             // Security check - ensure file is within storage directory
-            Path basePath = Paths.get(storageBasePath).toAbsolutePath().normalize();
-            Path normalizedFilePath = filePath.toAbsolutePath().normalize();
-            if (!normalizedFilePath.startsWith(basePath)) {
-                logger.warn("Path traversal attempt blocked on HEAD: {} (resolved to {})", requestPath, normalizedFilePath);
+            if (!isWithinStorage(filePath)) {
+                logger.warn("Path traversal attempt blocked on HEAD: {} (resolved to {})",
+                        requestPath, filePath.toAbsolutePath().normalize());
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 

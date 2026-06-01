@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,9 +34,9 @@ class CustomerCrApprovalControllerTest extends TestcontainersPostgresBase {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
 
-    @MockBean PortalApiClient portalApiClient;
-    @MockBean CustomerUserRepository customerUserRepository;
-    @MockBean CrAccessGuard crAccessGuard;
+    @MockitoBean PortalApiClient portalApiClient;
+    @MockitoBean CustomerUserRepository customerUserRepository;
+    @MockitoBean CrAccessGuard crAccessGuard;
 
     @BeforeEach
     void setUp() {

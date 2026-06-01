@@ -65,6 +65,10 @@ public class ProjectModuleController {
     private final NotificationTriggerService notificationTriggerService;
     private final TaskRepository taskRepository;
 
+    // Spring dependency-injection constructor: each parameter is an injected collaborator.
+    // Splitting this controller into smaller ones is tracked separately; suppress the
+    // "too many parameters" rule for the DI constructor in the meantime.
+    @SuppressWarnings("java:S107")
     public ProjectModuleController(ProjectDocumentService documentService,
                                    DashboardService dashboardService,
                                    CustomerUserRepository customerUserRepository,
@@ -109,52 +113,74 @@ public class ProjectModuleController {
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             List<Task> tasks = taskRepository.findByProjectIdOrderedForGantt(project.getId());
 
-            LocalDate today = LocalDate.now();
-            LocalDate projectStart = null;
-            LocalDate projectEnd = null;
-            int totalProgress = 0;
-            int countForProgress = 0;
-            int overdueTasks = 0;
-
-            List<Map<String, Object>> taskDtos = new java.util.ArrayList<>();
-            for (Task t : tasks) {
-                if (t.getStartDate() != null && (projectStart == null || t.getStartDate().isBefore(projectStart))) {
-                    projectStart = t.getStartDate();
-                }
-                if (t.getEndDate() != null && (projectEnd == null || t.getEndDate().isAfter(projectEnd))) {
-                    projectEnd = t.getEndDate();
-                }
-                boolean overdue = t.getEndDate() != null && t.getEndDate().isBefore(today)
-                        && !"COMPLETED".equals(t.getStatus()) && !"CANCELLED".equals(t.getStatus());
-                if (overdue) overdueTasks++;
-                if (!"CANCELLED".equals(t.getStatus())) {
-                    totalProgress += (t.getProgressPercent() != null ? t.getProgressPercent() : 0);
-                    countForProgress++;
-                }
-                Map<String, Object> dto = new java.util.LinkedHashMap<>();
-                dto.put("id", t.getId());
-                dto.put("title", t.getTitle());
-                dto.put(STATUS_KEY, t.getStatus());
-                dto.put("priority", t.getPriority());
-                dto.put("startDate", t.getStartDate());
-                dto.put("endDate", t.getEndDate());
-                dto.put("dueDate", t.getDueDate());
-                dto.put("progressPercent", t.getProgressPercent() != null ? t.getProgressPercent() : 0);
-                dto.put("overdue", overdue);
-                taskDtos.add(dto);
-            }
-
-            int overallProgress = countForProgress > 0 ? totalProgress / countForProgress : 0;
-            Map<String, Object> result = new java.util.LinkedHashMap<>();
-            result.put("tasks", taskDtos);
-            result.put("projectStartDate", projectStart);
-            result.put("projectEndDate", projectEnd);
-            result.put("overallProgress", overallProgress);
-            result.put("overdueTasks", overdueTasks);
+            Map<String, Object> result = buildGanttResult(tasks, LocalDate.now());
             return ResponseEntity.ok(new ApiResponse<>(true, "Gantt data retrieved successfully", result));
         } catch (RuntimeException e) {
             return handleRuntimeException(e, "get gantt data", projectUuid, auth);
         }
+    }
+
+    /**
+     * Aggregate the ordered task list into the customer-facing Gantt payload:
+     * per-task DTOs plus project date bounds, overall progress and overdue count.
+     */
+    private Map<String, Object> buildGanttResult(List<Task> tasks, LocalDate today) {
+        LocalDate projectStart = null;
+        LocalDate projectEnd = null;
+        int totalProgress = 0;
+        int countForProgress = 0;
+        int overdueTasks = 0;
+
+        List<Map<String, Object>> taskDtos = new java.util.ArrayList<>();
+        for (Task t : tasks) {
+            if (t.getStartDate() != null && (projectStart == null || t.getStartDate().isBefore(projectStart))) {
+                projectStart = t.getStartDate();
+            }
+            if (t.getEndDate() != null && (projectEnd == null || t.getEndDate().isAfter(projectEnd))) {
+                projectEnd = t.getEndDate();
+            }
+            boolean overdue = isTaskOverdue(t, today);
+            if (overdue) overdueTasks++;
+            if (!"CANCELLED".equals(t.getStatus())) {
+                totalProgress += (t.getProgressPercent() != null ? t.getProgressPercent() : 0);
+                countForProgress++;
+            }
+            taskDtos.add(toGanttTaskDto(t, overdue));
+        }
+
+        int overallProgress = countForProgress > 0 ? totalProgress / countForProgress : 0;
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("tasks", taskDtos);
+        result.put("projectStartDate", projectStart);
+        result.put("projectEndDate", projectEnd);
+        result.put("overallProgress", overallProgress);
+        result.put("overdueTasks", overdueTasks);
+        return result;
+    }
+
+    /**
+     * A task is overdue if it has an end date in the past and is neither completed nor cancelled.
+     */
+    private boolean isTaskOverdue(Task t, LocalDate today) {
+        return t.getEndDate() != null && t.getEndDate().isBefore(today)
+                && !"COMPLETED".equals(t.getStatus()) && !"CANCELLED".equals(t.getStatus());
+    }
+
+    /**
+     * Map a single task to its Gantt DTO map.
+     */
+    private Map<String, Object> toGanttTaskDto(Task t, boolean overdue) {
+        Map<String, Object> dto = new java.util.LinkedHashMap<>();
+        dto.put("id", t.getId());
+        dto.put("title", t.getTitle());
+        dto.put(STATUS_KEY, t.getStatus());
+        dto.put("priority", t.getPriority());
+        dto.put("startDate", t.getStartDate());
+        dto.put("endDate", t.getEndDate());
+        dto.put("dueDate", t.getDueDate());
+        dto.put("progressPercent", t.getProgressPercent() != null ? t.getProgressPercent() : 0);
+        dto.put("overdue", overdue);
+        return dto;
     }
 
     // ===== DOCUMENT ENDPOINTS =====

@@ -60,6 +60,7 @@ public class CustomerUser implements UserDetails {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
+    @SuppressWarnings("java:S1948") // JPA-managed lazy/eager proxy; entity is never Java-serialized
     private Role role;
 
     /** Projects this user can access — includes projects where they are the owner
@@ -67,6 +68,7 @@ public class CustomerUser implements UserDetails {
      *  Roles: CUSTOMER (owner), ARCHITECT, INTERIOR_DESIGNER, SITE_ENGINEER, VIEWER. */
     @ManyToMany
     @JoinTable(name = "project_members", joinColumns = @JoinColumn(name = "customer_user_id"), inverseJoinColumns = @JoinColumn(name = "project_id"))
+    @SuppressWarnings("java:S1948") // JPA-managed lazy proxy collection; entity is never Java-serialized
     private Set<Project> projects;
 
     @Column(nullable = false)

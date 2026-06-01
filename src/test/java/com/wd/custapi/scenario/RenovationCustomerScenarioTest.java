@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@SuppressWarnings("java:S5976") // stateful ordered scenario steps; not parameterizable into a single test
 class RenovationCustomerScenarioTest extends TestcontainersPostgresBase {
 
     private static final String CUSTOMER_C_EMAIL = "customerC@test.com";

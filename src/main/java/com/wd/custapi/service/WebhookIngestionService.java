@@ -200,6 +200,7 @@ public class WebhookIngestionService {
         notificationRepository.save(notification);
     }
 
+    @SuppressWarnings("java:S125") // explanatory prose comments, not commented-out code
     private void pushIfTokenPresent(CustomerUser user, String title, String body,
                                      PortalEventType eventType, Long referenceId,
                                      String resolvedNotifType) {

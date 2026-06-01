@@ -39,13 +39,18 @@ public class CustomerNextPaymentService {
 
     private final PaymentStageRepository paymentStageRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    @SuppressWarnings("java:S6813")   // self-injection requires field injection (constructor would cycle)
+    private CustomerNextPaymentService self;
+
     public CustomerNextPaymentService(PaymentStageRepository paymentStageRepository) {
         this.paymentStageRepository = paymentStageRepository;
     }
 
     @Transactional(readOnly = true)
     public NextPaymentMilestoneDto getNextPaymentMilestone(Project project) {
-        return getNextPaymentMilestoneAt(project, LocalDate.now(IST));
+        return (self != null ? self : this).getNextPaymentMilestoneAt(project, LocalDate.now(IST));
     }
 
     @Transactional(readOnly = true)

@@ -1,7 +1,9 @@
 package com.wd.custapi.service;
 
+import com.wd.custapi.exception.CustomerApiException;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -163,16 +165,23 @@ public class CctvStreamProxyService {
      * Fetches an upstream URL server-side, optionally with a Basic-auth header.
      * Used by the controller to relay manifests and segments to the customer.
      */
-    public UpstreamResponse fetch(URI url, String authHeader) throws Exception {
+    public UpstreamResponse fetch(URI url, String authHeader) {
         HttpRequest.Builder req = HttpRequest.newBuilder(url)
                 .timeout(Duration.ofSeconds(15))
                 .GET();
         if (authHeader != null) {
             req.header("Authorization", authHeader);
         }
-        HttpResponse<byte[]> resp = http.send(req.build(), HttpResponse.BodyHandlers.ofByteArray());
-        String ct = resp.headers().firstValue("content-type").orElse("application/octet-stream");
-        return new UpstreamResponse(resp.statusCode(), ct, resp.body());
+        try {
+            HttpResponse<byte[]> resp = http.send(req.build(), HttpResponse.BodyHandlers.ofByteArray());
+            String ct = resp.headers().firstValue("content-type").orElse("application/octet-stream");
+            return new UpstreamResponse(resp.statusCode(), ct, resp.body());
+        } catch (IOException e) {
+            throw new CustomerApiException("Upstream CCTV fetch failed: " + url, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CustomerApiException("Upstream CCTV fetch interrupted: " + url, e);
+        }
     }
 
     /** Heuristic: does this content look like an HLS manifest (so it needs rewriting)? */

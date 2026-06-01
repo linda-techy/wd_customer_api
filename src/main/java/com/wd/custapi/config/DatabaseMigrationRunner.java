@@ -41,73 +41,20 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
         logger.info("Starting database migration check...");
 
         try {
-            // 1. Check if project_uuid column exists
-            String checkColumnSql = "SELECT count(*) FROM information_schema.columns " +
-                    "WHERE table_name = 'customer_projects' AND column_name = 'project_uuid'";
-            Integer count = jdbcTemplate.queryForObject(checkColumnSql, Integer.class);
-
-            if (count != null && count == 0) {
-                // Check if old public_id column exists
-                String checkOldColumnSql = "SELECT count(*) FROM information_schema.columns " +
-                        "WHERE table_name = 'customer_projects' AND column_name = 'public_id'";
-                Integer oldCount = jdbcTemplate.queryForObject(checkOldColumnSql, Integer.class);
-
-                if (oldCount != null && oldCount > 0) {
-                    logger.info("Renaming 'public_id' to 'project_uuid'...");
-                    jdbcTemplate.execute("ALTER TABLE customer_projects RENAME COLUMN public_id TO project_uuid");
-                    logger.info("Column renamed.");
-                } else {
-                    logger.info("Column 'project_uuid' missing. Adding it...");
-                    jdbcTemplate.execute("ALTER TABLE customer_projects ADD COLUMN project_uuid VARCHAR(36)");
-                    logger.info("Column 'project_uuid' added.");
-                }
-            } else {
-                logger.info("Column 'project_uuid' already exists.");
-            }
+            // 1. Ensure project_uuid column exists (rename from public_id or add fresh)
+            ensureProjectUuidColumn();
 
             // 2. Backfill UUIDs for existing rows where project_uuid is null
-            String findNullsSql = "SELECT id FROM customer_projects WHERE project_uuid IS NULL";
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(findNullsSql);
-
-            if (!rows.isEmpty()) {
-                logger.info("Found {} rows with null project_uuid. Updating...", rows.size());
-                for (Map<String, Object> row : rows) {
-                    Long id = (Long) row.get("id");
-                    String uuid = UUID.randomUUID().toString();
-                    jdbcTemplate.update("UPDATE customer_projects SET project_uuid = ? WHERE id = ?", uuid, id);
-                }
-                logger.info("Successfully updated project_uuid for existing rows.");
-            } else {
-                logger.info("No rows found with null project_uuid.");
-            }
+            backfillNullProjectUuids();
 
             // 3. Add Unique Constraint
-            String checkConstraintSql = "SELECT count(*) FROM information_schema.table_constraints " +
-                    "WHERE table_name = 'customer_projects' AND constraint_name = 'uk_project_uuid'";
-            Integer constraintCount = jdbcTemplate.queryForObject(checkConstraintSql, Integer.class);
-
-            if (constraintCount != null && constraintCount == 0) {
-                logger.info("Adding unique constraint 'uk_project_uuid'...");
-                addUniqueProjectUuidConstraint();
-            } else {
-                logger.info("Unique constraint 'uk_project_uuid' already exists.");
-            }
+            ensureUniqueProjectUuidConstraint();
 
             // 4. Set Not Null
             setProjectUuidNotNull();
 
             // 5. Add sqfeet column if missing
-            String checkSqFeetSql = "SELECT count(*) FROM information_schema.columns " +
-                    "WHERE table_name = 'customer_projects' AND column_name = 'sqfeet'";
-            Integer sqFeetCount = jdbcTemplate.queryForObject(checkSqFeetSql, Integer.class);
-
-            if (sqFeetCount != null && sqFeetCount == 0) {
-                logger.info("Column 'sqfeet' missing. Adding it...");
-                jdbcTemplate.execute("ALTER TABLE customer_projects ADD COLUMN sqfeet DOUBLE PRECISION");
-                logger.info("Column 'sqfeet' added.");
-            } else {
-                logger.info("Column 'sqfeet' already exists.");
-            }
+            ensureSqFeetColumn();
 
             // 6. Add GPS distance tracking columns to site_visits
             addColumnIfMissing("site_visits", "distance_from_project_checkin", "DOUBLE PRECISION");
@@ -121,6 +68,88 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
         }
 
         logger.info("Database migration check completed.");
+    }
+
+    /**
+     * Ensure the project_uuid column exists. If an old public_id column is present,
+     * rename it; otherwise add a fresh project_uuid column.
+     */
+    private void ensureProjectUuidColumn() {
+        String checkColumnSql = "SELECT count(*) FROM information_schema.columns " +
+                "WHERE table_name = 'customer_projects' AND column_name = 'project_uuid'";
+        Integer count = jdbcTemplate.queryForObject(checkColumnSql, Integer.class);
+
+        if (count != null && count == 0) {
+            // Check if old public_id column exists
+            String checkOldColumnSql = "SELECT count(*) FROM information_schema.columns " +
+                    "WHERE table_name = 'customer_projects' AND column_name = 'public_id'";
+            Integer oldCount = jdbcTemplate.queryForObject(checkOldColumnSql, Integer.class);
+
+            if (oldCount != null && oldCount > 0) {
+                logger.info("Renaming 'public_id' to 'project_uuid'...");
+                jdbcTemplate.execute("ALTER TABLE customer_projects RENAME COLUMN public_id TO project_uuid");
+                logger.info("Column renamed.");
+            } else {
+                logger.info("Column 'project_uuid' missing. Adding it...");
+                jdbcTemplate.execute("ALTER TABLE customer_projects ADD COLUMN project_uuid VARCHAR(36)");
+                logger.info("Column 'project_uuid' added.");
+            }
+        } else {
+            logger.info("Column 'project_uuid' already exists.");
+        }
+    }
+
+    /**
+     * Backfill a generated UUID for every customer_projects row whose project_uuid is null.
+     */
+    private void backfillNullProjectUuids() {
+        String findNullsSql = "SELECT id FROM customer_projects WHERE project_uuid IS NULL";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(findNullsSql);
+
+        if (!rows.isEmpty()) {
+            logger.info("Found {} rows with null project_uuid. Updating...", rows.size());
+            for (Map<String, Object> row : rows) {
+                Long id = (Long) row.get("id");
+                String uuid = UUID.randomUUID().toString();
+                jdbcTemplate.update("UPDATE customer_projects SET project_uuid = ? WHERE id = ?", uuid, id);
+            }
+            logger.info("Successfully updated project_uuid for existing rows.");
+        } else {
+            logger.info("No rows found with null project_uuid.");
+        }
+    }
+
+    /**
+     * Add the uk_project_uuid unique constraint if it does not already exist.
+     */
+    private void ensureUniqueProjectUuidConstraint() {
+        String checkConstraintSql = "SELECT count(*) FROM information_schema.table_constraints " +
+                "WHERE table_name = 'customer_projects' AND constraint_name = 'uk_project_uuid'";
+        Integer constraintCount = jdbcTemplate.queryForObject(checkConstraintSql, Integer.class);
+
+        if (constraintCount != null && constraintCount == 0) {
+            logger.info("Adding unique constraint 'uk_project_uuid'...");
+            addUniqueProjectUuidConstraint();
+        } else {
+            logger.info("Unique constraint 'uk_project_uuid' already exists.");
+        }
+    }
+
+    /**
+     * Add the sqfeet column to customer_projects if it is missing.
+     */
+    private void ensureSqFeetColumn() {
+        String checkSqFeetSql = "SELECT count(*) FROM information_schema.columns " +
+                "WHERE table_name = 'customer_projects' AND column_name = 'sqfeet'";
+        Integer sqFeetCount = jdbcTemplate.queryForObject(checkSqFeetSql, Integer.class);
+
+        if (sqFeetCount != null && sqFeetCount == 0) {
+            logger.info("Column 'sqfeet' missing. Adding it...");
+            jdbcTemplate.execute("ALTER TABLE customer_projects ADD COLUMN sqfeet DOUBLE PRECISION");
+            logger.info("Column 'sqfeet' added.");
+        } else {
+            logger.info("Column 'sqfeet' already exists.");
+        }
     }
 
     /**

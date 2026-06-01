@@ -198,6 +198,7 @@ public class DashboardDto {
         public ProjectCard() {
         }
 
+        @SuppressWarnings("java:S107") // data carrier — many fields by design
         public ProjectCard(Long id, String projectUuid, String name, String code, String location, LocalDate startDate,
                 LocalDate endDate,
                 String status, Double progress, String projectPhase, String projectType, String designPackage,
@@ -685,6 +686,7 @@ public class DashboardDto {
         public ProjectDocumentSummary() {
         }
 
+        @SuppressWarnings("java:S107") // data carrier — many fields by design
         public ProjectDocumentSummary(Long id, String filename, String downloadUrl, Long fileSize,
                 String fileType, String categoryName, LocalDateTime uploadDate, String uploadedBy) {
             this.id = id;

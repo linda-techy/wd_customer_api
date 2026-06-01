@@ -6,6 +6,7 @@ package com.wd.custapi.exception;
  */
 public class ResourceNotFoundException extends RuntimeException {
     private final String resourceType;
+    @SuppressWarnings("java:S1948") // always a simple serializable id (Long/String/UUID) in practice
     private final Object resourceId;
 
     public ResourceNotFoundException(String resourceType, Object resourceId) {

@@ -23,6 +23,11 @@ public class CustomerChangeOrderService {
     private final ChangeOrderRepository changeOrderRepository;
     private final CustomerUserRepository customerUserRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    @SuppressWarnings("java:S6813")   // self-injection requires field injection (constructor would cycle)
+    private CustomerChangeOrderService self;
+
     public CustomerChangeOrderService(ChangeOrderRepository changeOrderRepository,
                                        CustomerUserRepository customerUserRepository) {
         this.changeOrderRepository = changeOrderRepository;
@@ -55,7 +60,7 @@ public class CustomerChangeOrderService {
      * The portal API watches for APPROVED status and triggers downstream docs.
      */
     public ChangeOrder approve(Long coId, Long projectId, String customerEmail) {
-        ChangeOrder co = getChangeOrder(coId, projectId);
+        ChangeOrder co = (self != null ? self : this).getChangeOrder(coId, projectId);
 
         if (!STATUS_CUSTOMER_REVIEW.equals(co.getStatus())) {
             throw new IllegalStateException(
@@ -74,7 +79,7 @@ public class CustomerChangeOrderService {
     }
 
     public ChangeOrder reject(Long coId, Long projectId, String customerEmail, String reason) {
-        ChangeOrder co = getChangeOrder(coId, projectId);
+        ChangeOrder co = (self != null ? self : this).getChangeOrder(coId, projectId);
 
         if (!STATUS_CUSTOMER_REVIEW.equals(co.getStatus())) {
             throw new IllegalStateException(

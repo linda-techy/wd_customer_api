@@ -27,6 +27,11 @@ public class AuthorizationService {
     private final SiteReportRepository siteReportRepository;
     private final ProjectRepository projectRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    @SuppressWarnings("java:S6813")   // self-injection requires field injection (constructor would cycle)
+    private AuthorizationService self;
+
     public AuthorizationService(DashboardService dashboardService,
                                 SiteReportRepository siteReportRepository,
                                 ProjectRepository projectRepository) {
@@ -118,7 +123,7 @@ public class AuthorizationService {
         }
 
         // Check if user has access
-        List<Long> accessibleProjectIds = getAccessibleProjectIds(userEmail);
+        List<Long> accessibleProjectIds = (self != null ? self : this).getAccessibleProjectIds(userEmail);
         if (!accessibleProjectIds.contains(projectId)) {
             logger.warn("User {} unauthorized to {} project {}", userEmail, action, projectId);
             throw new UnauthorizedException(action, "project");

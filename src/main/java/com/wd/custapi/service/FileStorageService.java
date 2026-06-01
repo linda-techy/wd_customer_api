@@ -48,6 +48,7 @@ public class FileStorageService {
         }
     }
 
+    @SuppressWarnings("java:S4449") // nullable comes from Spring's MultipartFile.getOriginalFilename() into Spring's StringUtils.cleanPath, which handles null
     public String storeFile(MultipartFile file, String subDirectory) {
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
 

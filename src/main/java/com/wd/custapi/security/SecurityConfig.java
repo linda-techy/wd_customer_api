@@ -45,6 +45,7 @@ public class SecurityConfig {
     }
     
     @Bean
+    @SuppressWarnings("java:S125") // explanatory prose comments, not commented-out code
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             // CSRF disabled for stateless JWT authentication - tokens in Authorization header

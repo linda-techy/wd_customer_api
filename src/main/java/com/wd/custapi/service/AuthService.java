@@ -63,6 +63,11 @@ public class AuthService {
     @Value("${app.customer-portal-base-url:https://cust.walldotbuilders.com}")
     private String customerPortalBaseUrl;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    @SuppressWarnings("java:S6813")   // self-injection requires field injection (constructor would cycle)
+    private AuthService self;
+
     public AuthService(AuthenticationManager authenticationManager,
                        JwtService jwtService,
                        CustomerUserRepository customerUserRepository,
@@ -326,7 +331,7 @@ public class AuthService {
 
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
-        forgotPassword(request, "unknown-client");
+        (self != null ? self : this).forgotPassword(request, "unknown-client");
     }
 
     @Transactional
@@ -372,7 +377,7 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        resetPassword(request, "unknown-client");
+        (self != null ? self : this).resetPassword(request, "unknown-client");
     }
 
     @Transactional

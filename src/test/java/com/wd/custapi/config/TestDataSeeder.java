@@ -41,8 +41,6 @@ public class TestDataSeeder {
 
     @Autowired private JdbcTemplate jdbcTemplate;
 
-    private boolean seeded = false;
-
     // Roles
     private Role customerRole;
     private Role adminRole;
@@ -93,7 +91,6 @@ public class TestDataSeeder {
         seedRoles();
         seedUsers();
         seedProjects();
-        seeded = true;
         ensureCustomerProjectLinks();
     }
 
@@ -281,18 +278,6 @@ public class TestDataSeeder {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Failed to set field '" + fieldName + "' on "
                     + target.getClass().getSimpleName(), e);
-        }
-    }
-
-    private void associateProjectWithCustomer(CustomerUser user, Project project) {
-        Set<Project> projects = user.getProjects();
-        if (projects == null) {
-            projects = new HashSet<>();
-        }
-        if (!projects.contains(project)) {
-            projects.add(project);
-            user.setProjects(projects);
-            customerUserRepository.save(user);
         }
     }
 

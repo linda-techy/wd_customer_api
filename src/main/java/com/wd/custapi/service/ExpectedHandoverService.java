@@ -49,6 +49,11 @@ public class ExpectedHandoverService {
     private final ProjectBaselineRepository projectBaselineRepository;
     private final DelayLogRepository delayLogRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    @SuppressWarnings("java:S6813")   // self-injection requires field injection (constructor would cycle)
+    private ExpectedHandoverService self;
+
     public ExpectedHandoverService(
             TaskRepository taskRepository,
             ProjectBaselineRepository projectBaselineRepository,
@@ -61,7 +66,7 @@ public class ExpectedHandoverService {
     @Transactional(readOnly = true)
     @Cacheable(value = "expectedHandover", key = "#project.projectUuid")
     public ExpectedHandoverDto compute(Project project) {
-        return computeAt(project, LocalDate.now());
+        return (self != null ? self : this).computeAt(project, LocalDate.now());
     }
 
     /**

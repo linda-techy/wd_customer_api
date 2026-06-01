@@ -109,6 +109,7 @@ class CustomerBoqControllerNextOnlyTest {
     }
 
     @Test
+    @SuppressWarnings("java:S125") // explanatory prose comments, not commented-out code
     void nextOnlyAbsent_returnsExistingFullSchedule() {
         when(paymentStageRepository.findByProjectIdOrderByStageNumberAsc(7L))
                 .thenReturn(Collections.emptyList());

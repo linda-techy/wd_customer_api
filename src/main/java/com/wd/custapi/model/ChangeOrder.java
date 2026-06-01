@@ -2,7 +2,7 @@ package com.wd.custapi.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * Customer can approve or reject via dedicated service methods.
  */
 @SQLDelete(sql = "UPDATE change_orders SET deleted_at = NOW() WHERE id = ? AND version = ?")
-@Where(clause = "deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 @Entity
 @Table(name = "change_orders")
 public class ChangeOrder {

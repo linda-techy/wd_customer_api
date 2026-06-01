@@ -116,6 +116,7 @@ public class LoginResponse {
             this.role = role;
         }
 
+        @SuppressWarnings("java:S107") // data carrier — many fields by design
         public UserInfo(Long id, String email, String firstName, String lastName, String role,
                         String phone, String whatsappNumber, String address, String companyName,
                         String gstNumber, String customerType) {

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
  * This configuration provides constants and settings for the customer application.
  */
 @Configuration
+@SuppressWarnings("java:S1118") // Spring @Configuration requires a non-private constructor for CGLIB proxying
 public class AppConfig {
 
     // Application-specific constants
