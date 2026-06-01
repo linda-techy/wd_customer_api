@@ -9,8 +9,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Computes side-by-side diff between two BOQ document revisions.
@@ -18,6 +16,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class BoqDiffService {
+
+    private static final String KEY_DESCRIPTION = "description";
 
     private final BoqDocumentRepository boqDocumentRepository;
     private final BoqItemRepository boqItemRepository;
@@ -35,7 +35,7 @@ public class BoqDiffService {
         return boqDocumentRepository.findByProjectIdOrderByRevisionNumberAsc(projectId)
                 .stream()
                 .map(this::revisionToMap)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -95,7 +95,7 @@ public class BoqDiffService {
             if (!changes.isEmpty()) {
                 Map<String, Object> modItem = new LinkedHashMap<>();
                 modItem.put("itemCode", entry.getKey());
-                modItem.put("description", to.getDescription());
+                modItem.put(KEY_DESCRIPTION, to.getDescription());
                 modItem.put("changes", changes);
                 modified.add(modItem);
             }
@@ -145,7 +145,7 @@ public class BoqDiffService {
         // The document-level summary (oldTotal / newTotal / delta) still tells the customer
         // whether the overall approved value changed, which is what they need to know.
         if (!Objects.equals(trim(from.getDescription()), trim(to.getDescription()))) {
-            changes.put("description", changeMap(from.getDescription(), to.getDescription()));
+            changes.put(KEY_DESCRIPTION, changeMap(from.getDescription(), to.getDescription()));
         }
         return changes;
     }
@@ -183,7 +183,7 @@ public class BoqDiffService {
     private Map<String, Object> itemToMap(BoqItem item) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("itemCode", item.getItemCode());
-        m.put("description", item.getDescription());
+        m.put(KEY_DESCRIPTION, item.getDescription());
         // Customer-facing diff: do NOT expose quantity, unit, rate, or amount.
         // Scope changes (added / removed items) reveal description only — pricing stays internal.
         return m;

@@ -58,15 +58,15 @@ public class WebhookIngestionService {
     @Transactional
     public void process(PortalWebhookEvent event) {
         // Persist event record with PROCESSING status before any work
-        ReceivedWebhookEvent record = new ReceivedWebhookEvent();
-        record.setEventType(event.eventType() != null ? event.eventType().name() : "UNKNOWN");
-        record.setStatus(ReceivedWebhookEvent.STATUS_PROCESSING);
+        ReceivedWebhookEvent webhookRecord = new ReceivedWebhookEvent();
+        webhookRecord.setEventType(event.eventType() != null ? event.eventType().name() : "UNKNOWN");
+        webhookRecord.setStatus(ReceivedWebhookEvent.STATUS_PROCESSING);
         try {
-            record.setPayload(objectMapper.writeValueAsString(event));
+            webhookRecord.setPayload(objectMapper.writeValueAsString(event));
         } catch (Exception ex) {
-            record.setPayload("{}");
+            webhookRecord.setPayload("{}");
         }
-        record = webhookEventRepository.save(record);
+        webhookRecord = webhookEventRepository.save(webhookRecord);
 
         try {
             log.info("Processing portal webhook event: type={} projectId={} referenceId={}",
@@ -74,16 +74,16 @@ public class WebhookIngestionService {
 
             doProcess(event);
 
-            record.setStatus(ReceivedWebhookEvent.STATUS_PROCESSED);
-            record.setProcessedAt(LocalDateTime.now());
-            webhookEventRepository.save(record);
+            webhookRecord.setStatus(ReceivedWebhookEvent.STATUS_PROCESSED);
+            webhookRecord.setProcessedAt(LocalDateTime.now());
+            webhookEventRepository.save(webhookRecord);
 
         } catch (Exception e) {
             // Never propagate — webhook processing must not affect portal API response
             log.error("Error processing portal webhook event type={}: {}", event.eventType(), e.getMessage(), e);
-            record.setStatus(ReceivedWebhookEvent.STATUS_FAILED);
-            record.setErrorMessage(e.getMessage());
-            webhookEventRepository.save(record);
+            webhookRecord.setStatus(ReceivedWebhookEvent.STATUS_FAILED);
+            webhookRecord.setErrorMessage(e.getMessage());
+            webhookEventRepository.save(webhookRecord);
         }
     }
 
@@ -102,37 +102,37 @@ public class WebhookIngestionService {
 
         log.info("Retrying {} failed webhook event(s)", failedEvents.size());
 
-        for (ReceivedWebhookEvent record : failedEvents) {
-            int attempt = record.getAttemptCount() + 1;
+        for (ReceivedWebhookEvent failedRecord : failedEvents) {
+            int attempt = failedRecord.getAttemptCount() + 1;
 
             if (attempt > MAX_RETRY_ATTEMPTS) {
                 log.warn("Abandoning webhook event id={} type={} after {} attempts",
-                        record.getId(), record.getEventType(), MAX_RETRY_ATTEMPTS);
-                record.setErrorMessage("[ABANDONED after " + MAX_RETRY_ATTEMPTS + " attempts] " + record.getErrorMessage());
-                webhookEventRepository.save(record);
+                        failedRecord.getId(), failedRecord.getEventType(), MAX_RETRY_ATTEMPTS);
+                failedRecord.setErrorMessage("[ABANDONED after " + MAX_RETRY_ATTEMPTS + " attempts] " + failedRecord.getErrorMessage());
+                webhookEventRepository.save(failedRecord);
                 continue;
             }
 
-            record.setAttemptCount(attempt);
-            record.setStatus(ReceivedWebhookEvent.STATUS_PROCESSING);
-            webhookEventRepository.save(record);
+            failedRecord.setAttemptCount(attempt);
+            failedRecord.setStatus(ReceivedWebhookEvent.STATUS_PROCESSING);
+            webhookEventRepository.save(failedRecord);
 
             try {
-                PortalWebhookEvent event = objectMapper.readValue(record.getPayload(), PortalWebhookEvent.class);
+                PortalWebhookEvent event = objectMapper.readValue(failedRecord.getPayload(), PortalWebhookEvent.class);
                 doProcess(event);
 
-                record.setStatus(ReceivedWebhookEvent.STATUS_PROCESSED);
-                record.setProcessedAt(LocalDateTime.now());
+                failedRecord.setStatus(ReceivedWebhookEvent.STATUS_PROCESSED);
+                failedRecord.setProcessedAt(LocalDateTime.now());
                 log.info("Successfully retried webhook event id={} type={} on attempt {}",
-                        record.getId(), record.getEventType(), attempt);
+                        failedRecord.getId(), failedRecord.getEventType(), attempt);
             } catch (Exception e) {
                 log.error("Retry attempt {} failed for webhook event id={} type={}: {}",
-                        attempt, record.getId(), record.getEventType(), e.getMessage(), e);
-                record.setStatus(ReceivedWebhookEvent.STATUS_FAILED);
-                record.setErrorMessage(e.getMessage());
+                        attempt, failedRecord.getId(), failedRecord.getEventType(), e.getMessage(), e);
+                failedRecord.setStatus(ReceivedWebhookEvent.STATUS_FAILED);
+                failedRecord.setErrorMessage(e.getMessage());
             }
 
-            webhookEventRepository.save(record);
+            webhookEventRepository.save(failedRecord);
         }
     }
 

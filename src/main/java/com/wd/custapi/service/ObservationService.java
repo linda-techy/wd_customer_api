@@ -10,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ObservationService {
@@ -119,7 +118,7 @@ public class ObservationService {
                 } else {
                         observations = observationRepository.findByProjectIdOrderByReportedDateDesc(projectId);
                 }
-                return observations.stream().map(this::toDto).collect(Collectors.toList());
+                return observations.stream().map(this::toDto).toList();
         }
 
         /**
@@ -134,7 +133,7 @@ public class ObservationService {
                                                 activeStatuses)
                                 .stream()
                                 .map(this::toDto)
-                                .collect(Collectors.toList());
+                                .toList();
         }
 
         /**
@@ -145,7 +144,7 @@ public class ObservationService {
                                 projectId, ObservationStatus.RESOLVED)
                                 .stream()
                                 .map(this::toDto)
-                                .collect(Collectors.toList());
+                                .toList();
         }
 
         /**

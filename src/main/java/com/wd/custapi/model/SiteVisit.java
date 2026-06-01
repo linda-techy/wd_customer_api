@@ -90,7 +90,9 @@ public class SiteVisit {
     private String visitType;
 
     // Constructors
-    public SiteVisit() {}
+    public SiteVisit() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {

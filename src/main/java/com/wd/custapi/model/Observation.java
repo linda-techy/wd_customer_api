@@ -74,6 +74,7 @@ public class Observation {
 
     // Constructors
     public Observation() {
+        // Default constructor required by JPA
     }
 
     // Getters and Setters

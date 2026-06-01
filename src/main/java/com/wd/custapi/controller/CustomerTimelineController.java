@@ -22,6 +22,8 @@ public class CustomerTimelineController {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerTimelineController.class);
 
+    private static final String KEY_ERROR = "error";
+
     private final CustomerTimelineService timelineService;
     private final DashboardService dashboardService;
 
@@ -45,13 +47,13 @@ public class CustomerTimelineController {
         } catch (RuntimeException e) {
             String msg = e.getMessage();
             if (msg != null && msg.toLowerCase().contains("not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", msg));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(KEY_ERROR,msg));
             }
-            return ResponseEntity.badRequest().body(Map.of("error", msg));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,msg));
         } catch (Exception e) {
             logger.error("Failed to fetch timeline for project {}", projectUuid, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to fetch timeline"));
+                    .body(Map.of(KEY_ERROR,"Failed to fetch timeline"));
         }
     }
 
@@ -66,9 +68,9 @@ public class CustomerTimelineController {
         } catch (RuntimeException e) {
             String msg = e.getMessage();
             if (msg != null && msg.toLowerCase().contains("not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", msg));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(KEY_ERROR,msg));
             }
-            return ResponseEntity.badRequest().body(Map.of("error", msg));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,msg));
         }
     }
 }

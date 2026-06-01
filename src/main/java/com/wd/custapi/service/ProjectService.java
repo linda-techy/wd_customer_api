@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ProjectService {
@@ -22,7 +21,7 @@ public class ProjectService {
     private com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
 
     public List<ProjectDtos.ProjectCard> getProjectsForCustomerEmail(String email) {
-        return projectRepository.findAllByCustomerEmail(email).stream().map(this::toCard).collect(Collectors.toList());
+        return projectRepository.findAllByCustomerEmail(email).stream().map(this::toCard).toList();
     }
 
     public long getProjectCountForCustomer(Long customerId) {
@@ -36,7 +35,7 @@ public class ProjectService {
 
         List<com.wd.custapi.model.ProjectDesignStep> steps = designStepRepository.findAll().stream()
                 .map(step -> new com.wd.custapi.model.ProjectDesignStep(project, step))
-                .collect(Collectors.toList());
+                .toList();
         projectDesignStepRepository.saveAll(steps);
     }
 

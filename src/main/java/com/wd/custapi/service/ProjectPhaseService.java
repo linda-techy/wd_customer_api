@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Read-only service exposing construction phase data to customers.
@@ -29,7 +28,7 @@ public class ProjectPhaseService {
         return projectPhaseRepository.findByProjectIdOrderByDisplayOrder(projectId)
                 .stream()
                 .map(this::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private ProjectPhaseDto toDto(ProjectPhase phase) {

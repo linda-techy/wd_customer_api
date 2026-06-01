@@ -46,7 +46,9 @@ public class ActivityFeed {
     private Map<String, Object> metadata;
     
     // Constructors
-    public ActivityFeed() {}
+    public ActivityFeed() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {

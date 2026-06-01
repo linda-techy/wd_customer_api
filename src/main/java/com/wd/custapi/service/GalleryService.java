@@ -76,14 +76,14 @@ public class GalleryService {
         return galleryImageRepository.findByProjectIdOrderByTakenDateDesc(projectId)
             .stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
-    
+
     public List<GalleryImageDto> getImagesByDate(Long projectId, LocalDate date) {
         return galleryImageRepository.findByProjectIdAndTakenDate(projectId, date)
             .stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
     
     /**

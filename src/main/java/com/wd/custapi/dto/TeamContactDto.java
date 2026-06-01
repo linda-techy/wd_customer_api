@@ -9,7 +9,9 @@ public class TeamContactDto {
     private String email;
     private String photoUrl;
 
-    public TeamContactDto() {}
+    public TeamContactDto() {
+        // Default constructor required by Jackson for deserialization
+    }
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }

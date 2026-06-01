@@ -18,6 +18,8 @@ import java.util.List;
 @Transactional
 public class CustomerChangeOrderService {
 
+    private static final String STATUS_CUSTOMER_REVIEW = "CUSTOMER_REVIEW";
+
     private final ChangeOrderRepository changeOrderRepository;
     private final CustomerUserRepository customerUserRepository;
     private final DashboardService dashboardService;
@@ -43,7 +45,7 @@ public class CustomerChangeOrderService {
 
     @Transactional(readOnly = true)
     public List<ChangeOrder> getPendingReview(Long projectId) {
-        return changeOrderRepository.findByProjectIdAndStatus(projectId, "CUSTOMER_REVIEW");
+        return changeOrderRepository.findByProjectIdAndStatus(projectId, STATUS_CUSTOMER_REVIEW);
     }
 
     /**
@@ -58,7 +60,7 @@ public class CustomerChangeOrderService {
     public ChangeOrder approve(Long coId, Long projectId, String customerEmail) {
         ChangeOrder co = getChangeOrder(coId, projectId);
 
-        if (!"CUSTOMER_REVIEW".equals(co.getStatus())) {
+        if (!STATUS_CUSTOMER_REVIEW.equals(co.getStatus())) {
             throw new IllegalStateException(
                 "Change order must be in CUSTOMER_REVIEW to approve. Current: " + co.getStatus());
         }
@@ -77,7 +79,7 @@ public class CustomerChangeOrderService {
     public ChangeOrder reject(Long coId, Long projectId, String customerEmail, String reason) {
         ChangeOrder co = getChangeOrder(coId, projectId);
 
-        if (!"CUSTOMER_REVIEW".equals(co.getStatus())) {
+        if (!STATUS_CUSTOMER_REVIEW.equals(co.getStatus())) {
             throw new IllegalStateException(
                 "Change order must be in CUSTOMER_REVIEW to reject. Current: " + co.getStatus());
         }

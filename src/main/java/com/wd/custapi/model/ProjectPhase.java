@@ -49,7 +49,9 @@ public class ProjectPhase {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public ProjectPhase() {}
+    public ProjectPhase() {
+        // Default constructor required by JPA
+    }
 
     // Getters — no setters needed (read-only from customer API perspective)
 

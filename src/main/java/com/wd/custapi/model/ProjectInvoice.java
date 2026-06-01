@@ -53,7 +53,9 @@ public class ProjectInvoice {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public ProjectInvoice() {}
+    public ProjectInvoice() {
+        // Default constructor required by JPA
+    }
 
     // Getters — no setters needed (read-only from customer API perspective)
 

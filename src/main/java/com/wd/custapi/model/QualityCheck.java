@@ -63,7 +63,9 @@ public class QualityCheck {
     }
     
     // Constructors
-    public QualityCheck() {}
+    public QualityCheck() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {

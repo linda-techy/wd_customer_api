@@ -66,21 +66,21 @@ class WebhookIngestionServiceTest {
 
     // Helper: saves record with an id so subsequent saves work
     private ReceivedWebhookEvent savedRecord(String status) {
-        ReceivedWebhookEvent record = new ReceivedWebhookEvent();
-        record.setStatus(status);
-        return record;
+        ReceivedWebhookEvent webhookRecord = new ReceivedWebhookEvent();
+        webhookRecord.setStatus(status);
+        return webhookRecord;
     }
 
     // ── process — event-type routing ──────────────────────────────────────────
 
     @Test
-    void process_siteReportSubmitted_createsNotificationWithSiteReportType() throws Exception {
+    void process_siteReportSubmitted_createsNotificationWithSiteReportType() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.SITE_REPORT_SUBMITTED, 10L, 1L, 55L,
                 "New site report", Map.of("reportTitle", "Week 3 Report"), LocalDateTime.now());
 
-        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
-        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        ReceivedWebhookEvent webhookRecord = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(webhookRecord);
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
 
         webhookIngestionService.process(event);
@@ -94,13 +94,13 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_invoiceIssued_createsPaymentNotification() throws Exception {
+    void process_invoiceIssued_createsPaymentNotification() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.INVOICE_ISSUED, 10L, 1L, 20L,
                 "Invoice issued", Map.of("invoiceNumber", "INV-001"), LocalDateTime.now());
 
-        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
-        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        ReceivedWebhookEvent webhookRecord = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(webhookRecord);
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
 
         webhookIngestionService.process(event);
@@ -112,13 +112,13 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_paymentRecorded_createsPaymentNotification() throws Exception {
+    void process_paymentRecorded_createsPaymentNotification() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.PAYMENT_RECORDED, 10L, 1L, 30L,
                 "Payment recorded", Map.of("amount", "50000"), LocalDateTime.now());
 
-        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
-        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        ReceivedWebhookEvent webhookRecord = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(webhookRecord);
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
 
         webhookIngestionService.process(event);
@@ -130,13 +130,13 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_delayReported_createsDelayNotificationWithCategory() throws Exception {
+    void process_delayReported_createsDelayNotificationWithCategory() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.DELAY_REPORTED, 10L, 1L, 40L,
                 "Delay reported", Map.of("category", "MATERIAL"), LocalDateTime.now());
 
-        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
-        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        ReceivedWebhookEvent webhookRecord = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(webhookRecord);
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
 
         webhookIngestionService.process(event);
@@ -148,7 +148,7 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_handoverShift_createsNotificationWithHandoverTitleAndScheduleType() throws Exception {
+    void process_handoverShift_createsNotificationWithHandoverTitleAndScheduleType() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.HANDOVER_SHIFT,
                 10L,            // projectId
@@ -178,7 +178,7 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_handoverShift_earlierDirection_titleStillUsesHandoverShifted() throws Exception {
+    void process_handoverShift_earlierDirection_titleStillUsesHandoverShifted() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.HANDOVER_SHIFT,
                 10L, null, 10L,
@@ -200,7 +200,7 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_unknownFutureEventType_doesNotThrow_marksProcessedSilently() throws Exception {
+    void process_unknownFutureEventType_doesNotThrow_marksProcessedSilently() {
         // Forward-compat: if portal-API ships a future event type the customer
         // hasn't deserialised yet, the inbound JSON may land with eventType=null.
         // The switches must not propagate IllegalStateException/NPE; they should
@@ -212,8 +212,8 @@ class WebhookIngestionServiceTest {
                 Map.of(),
                 LocalDateTime.now());
 
-        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
-        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        ReceivedWebhookEvent webhookRecord = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(webhookRecord);
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
 
         webhookIngestionService.process(event);
@@ -232,7 +232,7 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_handoverShift_pushesFcmWithScheduleNotificationType() throws Exception {
+    void process_handoverShift_pushesFcmWithScheduleNotificationType() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.HANDOVER_SHIFT, 10L, null, 10L,
                 "summary",
@@ -254,13 +254,13 @@ class WebhookIngestionServiceTest {
     // ── process — status tracking ─────────────────────────────────────────────
 
     @Test
-    void process_successfulProcessing_savesProcessingThenProcessedStatus() throws Exception {
+    void process_successfulProcessing_savesProcessingThenProcessedStatus() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.INVOICE_ISSUED, 10L, 1L, 20L,
                 "Invoice", Map.of("invoiceNumber", "INV-002"), LocalDateTime.now());
 
-        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
-        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        ReceivedWebhookEvent webhookRecord = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(webhookRecord);
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
 
         webhookIngestionService.process(event);
@@ -276,13 +276,13 @@ class WebhookIngestionServiceTest {
     }
 
     @Test
-    void process_onFailure_savesFailedStatusWithErrorMessage() throws Exception {
+    void process_onFailure_savesFailedStatusWithErrorMessage() {
         PortalWebhookEvent event = new PortalWebhookEvent(
                 PortalEventType.INVOICE_ISSUED, 10L, 1L, 20L,
                 "Invoice", Map.of("invoiceNumber", "INV-003"), LocalDateTime.now());
 
-        ReceivedWebhookEvent record = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
-        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(record);
+        ReceivedWebhookEvent webhookRecord = savedRecord(ReceivedWebhookEvent.STATUS_PROCESSING);
+        when(webhookEventRepository.save(any(ReceivedWebhookEvent.class))).thenReturn(webhookRecord);
         // Cause failure: user lookup throws
         when(userRepository.findById(1L)).thenThrow(new RuntimeException("DB error"));
 

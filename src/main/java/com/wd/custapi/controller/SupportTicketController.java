@@ -20,6 +20,8 @@ public class SupportTicketController {
 
     private static final Logger logger = LoggerFactory.getLogger(SupportTicketController.class);
 
+    private static final String KEY_ERROR = "error";
+
     private final SupportTicketService supportTicketService;
 
     public SupportTicketController(SupportTicketService supportTicketService) {
@@ -35,10 +37,10 @@ public class SupportTicketController {
             return ResponseEntity.status(201).body(ticket);
         } catch (IllegalArgumentException e) {
             logger.warn("Bad request creating support ticket: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (Exception e) {
             logger.error("Error creating support ticket", e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to create support ticket"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR,"Failed to create support ticket"));
         }
     }
 
@@ -59,10 +61,10 @@ public class SupportTicketController {
             ));
         } catch (IllegalArgumentException e) {
             logger.warn("Bad request listing support tickets: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (Exception e) {
             logger.error("Error listing support tickets", e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to list support tickets"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR,"Failed to list support tickets"));
         }
     }
 
@@ -75,13 +77,13 @@ public class SupportTicketController {
             return ResponseEntity.ok(ticket);
         } catch (IllegalArgumentException e) {
             logger.warn("Bad request fetching ticket {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (SecurityException e) {
             logger.warn("Access denied for ticket {}: {}", id, e.getMessage());
-            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(403).body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (Exception e) {
             logger.error("Error fetching ticket {}", id, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch ticket"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR,"Failed to fetch ticket"));
         }
     }
 
@@ -95,13 +97,13 @@ public class SupportTicketController {
             return ResponseEntity.status(201).body(reply);
         } catch (IllegalArgumentException e) {
             logger.warn("Bad request adding reply to ticket {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (SecurityException e) {
             logger.warn("Access denied adding reply to ticket {}: {}", id, e.getMessage());
-            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(403).body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (Exception e) {
             logger.error("Error adding reply to ticket {}", id, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to add reply"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR,"Failed to add reply"));
         }
     }
 
@@ -114,10 +116,10 @@ public class SupportTicketController {
             return ResponseEntity.ok(Map.of("tickets", tickets));
         } catch (IllegalArgumentException e) {
             logger.warn("Bad request listing tickets for project {}: {}", projectId, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (Exception e) {
             logger.error("Error listing tickets for project {}", projectId, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to list tickets for project"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR,"Failed to list tickets for project"));
         }
     }
 
@@ -130,13 +132,13 @@ public class SupportTicketController {
             return ResponseEntity.ok(ticket);
         } catch (IllegalArgumentException e) {
             logger.warn("Bad request closing ticket {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (SecurityException e) {
             logger.warn("Access denied closing ticket {}: {}", id, e.getMessage());
-            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(403).body(Map.of(KEY_ERROR,e.getMessage()));
         } catch (Exception e) {
             logger.error("Error closing ticket {}", id, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to close ticket"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR,"Failed to close ticket"));
         }
     }
 }

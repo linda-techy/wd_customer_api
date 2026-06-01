@@ -50,7 +50,9 @@ public class View360 {
     private Integer viewCount = 0;
     
     // Constructors
-    public View360() {}
+    public View360() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {

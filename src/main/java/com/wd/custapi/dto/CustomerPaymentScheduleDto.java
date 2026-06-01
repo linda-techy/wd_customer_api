@@ -3,7 +3,6 @@ package com.wd.custapi.dto;
 import com.wd.custapi.model.PaymentSchedule;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Customer-safe DTO for Payment Schedules.
@@ -38,7 +37,7 @@ public class CustomerPaymentScheduleDto {
         if (schedule.getTransactions() != null) {
             this.transactions = schedule.getTransactions().stream()
                     .map(CustomerPaymentTransactionDto::new)
-                    .collect(Collectors.toList());
+                    .toList();
         }
     }
 

@@ -21,6 +21,8 @@ import java.util.Map;
 @RequestMapping("/api/leads")
 public class ReferralProxyController {
 
+    private static final String KEY_MESSAGE = "message";
+
     @Value("${portal.api.url:http://localhost:8080}")
     private String portalApiUrl;
 
@@ -32,7 +34,7 @@ public class ReferralProxyController {
             Authentication auth) {
         if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("success", false, "message", "Authentication required"));
+                .body(Map.of("success", false, KEY_MESSAGE, "Authentication required"));
         }
         try {
             Map<String, Object> safeBody = buildSafeBody(body, auth.getName());
@@ -52,7 +54,7 @@ public class ReferralProxyController {
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "message", "Failed to submit referral"));
+                .body(Map.of("success", false, KEY_MESSAGE, "Failed to submit referral"));
         }
     }
 
@@ -61,7 +63,7 @@ public class ReferralProxyController {
         String[] allowed = {
             "referralName", "referralEmail", "referralPhone",
             "yourName", "yourPhone",
-            "projectType", "estimatedBudget", "location", "state", "district", "message"
+            "projectType", "estimatedBudget", "location", "state", "district", KEY_MESSAGE
         };
         if (body != null) {
             for (String k : allowed) {

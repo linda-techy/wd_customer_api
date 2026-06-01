@@ -17,6 +17,8 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseMigrationRunner.class);
 
+    private static final String TBL_PASSWORD_RESET_TOKENS = "customer_password_reset_tokens";
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -164,12 +166,12 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
             jdbcTemplate.execute("ALTER TABLE customer_password_reset_tokens ALTER COLUMN used SET NOT NULL");
 
             // Indexes for common lookups and cleanup.
-            createIndexIfMissing("idx_cust_pw_reset_email", "customer_password_reset_tokens", "email");
-            createIndexIfMissing("idx_cust_pw_reset_expires_at", "customer_password_reset_tokens", "expires_at");
-            createIndexIfMissing("idx_cust_pw_reset_used", "customer_password_reset_tokens", "used");
+            createIndexIfMissing("idx_cust_pw_reset_email", TBL_PASSWORD_RESET_TOKENS, "email");
+            createIndexIfMissing("idx_cust_pw_reset_expires_at", TBL_PASSWORD_RESET_TOKENS, "expires_at");
+            createIndexIfMissing("idx_cust_pw_reset_used", TBL_PASSWORD_RESET_TOKENS, "used");
             createIndexIfMissing(
                     "idx_cust_pw_reset_email_code_used",
-                    "customer_password_reset_tokens",
+                    TBL_PASSWORD_RESET_TOKENS,
                     "email, reset_code, used");
         } catch (Exception e) {
             logger.warn("Failed to create password reset tokens table: {}", e.getMessage());

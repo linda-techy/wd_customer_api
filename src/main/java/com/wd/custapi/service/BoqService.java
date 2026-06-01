@@ -31,7 +31,7 @@ public class BoqService {
         return boqItemRepository.findApprovedByProjectId(projectId)
             .stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     public List<BoqItemDto> getBoqItemsByWorkType(Long projectId, Long workTypeId) {
@@ -39,7 +39,7 @@ public class BoqService {
             .stream()
             .filter(b -> b.getWorkType() != null && workTypeId.equals(b.getWorkType().getId()))
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
     
     public BoqSummaryDto getBoqSummary(Long projectId) {
@@ -87,7 +87,7 @@ public class BoqService {
                     entry.getValue().size()
                 );
             })
-            .collect(Collectors.toList());
+            .toList();
 
         BigDecimal baseScopeAmount = items.stream()
             .filter(i -> !"ADDON".equals(i.getItemKind()) && !"OPTIONAL".equals(i.getItemKind()) && !"EXCLUSION".equals(i.getItemKind()))
@@ -119,7 +119,7 @@ public class BoqService {
         return boqWorkTypeRepository.findAllByOrderByDisplayOrderAsc()
             .stream()
             .map(wt -> new BoqWorkTypeDto(wt.getId(), wt.getName(), wt.getDescription(), wt.getDisplayOrder()))
-            .collect(Collectors.toList());
+            .toList();
     }
     
     private BoqItemDto toDto(BoqItem item) {

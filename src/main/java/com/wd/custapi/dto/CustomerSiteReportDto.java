@@ -3,7 +3,6 @@ package com.wd.custapi.dto;
 import com.wd.custapi.model.SiteReport;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Customer-safe DTO for Site Reports.
@@ -73,7 +72,7 @@ public class CustomerSiteReportDto {
         this.photos = report.getPhotos() != null
                 ? report.getPhotos().stream()
                         .map(CustomerSiteReportPhotoDto::new)
-                        .collect(Collectors.toList())
+                        .toList()
                 : Collections.emptyList();
     }
 

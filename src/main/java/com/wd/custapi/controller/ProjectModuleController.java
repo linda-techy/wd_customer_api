@@ -32,6 +32,15 @@ public class ProjectModuleController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectModuleController.class);
 
+    private static final String STATUS_KEY = "status";
+
+    /**
+     * Roles allowed to READ feature data (quality checks, observations, etc.).
+     * Customer-facing read access set, shared across multiple endpoints.
+     */
+    private static final String[] READ_ACCESS_ROLES =
+            {"CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER"};
+
     private final ProjectDocumentService documentService;
     private final DashboardService dashboardService;
     private final CustomerUserRepository customerUserRepository;
@@ -117,7 +126,7 @@ public class ProjectModuleController {
                 Map<String, Object> dto = new java.util.LinkedHashMap<>();
                 dto.put("id", t.getId());
                 dto.put("title", t.getTitle());
-                dto.put("status", t.getStatus());
+                dto.put(STATUS_KEY, t.getStatus());
                 dto.put("priority", t.getPriority());
                 dto.put("startDate", t.getStartDate());
                 dto.put("endDate", t.getEndDate());
@@ -216,7 +225,7 @@ public class ProjectModuleController {
             @RequestParam(required = false) String status,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, READ_ACCESS_ROLES)) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Quality checks retrieved successfully", java.util.List.of()));
             }
             String email = auth.getName();
@@ -474,7 +483,7 @@ public class ProjectModuleController {
             @RequestParam(required = false) String status,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, READ_ACCESS_ROLES)) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Observations retrieved successfully", java.util.List.of()));
             }
             String email = auth.getName();
@@ -495,7 +504,7 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, READ_ACCESS_ROLES)) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Active observations retrieved", java.util.List.of()));
             }
             String email = auth.getName();
@@ -516,7 +525,7 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, READ_ACCESS_ROLES)) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Resolved observations retrieved", java.util.List.of()));
             }
             String email = auth.getName();
@@ -537,7 +546,7 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, READ_ACCESS_ROLES)) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Observation counts retrieved", java.util.Map.of()));
             }
             String email = auth.getName();
@@ -868,7 +877,7 @@ public class ProjectModuleController {
             if (!"ADMIN".equalsIgnoreCase(role) && !isCustomerRole) {
                 items = items.stream()
                         .filter(i -> i.status() != null && !"DRAFT".equalsIgnoreCase(i.status()))
-                        .collect(java.util.stream.Collectors.toList());
+                        .toList();
             }
             // CUSTOMER / CUSTOMER_ADMIN: hide all commercially sensitive fields.
             // Customer sees: description, item code, scope/specs/notes, status, progress %, work type/category, item kind.
@@ -892,7 +901,7 @@ public class ProjectModuleController {
                         i.status(), i.specifications(), i.notes(),
                         i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive(),
                         i.itemKind()
-                )).collect(java.util.stream.Collectors.toList());
+                )).toList();
             }
             // ARCHITECT / INTERIOR_DESIGNER see items but NOT financial amounts
             if (!"CUSTOMER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role) && !"CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
@@ -909,7 +918,7 @@ public class ProjectModuleController {
                         i.status(), i.specifications(), i.notes(),
                         i.createdAt(), i.updatedAt(), i.createdById(), i.createdByName(), i.isActive(),
                         i.itemKind()
-                )).collect(java.util.stream.Collectors.toList());
+                )).toList();
             }
             return ResponseEntity.ok(new ApiResponse<>(true, "BoQ items retrieved successfully", items));
         } catch (Exception e) {
@@ -966,7 +975,7 @@ public class ProjectModuleController {
 
             logger.info("BOQ approval [{}] submitted by user {} for project {}", status, email, projectUuid);
             return ResponseEntity.ok(new ApiResponse<>(true, "BOQ response submitted successfully",
-                    Map.of("status", status)));
+                    Map.of(STATUS_KEY, status)));
         } catch (Exception e) {
             logger.error("Failed to submit BOQ approval for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -989,11 +998,11 @@ public class ProjectModuleController {
                     boqApprovalRepository.findTopByProjectIdOrderByCreatedAtDesc(project.getId());
             if (latest.isEmpty()) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "No response submitted yet",
-                        Map.of("status", "PENDING", "message", "")));
+                        Map.of(STATUS_KEY, "PENDING", "message", "")));
             }
             BoqApproval a = latest.get();
             return ResponseEntity.ok(new ApiResponse<>(true, "Approval status fetched",
-                    Map.of("status", a.getStatus(),
+                    Map.of(STATUS_KEY, a.getStatus(),
                            "message", a.getMessage() != null ? a.getMessage() : "")));
         } catch (Exception e) {
             logger.error("Failed to fetch BOQ approval status for project {}: {}", projectUuid, e.getMessage(), e);

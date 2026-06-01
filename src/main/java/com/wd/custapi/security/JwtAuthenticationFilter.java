@@ -21,7 +21,7 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Autowired
     private JwtService jwtService;
@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            logger.debug("Authorization header is null or doesn't start with Bearer. Skipping JWT filter.");
+            log.debug("Authorization header is null or doesn't start with Bearer. Skipping JWT filter.");
             filterChain.doFilter(request, response);
             return;
         }
@@ -76,13 +76,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                logger.debug("Successfully authenticated user: {} with authorities: {}",
+                log.debug("Successfully authenticated user: {} with authorities: {}",
                         email, userDetails.getAuthorities());
             }
         } catch (Exception e) {
             // If user not found in customer users, skip authentication
             // This allows the request to proceed to the controller where it will be rejected
-            logger.debug("Authentication skipped: {}", e.getMessage());
+            log.debug("Authentication skipped: {}", e.getMessage());
         }
     }
 }

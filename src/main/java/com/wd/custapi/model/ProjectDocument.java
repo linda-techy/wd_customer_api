@@ -64,7 +64,9 @@ public class ProjectDocument {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public ProjectDocument() {}
+    public ProjectDocument() {
+        // Default constructor required by JPA
+    }
 
     public Long getId() {
         return id;

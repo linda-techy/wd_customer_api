@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +42,16 @@ import java.util.Optional;
 public class CustomerBoqController {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerBoqController.class);
+
+    private static final String SUCCESS_KEY = "success";
+    private static final String MESSAGE_KEY = "message";
+    private static final String STATUS_KEY = "status";
+    private static final String CHANGE_ORDER_KEY = "changeOrder";
+    private static final String GST_AMOUNT_KEY = "gstAmount";
+    private static final String APPROVED_AT_KEY = "approvedAt";
+    private static final String PAID_AMOUNT_KEY = "paidAmount";
+    private static final String STAGE_AMOUNT_INCL_GST_KEY = "stageAmountInclGst";
+    private static final String INTERNAL_ERROR_MESSAGE = "An internal error occurred";
 
     private final DashboardService dashboardService;
     private final BoqDocumentRepository boqDocumentRepository;
@@ -78,11 +87,11 @@ public class CustomerBoqController {
             return boqDocumentRepository.findTopByProjectIdOrderByRevisionNumberDesc(project.getId())
                     .map(doc -> ResponseEntity.ok(boqDocumentToMap(doc)))
                     .orElse(ResponseEntity.status(404).body(
-                            Map.of("success", false, "message", "No BOQ document found for this project")));
+                            Map.of(SUCCESS_KEY, false, MESSAGE_KEY, "No BOQ document found for this project")));
         } catch (Exception e) {
             logger.error("Failed to fetch BOQ document for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -107,8 +116,8 @@ public class CustomerBoqController {
             }
             if (docOpt.isEmpty()) {
                 Map<String, Object> noBoq = new LinkedHashMap<>();
-                noBoq.put("success", true);
-                noBoq.put("message", "No BOQ available yet");
+                noBoq.put(SUCCESS_KEY, true);
+                noBoq.put(MESSAGE_KEY, "No BOQ available yet");
                 noBoq.put("data", null);
                 return ResponseEntity.ok(noBoq);
             }
@@ -118,11 +127,11 @@ public class CustomerBoqController {
                     .findByBoqDocumentIdOrderByStageNumberAsc(doc.getId())
                     .stream().map(this::stageSummaryToMap).toList();
 
-            return ResponseEntity.ok(Map.of("success", true, "data", boqSummaryToMap(doc, stages)));
+            return ResponseEntity.ok(Map.of(SUCCESS_KEY, true, "data", boqSummaryToMap(doc, stages)));
         } catch (Exception e) {
             logger.error("Failed to fetch BOQ summary for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -141,11 +150,11 @@ public class CustomerBoqController {
                     .findByProjectIdOrderByStageNumberAsc(project.getId())
                     .stream().map(this::stageSummaryToMap).toList();
 
-            return ResponseEntity.ok(Map.of("success", true, "stages", stages));
+            return ResponseEntity.ok(Map.of(SUCCESS_KEY, true, "stages", stages));
         } catch (Exception e) {
             logger.error("Failed to fetch BOQ payment stages for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -168,7 +177,7 @@ public class CustomerBoqController {
 
             if (!doc.getProject().getId().equals(project.getId())) {
                 return ResponseEntity.status(403).body(
-                        Map.of("success", false, "message", "Document does not belong to this project"));
+                        Map.of(SUCCESS_KEY, false, MESSAGE_KEY, "Document does not belong to this project"));
             }
 
             // Idempotency: if already acknowledged, skip write and return current state
@@ -177,8 +186,8 @@ public class CustomerBoqController {
                         .findByBoqDocumentIdOrderByStageNumberAsc(documentId)
                         .stream().map(this::stageSummaryToMap).toList();
                 return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "BOQ acknowledged",
+                        SUCCESS_KEY, true,
+                        MESSAGE_KEY, "BOQ acknowledged",
                         "data", boqSummaryToMap(doc, existingStages)));
             }
 
@@ -196,15 +205,15 @@ public class CustomerBoqController {
                     .stream().map(this::stageSummaryToMap).toList();
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "BOQ acknowledged",
+                    SUCCESS_KEY, true,
+                    MESSAGE_KEY, "BOQ acknowledged",
                     "data", boqSummaryToMap(updated, stages)));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(404).body(Map.of(SUCCESS_KEY, false, MESSAGE_KEY, e.getMessage()));
         } catch (Exception e) {
             logger.error("Failed to acknowledge BOQ document {} for project {}", documentId, projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -232,11 +241,11 @@ public class CustomerBoqController {
 
             // Summary totals
             BigDecimal totalContractValue = stages.stream()
-                    .map(s -> (BigDecimal) s.get("stageAmountInclGst"))
+                    .map(s -> (BigDecimal) s.get(STAGE_AMOUNT_INCL_GST_KEY))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             BigDecimal totalPaid = stages.stream()
-                    .map(s -> (BigDecimal) s.get("paidAmount"))
+                    .map(s -> (BigDecimal) s.get(PAID_AMOUNT_KEY))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // Outstanding = what is still owed = Σ (netPayable − paid) per stage,
@@ -249,7 +258,7 @@ public class CustomerBoqController {
             BigDecimal totalOutstanding = stages.stream()
                     .map(s -> {
                         BigDecimal net = (BigDecimal) s.get("netPayableAmount");
-                        BigDecimal paid = (BigDecimal) s.get("paidAmount");
+                        BigDecimal paid = (BigDecimal) s.get(PAID_AMOUNT_KEY);
                         BigDecimal owed = (net == null ? BigDecimal.ZERO : net)
                                 .subtract(paid == null ? BigDecimal.ZERO : paid);
                         return owed.compareTo(BigDecimal.ZERO) > 0 ? owed : BigDecimal.ZERO;
@@ -257,7 +266,7 @@ public class CustomerBoqController {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    SUCCESS_KEY, true,
                     "stages", stages,
                     "summary", Map.of(
                             "totalContractValue", totalContractValue,
@@ -269,7 +278,7 @@ public class CustomerBoqController {
         } catch (Exception e) {
             logger.error("Failed to fetch payment schedule for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -287,11 +296,11 @@ public class CustomerBoqController {
                     .getProjectChangeOrders(project.getId())
                     .stream().map(this::changeOrderToMap).toList();
 
-            return ResponseEntity.ok(Map.of("success", true, "changeOrders", cos));
+            return ResponseEntity.ok(Map.of(SUCCESS_KEY, true, "changeOrders", cos));
         } catch (Exception e) {
             logger.error("Failed to fetch change orders for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -307,11 +316,11 @@ public class CustomerBoqController {
                     .getPendingReview(project.getId())
                     .stream().map(this::changeOrderToMap).toList();
 
-            return ResponseEntity.ok(Map.of("success", true, "changeOrders", cos));
+            return ResponseEntity.ok(Map.of(SUCCESS_KEY, true, "changeOrders", cos));
         } catch (Exception e) {
             logger.error("Failed to fetch pending COs for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -324,13 +333,13 @@ public class CustomerBoqController {
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             ChangeOrder co = changeOrderService.getChangeOrder(coId, project.getId());
-            return ResponseEntity.ok(Map.of("success", true, "changeOrder", changeOrderToMap(co)));
+            return ResponseEntity.ok(Map.of(SUCCESS_KEY, true, CHANGE_ORDER_KEY, changeOrderToMap(co)));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(404).body(Map.of(SUCCESS_KEY, false, MESSAGE_KEY, e.getMessage()));
         } catch (Exception e) {
             logger.error("Failed to fetch change order {} for project {}", coId, projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -344,15 +353,15 @@ public class CustomerBoqController {
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             ChangeOrder co = changeOrderService.approve(coId, project.getId(), email);
             return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Change order approved successfully",
-                    "changeOrder", changeOrderToMap(co)));
+                    SUCCESS_KEY, true,
+                    MESSAGE_KEY, "Change order approved successfully",
+                    CHANGE_ORDER_KEY, changeOrderToMap(co)));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(400).body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of(SUCCESS_KEY, false, MESSAGE_KEY, e.getMessage()));
         } catch (Exception e) {
             logger.error("Failed to approve change order {} for project {}", coId, projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -367,15 +376,15 @@ public class CustomerBoqController {
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             ChangeOrder co = changeOrderService.reject(coId, project.getId(), email, request.reason());
             return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Change order rejected",
-                    "changeOrder", changeOrderToMap(co)));
+                    SUCCESS_KEY, true,
+                    MESSAGE_KEY, "Change order rejected",
+                    CHANGE_ORDER_KEY, changeOrderToMap(co)));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(400).body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of(SUCCESS_KEY, false, MESSAGE_KEY, e.getMessage()));
         } catch (Exception e) {
             logger.error("Failed to reject change order {} for project {}", coId, projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(SUCCESS_KEY, false, MESSAGE_KEY, INTERNAL_ERROR_MESSAGE));
         }
     }
 
@@ -384,14 +393,14 @@ public class CustomerBoqController {
     private Map<String, Object> boqDocumentToMap(BoqDocument d) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", d.getId());
-        m.put("status", d.getStatus());
+        m.put(STATUS_KEY, d.getStatus());
         m.put("totalValueExGst", d.getTotalValueExGst());
         m.put("gstRate", d.getGstRate());
         m.put("totalGstAmount", d.getTotalGstAmount());
         m.put("totalValueInclGst", d.getTotalValueInclGst());
         m.put("revisionNumber", d.getRevisionNumber());
         m.put("submittedAt", d.getSubmittedAt());
-        m.put("approvedAt", d.getApprovedAt());
+        m.put(APPROVED_AT_KEY, d.getApprovedAt());
         m.put("customerApprovedAt", d.getCustomerApprovedAt());
         m.put("rejectedAt", d.getRejectedAt());
         m.put("rejectionReason", d.getRejectionReason());
@@ -405,12 +414,12 @@ public class CustomerBoqController {
         m.put("stageName", s.getStageName());
         m.put("stagePercentage", s.getStagePercentage());
         m.put("stageAmountExGst", s.getStageAmountExGst());
-        m.put("gstAmount", s.getGstAmount());
-        m.put("stageAmountInclGst", s.getStageAmountInclGst());
+        m.put(GST_AMOUNT_KEY, s.getGstAmount());
+        m.put(STAGE_AMOUNT_INCL_GST_KEY, s.getStageAmountInclGst());
         m.put("appliedCreditAmount", s.getAppliedCreditAmount());
         m.put("netPayableAmount", s.getNetPayableAmount());
-        m.put("paidAmount", s.getPaidAmount() != null ? s.getPaidAmount() : BigDecimal.ZERO);
-        m.put("status", s.getStatus());
+        m.put(PAID_AMOUNT_KEY, s.getPaidAmount() != null ? s.getPaidAmount() : BigDecimal.ZERO);
+        m.put(STATUS_KEY, s.getStatus());
         m.put("dueDate", s.getDueDate());
         m.put("milestoneDescription", s.getMilestoneDescription());
         m.put("paidAt", s.getPaidAt());
@@ -422,15 +431,15 @@ public class CustomerBoqController {
         m.put("id", co.getId());
         m.put("referenceNumber", co.getReferenceNumber());
         m.put("coType", co.getCoType());
-        m.put("status", co.getStatus());
+        m.put(STATUS_KEY, co.getStatus());
         m.put("title", co.getTitle());
         m.put("description", co.getDescription());
         m.put("justification", co.getJustification());
         m.put("netAmountExGst", co.getNetAmountExGst());
-        m.put("gstAmount", co.getGstAmount());
+        m.put(GST_AMOUNT_KEY, co.getGstAmount());
         m.put("netAmountInclGst", co.getNetAmountInclGst());
         m.put("submittedAt", co.getSubmittedAt());
-        m.put("approvedAt", co.getApprovedAt());
+        m.put(APPROVED_AT_KEY, co.getApprovedAt());
         m.put("rejectedAt", co.getRejectedAt());
         m.put("rejectionReason", co.getRejectionReason());
         m.put("createdAt", co.getCreatedAt());
@@ -445,8 +454,8 @@ public class CustomerBoqController {
         m.put("stageNumber", s.getStageNumber());
         m.put("stageName", s.getStageName());
         m.put("stageAmountExGst", s.getStageAmountExGst());
-        m.put("gstAmount", s.getGstAmount());
-        m.put("stageAmountInclGst", s.getStageAmountInclGst());
+        m.put(GST_AMOUNT_KEY, s.getGstAmount());
+        m.put(STAGE_AMOUNT_INCL_GST_KEY, s.getStageAmountInclGst());
         m.put("stagePercentage", s.getStagePercentage());
         m.put("status", s.getStatus());
         m.put("dueDate", s.getDueDate());
@@ -464,9 +473,9 @@ public class CustomerBoqController {
         m.put("totalGstAmount", doc.getTotalGstAmount());
         m.put("totalValueInclGst", doc.getTotalValueInclGst());
         m.put("gstRate", doc.getGstRate());
-        m.put("status", doc.getStatus());
+        m.put(STATUS_KEY, doc.getStatus());
         m.put("revisionNumber", doc.getRevisionNumber());
-        m.put("approvedAt", doc.getCustomerApprovedAt());
+        m.put(APPROVED_AT_KEY, doc.getCustomerApprovedAt());
         m.put("acknowledgedAt", doc.getCustomerAcknowledgedAt());
         m.put("pendingAcknowledgement", pendingAcknowledgement);
         m.put("paymentStages", stages);

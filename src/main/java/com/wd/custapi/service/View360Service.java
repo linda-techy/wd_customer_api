@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class View360Service {
@@ -67,7 +66,7 @@ public class View360Service {
         return view360Repository.findByProjectIdAndIsActiveTrue(projectId)
             .stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
     
     private View360Dto toDto(View360 view) {

@@ -74,7 +74,7 @@ class AuthServicePasswordResetTest {
     }
 
     @Test
-    void forgotPassword_knownEmail_storesHashAndSendsRawTokenLink() throws Exception {
+    void forgotPassword_knownEmail_storesHashAndSendsRawTokenLink() {
         ForgotPasswordRequest request = new ForgotPasswordRequest();
         request.setEmail("known@example.com");
 

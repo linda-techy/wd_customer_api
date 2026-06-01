@@ -33,6 +33,8 @@ public class DashboardController {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
 
+    private static final String KEY_ERROR = "error";
+
     @Autowired
     private DashboardService dashboardService;
 
@@ -53,7 +55,7 @@ public class DashboardController {
             logger.error("Failed to load dashboard for user {}: {}",
                     authentication.getName(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to load dashboard: " + e.getMessage()));
+                    .body(Map.of(KEY_ERROR,"Failed to load dashboard: " + e.getMessage()));
         }
     }
 
@@ -68,7 +70,7 @@ public class DashboardController {
         try {
             if (limit < 1 || limit > 50) {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Limit must be between 1 and 50"));
+                        .body(Map.of(KEY_ERROR,"Limit must be between 1 and 50"));
             }
             String email = authentication.getName();
             List<DashboardDto.ProjectCard> projects = dashboardService.getRecentProjects(email, limit);
@@ -77,7 +79,7 @@ public class DashboardController {
             logger.error("Failed to fetch recent projects for user {}: {}",
                     authentication.getName(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to fetch recent projects"));
+                    .body(Map.of(KEY_ERROR,"Failed to fetch recent projects"));
         }
     }
 
@@ -98,7 +100,7 @@ public class DashboardController {
             logger.error("Project search failed for user {}, query '{}': {}",
                     authentication.getName(), q, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Project search failed"));
+                    .body(Map.of(KEY_ERROR,"Project search failed"));
         }
     }
 
@@ -121,7 +123,7 @@ public class DashboardController {
             logger.error("Failed to fetch project details for {} by user {}: {}",
                     projectUuid, authentication.getName(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to fetch project details"));
+                    .body(Map.of(KEY_ERROR,"Failed to fetch project details"));
         }
     }
 
@@ -145,7 +147,7 @@ public class DashboardController {
         } catch (Exception e) {
             logger.error("Failed to fetch phases for project {}: {}", projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to fetch project phases"));
+                    .body(Map.of(KEY_ERROR,"Failed to fetch project phases"));
         }
     }
 
@@ -177,7 +179,7 @@ public class DashboardController {
             logger.error("Failed to update design package for project {}: {}",
                     projectUuid, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to update design package"));
+                    .body(Map.of(KEY_ERROR,"Failed to update design package"));
         }
     }
 
@@ -199,7 +201,7 @@ public class DashboardController {
             logger.error("Failed to fetch admin projects for user {}: {}",
                     authentication.getName(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to fetch admin projects"));
+                    .body(Map.of(KEY_ERROR,"Failed to fetch admin projects"));
         }
     }
 
@@ -209,17 +211,17 @@ public class DashboardController {
         if (message != null && message.toLowerCase().contains("not found")) {
             logger.warn("Resource not found during {} for project {}: {}", operation, projectUuid, message);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", message));
+                    .body(Map.of(KEY_ERROR,message));
         }
         if (message != null && (message.toLowerCase().contains("access denied")
                 || message.toLowerCase().contains("not authorized"))) {
             logger.warn("Access denied during {} for project {} by user {}: {}",
                     operation, projectUuid, auth != null ? auth.getName() : "unknown", message);
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Access denied"));
+                    .body(Map.of(KEY_ERROR,"Access denied"));
         }
         logger.error("Runtime error during {} for project {}: {}", operation, projectUuid, message, e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Operation failed: " + operation));
+                .body(Map.of(KEY_ERROR,"Operation failed: " + operation));
     }
 }

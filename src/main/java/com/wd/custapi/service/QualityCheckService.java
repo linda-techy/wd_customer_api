@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class QualityCheckService {
@@ -90,7 +89,7 @@ public class QualityCheckService {
         } else {
             checks = qualityCheckRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
         }
-        return checks.stream().map(this::toDto).collect(Collectors.toList());
+        return checks.stream().map(this::toDto).toList();
     }
     
     private QualityCheckDto toDto(QualityCheck qc) {

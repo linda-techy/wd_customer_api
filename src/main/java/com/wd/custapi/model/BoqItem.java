@@ -107,7 +107,9 @@ public class BoqItem {
     @Column(name = "version", insertable = false, updatable = false)
     private Long version;
 
-    public BoqItem() {}
+    public BoqItem() {
+        // Default constructor required by JPA
+    }
 
     // Getters (no setters — entity is fully read-only)
 

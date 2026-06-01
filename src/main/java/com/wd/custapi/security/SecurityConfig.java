@@ -21,7 +21,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -88,7 +87,7 @@ public class SecurityConfig {
         List<String> allowedIps = Arrays.stream(internalAllowedIps.split(","))
                 .map(String::trim)
                 .filter(ip -> !ip.isEmpty())
-                .collect(Collectors.toList());
+                .toList();
         return (authentication, context) -> {
             String remoteAddr = context.getRequest().getRemoteAddr();
             boolean allowed = allowedIps.contains(remoteAddr);
@@ -107,7 +106,7 @@ public class SecurityConfig {
                 Arrays.stream(allowedOrigins.split(","))
                         .map(String::trim)
                         .filter(origin -> !origin.isEmpty())
-                        .collect(Collectors.toList()));
+                        .toList());
         
         configuration.setAllowedOriginPatterns(originPatterns);
         

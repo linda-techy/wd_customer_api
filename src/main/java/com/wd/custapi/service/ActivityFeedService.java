@@ -19,7 +19,9 @@ import java.util.stream.Stream;
                                 // throw LazyInitializationException -> 500. Write methods below
                                 // override with their own @Transactional. (Audit Card 4.1, 2026-05-26)
 public class ActivityFeedService {
-    
+
+    private static final String DEFAULT_STAFF_NAME = "Staff";
+
     private final ActivityFeedRepository activityFeedRepository;
     private final ActivityTypeRepository activityTypeRepository;
     private final ProjectRepository projectRepository;
@@ -81,9 +83,9 @@ public class ActivityFeedService {
         return activityFeedRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
             .stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
-    
+
     public List<ActivityFeedDto> getProjectActivitiesByDateRange(Long projectId, 
                                                                  LocalDateTime startDate, 
                                                                  LocalDateTime endDate) {
@@ -91,7 +93,7 @@ public class ActivityFeedService {
             projectId, startDate, endDate)
             .stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
     
     private ActivityFeedDto toDto(ActivityFeed activity) {
@@ -149,29 +151,29 @@ public class ActivityFeedService {
         List<CombinedActivityItem> siteReportItems = siteReports.stream()
             .filter(r -> r.getStatus() == null || !"DRAFT".equalsIgnoreCase(r.getStatus()))
             .map(this::toActivityItem)
-            .collect(Collectors.toList());
+            .toList();
 
         List<CombinedActivityItem> obsItems = observations.stream()
             .map(this::toActivityItem)
-            .collect(Collectors.toList());
+            .toList();
 
         List<CombinedActivityItem> qcItems = checks.stream()
             .map(this::toActivityItem)
-            .collect(Collectors.toList());
+            .toList();
 
         List<CombinedActivityItem> galleryItems = images.stream()
             .map(this::toActivityItem)
-            .collect(Collectors.toList());
+            .toList();
 
         List<CombinedActivityItem> visitItems = visits.stream()
             .map(this::toActivityItem)
-            .collect(Collectors.toList());
+            .toList();
 
         // Merge and sort by timestamp descending
         return Stream.of(siteReportItems, obsItems, qcItems, galleryItems, visitItems)
             .flatMap(List::stream)
             .sorted(Comparator.comparing(CombinedActivityItem::timestamp).reversed())
-            .collect(Collectors.toList());
+            .toList();
     }
     
     /**
@@ -197,7 +199,7 @@ public class ActivityFeedService {
         }
         return all.stream()
             .filter(item -> item.type().equalsIgnoreCase(type))
-            .collect(Collectors.toList());
+            .toList();
     }
     
     /**
@@ -254,7 +256,7 @@ public class ActivityFeedService {
         String createdByName = safeName(
                 () -> obs.getReportedBy() == null ? null
                         : obs.getReportedBy().getFirstName() + " " + obs.getReportedBy().getLastName(),
-                "Staff");
+                DEFAULT_STAFF_NAME);
         
         return new CombinedActivityItem(
             obs.getId(),
@@ -277,7 +279,7 @@ public class ActivityFeedService {
         String createdByName = safeName(
                 () -> qc.getCreatedBy() == null ? null
                         : qc.getCreatedBy().getFirstName() + " " + qc.getCreatedBy().getLastName(),
-                "Staff");
+                DEFAULT_STAFF_NAME);
         
         return new CombinedActivityItem(
             qc.getId(),
@@ -300,7 +302,7 @@ public class ActivityFeedService {
         String createdByName = safeName(
                 () -> img.getUploadedBy() == null ? null
                         : img.getUploadedBy().getFirstName() + " " + img.getUploadedBy().getLastName(),
-                "Staff");
+                DEFAULT_STAFF_NAME);
         
         return new CombinedActivityItem(
             img.getId(),
@@ -323,7 +325,7 @@ public class ActivityFeedService {
         String createdByName = safeName(
                 () -> visit.getVisitor() == null ? null
                         : visit.getVisitor().getFirstName() + " " + visit.getVisitor().getLastName(),
-                "Staff");
+                DEFAULT_STAFF_NAME);
         
         return new CombinedActivityItem(
             visit.getId(),

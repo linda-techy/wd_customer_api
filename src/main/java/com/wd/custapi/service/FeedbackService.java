@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class FeedbackService {
@@ -89,7 +88,7 @@ public class FeedbackService {
                 .findByFormIdAndCustomerId(form.getId(), userId)
                 .isPresent();
             return toFormDto(form, isCompleted);
-        }).collect(Collectors.toList());
+        }).toList();
     }
     
     @Transactional(readOnly = true)
@@ -97,7 +96,7 @@ public class FeedbackService {
         return feedbackResponseRepository.findByFormId(formId)
             .stream()
             .map(this::toResponseDto)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**

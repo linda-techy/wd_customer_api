@@ -20,12 +20,14 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class SupportTicketService {
 
     private static final Logger logger = LoggerFactory.getLogger(SupportTicketService.class);
+
+    private static final String USER_NOT_FOUND = "User not found: ";
+    private static final String TICKET_NOT_FOUND = "Ticket not found: ";
 
     private final SupportTicketRepository ticketRepository;
     private final SupportTicketReplyRepository replyRepository;
@@ -42,7 +44,7 @@ public class SupportTicketService {
     @Transactional
     public Map<String, Object> createTicket(String email, SupportTicketRequest request) {
         CustomerUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND + email));
 
         Long seq = ticketRepository.getNextTicketSequence();
         String ticketNumber = String.format("TKT-%05d", seq);
@@ -65,7 +67,7 @@ public class SupportTicketService {
 
     public Page<Map<String, Object>> getMyTickets(String email, String status, int page, int size) {
         CustomerUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND + email));
 
         Pageable pageable = PageRequest.of(page, size);
         Page<SupportTicket> tickets;
@@ -81,10 +83,10 @@ public class SupportTicketService {
 
     public Map<String, Object> getTicketDetail(String email, Long ticketId) {
         CustomerUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND + email));
 
         SupportTicket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket not found: " + ticketId));
+                .orElseThrow(() -> new IllegalArgumentException(TICKET_NOT_FOUND + ticketId));
 
         if (!ticket.getCustomerUser().getId().equals(user.getId())) {
             throw new SecurityException("Access denied to ticket: " + ticketId);
@@ -93,7 +95,7 @@ public class SupportTicketService {
         List<SupportTicketReply> replies = replyRepository.findByTicket_IdOrderByCreatedAtAsc(ticketId);
 
         Map<String, Object> result = toTicketDto(ticket);
-        result.put("replies", replies.stream().map(this::toReplyDto).collect(Collectors.toList()));
+        result.put("replies", replies.stream().map(this::toReplyDto).toList());
 
         return result;
     }
@@ -101,10 +103,10 @@ public class SupportTicketService {
     @Transactional
     public Map<String, Object> addReply(String email, Long ticketId, SupportTicketReplyRequest request) {
         CustomerUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND + email));
 
         SupportTicket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket not found: " + ticketId));
+                .orElseThrow(() -> new IllegalArgumentException(TICKET_NOT_FOUND + ticketId));
 
         if (!ticket.getCustomerUser().getId().equals(user.getId())) {
             throw new SecurityException("Access denied to ticket: " + ticketId);
@@ -135,22 +137,22 @@ public class SupportTicketService {
                 .findByCustomerUser_IdAndProjectIdOrderByCreatedAtDesc(customerUserId, projectId)
                 .stream()
                 .map(this::toTicketDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<Map<String, Object>> listByProjectForCustomer(Long projectId, String email) {
         CustomerUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND + email));
         return listByProjectForCustomer(projectId, user.getId());
     }
 
     @Transactional
     public Map<String, Object> closeTicket(String email, Long ticketId) {
         CustomerUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+                .orElseThrow(() -> new IllegalArgumentException(USER_NOT_FOUND + email));
 
         SupportTicket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket not found: " + ticketId));
+                .orElseThrow(() -> new IllegalArgumentException(TICKET_NOT_FOUND + ticketId));
 
         if (!ticket.getCustomerUser().getId().equals(user.getId())) {
             throw new SecurityException("Access denied to ticket: " + ticketId);

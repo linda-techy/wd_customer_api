@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Customer-facing payment API.
@@ -70,7 +69,7 @@ public class CustomerPaymentController {
             List<Project> userProjects = dashboardService.getProjectsForUser(email);
             List<Long> projectIds = userProjects.stream()
                     .map(Project::getId)
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (projectIds.isEmpty()) {
                 return ResponseEntity.ok(new ApiResponse<>(true,

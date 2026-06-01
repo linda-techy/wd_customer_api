@@ -479,6 +479,7 @@ public class DashboardDto {
         private String estimatedCompletionDate;     // ISO date string or null
 
         public ProjectDetails() {
+            // Default constructor required by Jackson for serialization
         }
 
         // Getters and Setters
@@ -772,6 +773,7 @@ public class DashboardDto {
         private List<ProgressMilestone> milestones;
 
         public ProgressData() {
+            // Default constructor required by Jackson for serialization
         }
 
         // Getters and Setters

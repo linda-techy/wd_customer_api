@@ -31,6 +31,9 @@ public class BoqDiffController {
 
     private static final Logger logger = LoggerFactory.getLogger(BoqDiffController.class);
 
+    private static final String KEY_SUCCESS = "success";
+    private static final String KEY_MESSAGE = "message";
+
     private final DashboardService dashboardService;
     private final BoqDiffService boqDiffService;
 
@@ -53,14 +56,14 @@ public class BoqDiffController {
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             List<Map<String, Object>> revisions = boqDiffService.getRevisions(project.getId());
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    KEY_SUCCESS, true,
                     "revisions", revisions,
                     "count", revisions.size()
             ));
         } catch (Exception e) {
             logger.error("Failed to fetch BOQ revisions for project {}", projectUuid, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(KEY_SUCCESS, false, KEY_MESSAGE, "An internal error occurred"));
         }
     }
 
@@ -81,15 +84,15 @@ public class BoqDiffController {
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             Map<String, Object> diff = boqDiffService.getDiff(project.getId(), fromDocId, toDocId);
-            return ResponseEntity.ok(Map.of("success", true, "data", diff));
+            return ResponseEntity.ok(Map.of(KEY_SUCCESS, true, "data", diff));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(
-                    Map.of("success", false, "message", e.getMessage()));
+                    Map.of(KEY_SUCCESS, false, KEY_MESSAGE, e.getMessage()));
         } catch (Exception e) {
             logger.error("Failed to compute BOQ diff for project {} ({} vs {})",
                     projectUuid, fromDocId, toDocId, e);
             return ResponseEntity.status(500).body(
-                    Map.of("success", false, "message", "An internal error occurred"));
+                    Map.of(KEY_SUCCESS, false, KEY_MESSAGE, "An internal error occurred"));
         }
     }
 }

@@ -42,6 +42,9 @@ public class FileDownloadController {
 
     private static final Logger logger = LoggerFactory.getLogger(FileDownloadController.class);
 
+    private static final String STORAGE_PREFIX = "/api/storage";
+    private static final String STORAGE_PREFIX_SLASH = "/api/storage/";
+
     @Value("${storageBasePath}")
     private String storageBasePath;
 
@@ -76,10 +79,10 @@ public class FileDownloadController {
             String requestURI = request.getRequestURI();
             String requestPath;
             
-            if (requestURI.startsWith("/api/storage/")) {
-                requestPath = requestURI.substring("/api/storage/".length());
-            } else if (requestURI.startsWith("/api/storage")) {
-                requestPath = requestURI.substring("/api/storage".length());
+            if (requestURI.startsWith(STORAGE_PREFIX_SLASH)) {
+                requestPath = requestURI.substring(STORAGE_PREFIX_SLASH.length());
+            } else if (requestURI.startsWith(STORAGE_PREFIX)) {
+                requestPath = requestURI.substring(STORAGE_PREFIX.length());
                 // Remove leading slash if present
                 if (requestPath.startsWith("/")) {
                     requestPath = requestPath.substring(1);
@@ -228,10 +231,10 @@ public class FileDownloadController {
             String requestURI = request.getRequestURI();
             String requestPath;
             
-            if (requestURI.startsWith("/api/storage/")) {
-                requestPath = requestURI.substring("/api/storage/".length());
-            } else if (requestURI.startsWith("/api/storage")) {
-                requestPath = requestURI.substring("/api/storage".length());
+            if (requestURI.startsWith(STORAGE_PREFIX_SLASH)) {
+                requestPath = requestURI.substring(STORAGE_PREFIX_SLASH.length());
+            } else if (requestURI.startsWith(STORAGE_PREFIX)) {
+                requestPath = requestURI.substring(STORAGE_PREFIX.length());
                 // Remove leading slash if present
                 if (requestPath.startsWith("/")) {
                     requestPath = requestPath.substring(1);

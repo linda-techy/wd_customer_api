@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Centralized authorization service for checking user permissions.
@@ -91,7 +90,7 @@ public class AuthorizationService {
         List<Long> projectIds = dashboardService.getProjectsForUser(userEmail)
             .stream()
             .map(Project::getId)
-            .collect(Collectors.toList());
+            .toList();
 
         logger.debug("User {} has access to {} projects", userEmail, projectIds.size());
         return projectIds;

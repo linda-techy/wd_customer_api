@@ -32,12 +32,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+    private static final String CUSTOMER_USER_NOT_FOUND = "Customer user not found";
+    private static final String FIELD_FIRST_NAME = "firstName";
+    private static final String FIELD_LAST_NAME = "lastName";
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -86,7 +89,7 @@ public class AuthService {
         // Get user permissions
         List<String> permissions = user.getAuthorities().stream()
                 .map(Object::toString)
-                .collect(Collectors.toList());
+                .toList();
 
         LoginResponse.UserInfo userInfo = buildUserInfo(user);
 
@@ -109,7 +112,7 @@ public class AuthService {
         // Get user from refresh token
         String userEmail = jwtService.extractUsername(refreshToken);
         CustomerUser user = customerUserRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Customer user not found"));
+                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
 
         // Check if refresh token exists and is not revoked (compare against stored hash)
         RefreshToken storedToken = refreshTokenRepository.findByToken(TokenHashUtil.hash(refreshToken))
@@ -137,7 +140,7 @@ public class AuthService {
 
     public LoginResponse.UserInfo getCurrentUser(String email) {
         CustomerUser user = customerUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer user not found"));
+                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
 
         return buildUserInfo(user);
     }
@@ -149,13 +152,13 @@ public class AuthService {
     @Transactional
     public LoginResponse.UserInfo updateProfile(String email, Map<String, String> updates) {
         CustomerUser user = customerUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer user not found"));
+                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
 
-        if (updates.containsKey("firstName") && updates.get("firstName") != null) {
-            user.setFirstName(updates.get("firstName").trim());
+        if (updates.containsKey(FIELD_FIRST_NAME) && updates.get(FIELD_FIRST_NAME) != null) {
+            user.setFirstName(updates.get(FIELD_FIRST_NAME).trim());
         }
-        if (updates.containsKey("lastName") && updates.get("lastName") != null) {
-            user.setLastName(updates.get("lastName").trim());
+        if (updates.containsKey(FIELD_LAST_NAME) && updates.get(FIELD_LAST_NAME) != null) {
+            user.setLastName(updates.get(FIELD_LAST_NAME).trim());
         }
         if (updates.containsKey("phone")) {
             user.setPhone(updates.get("phone"));
@@ -217,7 +220,7 @@ public class AuthService {
             throw new IllegalArgumentException("FCM token cannot be empty");
         }
         CustomerUser user = customerUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer user not found"));
+                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
         user.setFcmToken(fcmToken);
         customerUserRepository.save(user);
         log.info("FCM token registered for user: {}", email);
@@ -300,7 +303,7 @@ public class AuthService {
 
         List<String> permissions = newUser.getAuthorities().stream()
                 .map(Object::toString)
-                .collect(Collectors.toList());
+                .toList();
 
         LoginResponse.UserInfo userInfo = buildUserInfo(newUser);
 

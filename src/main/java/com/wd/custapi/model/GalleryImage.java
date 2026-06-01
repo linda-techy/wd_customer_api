@@ -56,7 +56,9 @@ public class GalleryImage {
     private String uploadedByType = "CUSTOMER"; // CUSTOMER | STAFF
 
     // Constructors
-    public GalleryImage() {}
+    public GalleryImage() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {

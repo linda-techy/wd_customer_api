@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ProjectDocumentService {
@@ -84,18 +83,18 @@ public class ProjectDocumentService {
             documents = documentRepository.findByReferenceIdAndReferenceTypeAndIsActiveTrue(
                     projectId, REFERENCE_TYPE_PROJECT);
         }
-        return documents.stream().map(this::toDto).collect(Collectors.toList());
+        return documents.stream().map(this::toDto).toList();
     }
 
     public List<DocumentCategoryDto> getAllCategories() {
         return categoryRepository.findAllByOrderByDisplayOrderAsc().stream()
                 .map(c -> new DocumentCategoryDto(c.getId(), c.getName(), c.getDescription(), c.getDisplayOrder()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private ProjectDocumentDto toDto(ProjectDocument doc) {
         String downloadUrl = "/api/storage/" + doc.getFilePath();
-        Long projectId = "PROJECT".equals(doc.getReferenceType()) ? doc.getReferenceId() : null;
+        Long projectId = REFERENCE_TYPE_PROJECT.equals(doc.getReferenceType()) ? doc.getReferenceId() : null;
         // Uploader id is polymorphic (portal_users or customer_users); the
         // customer-side cannot resolve a portal_users.id to a name without a
         // cross-API call. Attribute portal-uploaded docs to "Company" — same

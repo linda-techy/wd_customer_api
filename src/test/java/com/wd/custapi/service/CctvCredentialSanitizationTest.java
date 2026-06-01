@@ -5,7 +5,6 @@ import com.wd.custapi.dto.ProjectModuleDtos.CctvCameraDto;
 import com.wd.custapi.model.CctvCamera;
 import com.wd.custapi.model.enums.StreamProtocol;
 import com.wd.custapi.repository.CctvCameraRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

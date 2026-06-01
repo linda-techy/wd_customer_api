@@ -38,7 +38,9 @@ public class BoqCategory {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public BoqCategory() {}
+    public BoqCategory() {
+        // Default constructor required by JPA
+    }
 
     // Getters only (read-only for customers)
 

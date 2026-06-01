@@ -52,7 +52,9 @@ public class FeedbackResponse {
     private Long adminRespondedById;
 
     // Constructors
-    public FeedbackResponse() {}
+    public FeedbackResponse() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {

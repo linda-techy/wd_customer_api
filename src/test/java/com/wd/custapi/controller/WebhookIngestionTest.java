@@ -41,7 +41,7 @@ class WebhookIngestionTest {
     private static final String SECRET = "test-webhook-secret";
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         // Inject ObjectMapper (not a Spring context — inject manually)
         ReflectionTestUtils.setField(webhookController, "objectMapper", objectMapper);
         ReflectionTestUtils.setField(webhookController, "webhookSecret", SECRET);
@@ -147,7 +147,7 @@ class WebhookIngestionTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private String buildPayload() throws Exception {
+    private String buildPayload() {
         // Construct a minimal valid PortalWebhookEvent JSON
         return "{\"eventType\":\"INVOICE_ISSUED\",\"projectId\":42,\"referenceId\":7," +
                "\"customerId\":null,\"summary\":\"Invoice #001 issued\"," +

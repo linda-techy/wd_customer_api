@@ -40,6 +40,9 @@ public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
+    private static final String ERROR_KEY = "error";
+    private static final String MESSAGE_KEY = "message";
+
     @Autowired
     private AuthService authService;
 
@@ -60,7 +63,7 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             logger.warn("Login validation failed for email {}: {}", loginRequest.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             // Redact email to prevent PII accumulation in logs (GDPR/PDPA compliance)
             String maskedEmail = loginRequest.getEmail().replaceAll("(.).+(@.+)", "$1***$2");
@@ -68,7 +71,7 @@ public class AuthController {
             logger.warn("Login failed for email {} reason={}: {}", maskedEmail, reasonCode, e.getMessage());
 
             Map<String, Object> body = new java.util.LinkedHashMap<>();
-            body.put("error", "Invalid email or password");
+            body.put(ERROR_KEY, "Invalid email or password");
             // Surface the real cause in non-prod to avoid 401-with-correct-password mysteries.
             if (isDevProfile()) {
                 body.put("debugReason", reasonCode);
@@ -107,11 +110,11 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             logger.warn("Registration validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             logger.error("Registration failed for email {}: {}", registerRequest.getEmail(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Registration failed. Please try again."));
+                .body(Map.of(ERROR_KEY,"Registration failed. Please try again."));
         }
     }
 
@@ -120,7 +123,7 @@ public class AuthController {
         try {
             authService.forgotPassword(request, extractClientKey(httpRequest));
             return ResponseEntity.ok(Map.of(
-                "message", "If an account exists for this email, a password reset link has been sent"
+                MESSAGE_KEY, "If an account exists for this email, a password reset link has been sent"
             ));
         } catch (IllegalArgumentException e) {
             logger.warn("Forgot password validation failed: {}", e.getMessage());
@@ -128,11 +131,11 @@ public class AuthController {
                     ? HttpStatus.TOO_MANY_REQUESTS
                     : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             logger.error("Forgot password failed for request: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to process password reset request"));
+                .body(Map.of(ERROR_KEY,"Failed to process password reset request"));
         }
     }
 
@@ -140,22 +143,22 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
         try {
             authService.resetPassword(request, extractClientKey(httpRequest));
-            return ResponseEntity.ok(Map.of("message", "Password has been reset successfully"));
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY,"Password has been reset successfully"));
         } catch (IllegalArgumentException e) {
             logger.warn("Reset password validation failed: {}", e.getMessage());
             HttpStatus status = e.getMessage() != null && e.getMessage().startsWith("Too many")
                     ? HttpStatus.TOO_MANY_REQUESTS
                     : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (RuntimeException e) {
             logger.warn("Reset password rejected: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             logger.error("Reset password failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to reset password. Please try again."));
+                .body(Map.of(ERROR_KEY,"Failed to reset password. Please try again."));
         }
     }
 
@@ -167,11 +170,11 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             logger.warn("Refresh token validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             logger.error("Refresh token failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Invalid or expired refresh token"));
+                .body(Map.of(ERROR_KEY,"Invalid or expired refresh token"));
         }
     }
 
@@ -195,7 +198,7 @@ public class AuthController {
             if (authentication == null || !authentication.isAuthenticated()
                     || "anonymousUser".equals(authentication.getPrincipal())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Not authenticated"));
+                    .body(Map.of(ERROR_KEY,"Not authenticated"));
             }
             String email = authentication.getName();
             LoginResponse.UserInfo userInfo = authService.getCurrentUser(email);
@@ -203,7 +206,7 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("Failed to get current user: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Authentication failed"));
+                .body(Map.of(ERROR_KEY,"Authentication failed"));
         }
     }
 
@@ -219,18 +222,18 @@ public class AuthController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Not authenticated"));
+                    .body(Map.of(ERROR_KEY,"Not authenticated"));
             }
             LoginResponse.UserInfo updated = authService.updateProfile(authentication.getName(), updates);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             logger.warn("Profile update validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             logger.error("Profile update failed for {}: {}", authentication != null ? authentication.getName() : "unknown", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to update profile"));
+                .body(Map.of(ERROR_KEY,"Failed to update profile"));
         }
     }
 
@@ -246,22 +249,22 @@ public class AuthController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Not authenticated"));
+                    .body(Map.of(ERROR_KEY,"Not authenticated"));
             }
             authService.changePassword(
                     authentication.getName(),
                     request.getCurrentPassword(),
                     request.getNewPassword());
-            return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY,"Password changed successfully"));
         } catch (IllegalArgumentException e) {
             logger.warn("Password change validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             logger.error("Password change failed for {}: {}",
                     authentication != null ? authentication.getName() : "unknown", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to change password"));
+                .body(Map.of(ERROR_KEY,"Failed to change password"));
         }
     }
 
@@ -276,19 +279,19 @@ public class AuthController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Not authenticated"));
+                    .body(Map.of(ERROR_KEY,"Not authenticated"));
             }
             String fcmToken = body.get("fcmToken");
             if (fcmToken == null || fcmToken.isBlank()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "fcmToken is required"));
+                    .body(Map.of(ERROR_KEY,"fcmToken is required"));
             }
             authService.registerFcmToken(authentication.getName(), fcmToken);
-            return ResponseEntity.ok(Map.of("message", "FCM token registered successfully"));
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY,"FCM token registered successfully"));
         } catch (Exception e) {
             logger.error("FCM token registration failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to register FCM token"));
+                .body(Map.of(ERROR_KEY,"Failed to register FCM token"));
         }
     }
 
@@ -296,15 +299,15 @@ public class AuthController {
     public ResponseEntity<?> verifyEmail(@org.springframework.web.bind.annotation.RequestParam String token) {
         try {
             authService.verifyEmail(token);
-            return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY,"Email verified successfully"));
         } catch (IllegalArgumentException | IllegalStateException e) {
             logger.warn("Email verification failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of(ERROR_KEY,e.getMessage()));
         } catch (Exception e) {
             logger.error("Email verification error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Verification failed"));
+                .body(Map.of(ERROR_KEY,"Verification failed"));
         }
     }
 

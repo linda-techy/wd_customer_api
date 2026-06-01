@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CctvService {
@@ -24,7 +23,7 @@ public class CctvService {
         return cctvRepository.findByProjectIdAndIsActiveTrueOrderByDisplayOrder(projectId)
             .stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     private CctvCameraDto toDto(CctvCamera camera) {

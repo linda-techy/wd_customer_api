@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = AppConfig.USER_TABLE)
@@ -108,7 +107,7 @@ public class CustomerUser implements UserDetails {
             authorities.addAll(role.getPermissions().stream()
                     .filter(java.util.Objects::nonNull)
                     .map(permission -> new SimpleGrantedAuthority(permission.getName()))
-                    .collect(Collectors.toList()));
+                    .toList());
         }
 
         return authorities;

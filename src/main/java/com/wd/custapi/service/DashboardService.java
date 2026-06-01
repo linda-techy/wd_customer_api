@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +27,9 @@ import org.slf4j.LoggerFactory;
 public class DashboardService {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
+
+    private static final String ROLE_VIEWER = "VIEWER";
+    private static final String ROLE_ADMIN = "ADMIN";
 
     @Autowired
     private CustomerUserRepository customerUserRepository;
@@ -59,8 +61,8 @@ public class DashboardService {
      */
     public String getUserRole(String email) {
         return customerUserRepository.findByEmail(email)
-                .map(u -> u.getRole() != null ? u.getRole().getName() : "VIEWER")
-                .orElse("VIEWER");
+                .map(u -> u.getRole() != null ? u.getRole().getName() : ROLE_VIEWER)
+                .orElse(ROLE_VIEWER);
     }
 
     @Transactional(readOnly = true)
@@ -69,7 +71,7 @@ public class DashboardService {
             CustomerUser user = customerUserRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Customer user not found"));
 
-            boolean isAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getName());
+            boolean isAdmin = user.getRole() != null && ROLE_ADMIN.equalsIgnoreCase(user.getRole().getName());
             List<Project> userProjects;
             try {
                 if (isAdmin) {
@@ -102,9 +104,9 @@ public class DashboardService {
 
             // Financial stats (payment totals) are only shown to primary CUSTOMER and ADMIN roles.
             // ARCHITECT, INTERIOR_DESIGNER, SITE_ENGINEER, VIEWER see zeroed-out stats.
-            String userRole = user.getRole() != null ? user.getRole().getName() : "VIEWER";
+            String userRole = user.getRole() != null ? user.getRole().getName() : ROLE_VIEWER;
             DashboardDto.QuickStats quickStats;
-            if ("CUSTOMER".equalsIgnoreCase(userRole) || "ADMIN".equalsIgnoreCase(userRole)) {
+            if ("CUSTOMER".equalsIgnoreCase(userRole) || ROLE_ADMIN.equalsIgnoreCase(userRole)) {
                 quickStats = buildQuickStats(user, userProjects);
             } else {
                 quickStats = new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
@@ -125,7 +127,7 @@ public class DashboardService {
                 .count();
         long completedProjects = totalProjects - activeProjects;
 
-        List<Project> recent = projects.stream().limit(5).collect(Collectors.toList());
+        List<Project> recent = projects.stream().limit(5).toList();
         List<DashboardDto.ProjectCard> recentProjects = toProjectCards(recent);
 
         return new DashboardDto.ProjectSummary(totalProjects, activeProjects, completedProjects, recentProjects);
@@ -138,7 +140,7 @@ public class DashboardService {
     private List<DashboardDto.ProjectCard> toProjectCards(List<Project> projects) {
         if (projects.isEmpty()) return Collections.emptyList();
 
-        List<Long> ids = projects.stream().map(Project::getId).collect(Collectors.toList());
+        List<Long> ids = projects.stream().map(Project::getId).toList();
         Map<Long, Double> progressMap = new HashMap<>();
         try {
             List<Object[]> rows = projectDesignStepRepository.calculateDesignProgressBatch(ids);
@@ -153,7 +155,7 @@ public class DashboardService {
 
         return projects.stream()
                 .map(p -> toProjectCard(p, progressMap.getOrDefault(p.getId(), 0.0)))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private DashboardDto.ProjectCard toProjectCard(Project project, double designProgress) {
@@ -200,7 +202,7 @@ public class DashboardService {
         try {
             List<Long> projectIds = projects.stream()
                     .map(Project::getId)
-                    .collect(Collectors.toList());
+                    .toList();
 
             // Single bulk DB query — replaces old per-project N+1 loop
             org.springframework.data.domain.Pageable top10 =
@@ -246,7 +248,7 @@ public class DashboardService {
 
             List<Long> projectIds = userProjects.stream()
                     .map(Project::getId)
-                    .collect(Collectors.toList());
+                    .toList();
 
             // Single DB aggregate query — no full row loading
             Object[] row = paymentScheduleRepository.getPaymentSummaryForProjects(projectIds);
@@ -298,7 +300,7 @@ public class DashboardService {
 
     private boolean isAdminByEmail(String email) {
         return customerUserRepository.findByEmail(email)
-                .map(u -> u.getRole() != null && "ADMIN".equalsIgnoreCase(u.getRole().getName()))
+                .map(u -> u.getRole() != null && ROLE_ADMIN.equalsIgnoreCase(u.getRole().getName()))
                 .orElse(false);
     }
 
@@ -432,7 +434,7 @@ public class DashboardService {
                 .findByReferenceIdAndReferenceTypeAndIsActiveTrue(project.getId(), "PROJECT");
         List<DashboardDto.ProjectDocumentSummary> documentSummaries = documents.stream()
                 .map(this::toDocumentSummary)
-                .collect(Collectors.toList());
+                .toList();
         details.setDocuments(documentSummaries);
 
         // Build progress data
@@ -563,7 +565,7 @@ public class DashboardService {
                     pm.setStatus(m.getStatus() != null ? m.getStatus() : "PENDING");
                     return pm;
                 })
-                .collect(Collectors.toList());
+                .toList();
         progressData.setMilestones(milestones);
 
         return progressData;

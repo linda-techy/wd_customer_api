@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Public content endpoints — no authentication required.
@@ -25,6 +24,9 @@ import java.util.stream.Collectors;
 public class ContentController {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentController.class);
+
+    private static final String ERROR_KEY = "error";
+    private static final String TITLE_KEY = "title";
 
     private final ContentService contentService;
 
@@ -45,7 +47,7 @@ public class ContentController {
             Page<BlogPost> blogPage = contentService.getPublishedBlogs(page, size, search);
             List<Map<String, Object>> summaries = blogPage.getContent().stream()
                     .map(this::toBlogSummary)
-                    .collect(Collectors.toList());
+                    .toList();
 
             Map<String, Object> response = new HashMap<>();
             response.put("blogs", summaries);
@@ -56,7 +58,7 @@ public class ContentController {
         } catch (Exception e) {
             logger.error("Error fetching published blogs: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to retrieve blogs"));
+                    .body(Map.of(ERROR_KEY, "Failed to retrieve blogs"));
         }
     }
 
@@ -70,13 +72,13 @@ public class ContentController {
             BlogPost blog = contentService.getBlogBySlug(slug);
             if (blog == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Blog post not found"));
+                        .body(Map.of(ERROR_KEY, "Blog post not found"));
             }
             return ResponseEntity.ok(toBlogDetail(blog));
         } catch (Exception e) {
             logger.error("Error fetching blog by slug {}: {}", slug, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to retrieve blog post"));
+                    .body(Map.of(ERROR_KEY, "Failed to retrieve blog post"));
         }
     }
 
@@ -93,7 +95,7 @@ public class ContentController {
             Page<PortfolioItem> portfolioPage = contentService.getPublishedPortfolio(page, size, projectType);
             List<Map<String, Object>> summaries = portfolioPage.getContent().stream()
                     .map(this::toPortfolioSummary)
-                    .collect(Collectors.toList());
+                    .toList();
 
             Map<String, Object> response = new HashMap<>();
             response.put("portfolio", summaries);
@@ -104,7 +106,7 @@ public class ContentController {
         } catch (Exception e) {
             logger.error("Error fetching published portfolio: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to retrieve portfolio"));
+                    .body(Map.of(ERROR_KEY, "Failed to retrieve portfolio"));
         }
     }
 
@@ -118,13 +120,13 @@ public class ContentController {
             PortfolioItem item = contentService.getPortfolioBySlug(slug);
             if (item == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Portfolio item not found"));
+                        .body(Map.of(ERROR_KEY, "Portfolio item not found"));
             }
             return ResponseEntity.ok(toPortfolioDetail(item));
         } catch (Exception e) {
             logger.error("Error fetching portfolio by slug {}: {}", slug, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to retrieve portfolio item"));
+                    .body(Map.of(ERROR_KEY, "Failed to retrieve portfolio item"));
         }
     }
 
@@ -142,7 +144,7 @@ public class ContentController {
     private Map<String, Object> toBlogSummary(BlogPost blog) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", blog.getId());
-        map.put("title", blog.getTitle());
+        map.put(TITLE_KEY, blog.getTitle());
         map.put("slug", blog.getSlug());
         map.put("excerpt", blog.getExcerpt());
         map.put("imageUrl", blog.getImageUrl());
@@ -154,7 +156,7 @@ public class ContentController {
     private Map<String, Object> toBlogDetail(BlogPost blog) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", blog.getId());
-        map.put("title", blog.getTitle());
+        map.put(TITLE_KEY, blog.getTitle());
         map.put("slug", blog.getSlug());
         map.put("excerpt", blog.getExcerpt());
         map.put("content", blog.getContent());
@@ -169,7 +171,7 @@ public class ContentController {
     private Map<String, Object> toPortfolioSummary(PortfolioItem item) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", item.getId());
-        map.put("title", item.getTitle());
+        map.put(TITLE_KEY, item.getTitle());
         map.put("slug", item.getSlug());
         map.put("location", item.getLocation());
         map.put("projectType", item.getProjectType());
@@ -182,7 +184,7 @@ public class ContentController {
     private Map<String, Object> toPortfolioDetail(PortfolioItem item) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", item.getId());
-        map.put("title", item.getTitle());
+        map.put(TITLE_KEY, item.getTitle());
         map.put("slug", item.getSlug());
         map.put("description", item.getDescription());
         map.put("location", item.getLocation());

@@ -12,7 +12,9 @@ public class ChangePasswordRequest {
     @Size(min = 8, message = "New password must be at least 8 characters")
     private String newPassword;
 
-    public ChangePasswordRequest() {}
+    public ChangePasswordRequest() {
+        // Default constructor required by Jackson for deserialization
+    }
 
     public String getCurrentPassword() { return currentPassword; }
     public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }

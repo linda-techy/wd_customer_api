@@ -100,7 +100,9 @@ public class SiteReport {
     }
     
     // Constructors
-    public SiteReport() {}
+    public SiteReport() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {

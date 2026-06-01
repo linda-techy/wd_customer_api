@@ -31,6 +31,10 @@ public class CustomerFinancialController {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerFinancialController.class);
 
+    private static final String KEY_STATUS = "status";
+    private static final String KEY_COUNT = "count";
+    private static final String KEY_ERROR = "error";
+
     private final DashboardService dashboardService;
     private final PaymentStageRepository stageRepository;
     private final ChangeOrderRepository changeOrderRepository;
@@ -75,7 +79,7 @@ public class CustomerFinancialController {
                 m.put("stageAmountInclGst", s.getStageAmountInclGst());
                 m.put("netPayableAmount", s.getNetPayableAmount());
                 m.put("paidAmount", s.getPaidAmount());
-                m.put("status", s.getStatus());
+                m.put(KEY_STATUS, s.getStatus());
                 m.put("dueDate", s.getDueDate());
                 m.put("certifiedBy", s.getCertifiedBy());
                 m.put("certifiedAt", s.getCertifiedAt());
@@ -85,10 +89,10 @@ public class CustomerFinancialController {
                 return m;
             }).toList();
 
-            return ResponseEntity.ok(Map.of("stages", result, "count", result.size()));
+            return ResponseEntity.ok(Map.of("stages", result, KEY_COUNT, result.size()));
         } catch (Exception e) {
             logger.error("Failed to fetch stages for project {}", projectUuid, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch stages"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR, "Failed to fetch stages"));
         }
     }
 
@@ -109,7 +113,7 @@ public class CustomerFinancialController {
                 m.put("referenceNumber", co.getReferenceNumber());
                 m.put("title", co.getTitle());
                 m.put("coType", co.getCoType());
-                m.put("status", co.getStatus());
+                m.put(KEY_STATUS, co.getStatus());
                 m.put("voCategory", co.getVoCategory());
                 m.put("netAmountInclGst", co.getNetAmountInclGst());
                 m.put("approvedCost", co.getApprovedCost());
@@ -134,10 +138,10 @@ public class CustomerFinancialController {
                 return m;
             }).toList();
 
-            return ResponseEntity.ok(Map.of("variationOrders", result, "count", result.size()));
+            return ResponseEntity.ok(Map.of("variationOrders", result, KEY_COUNT, result.size()));
         } catch (Exception e) {
             logger.error("Failed to fetch variation orders for project {}", projectUuid, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch variation orders"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR, "Failed to fetch variation orders"));
         }
     }
 
@@ -176,13 +180,13 @@ public class CustomerFinancialController {
 
             return ResponseEntity.ok(Map.of(
                     "deductions", result,
-                    "count", result.size(),
+                    KEY_COUNT, result.size(),
                     "totalRequestedAmount", totalRequested,
                     "totalAcceptedAmount", totalAccepted
             ));
         } catch (Exception e) {
             logger.error("Failed to fetch deductions for project {}", projectUuid, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch deductions"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR, "Failed to fetch deductions"));
         }
     }
 
@@ -207,7 +211,7 @@ public class CustomerFinancialController {
             FinalAccount fa = opt.get();
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", fa.getId());
-            m.put("status", fa.getStatus());
+            m.put(KEY_STATUS, fa.getStatus());
             m.put("baseContractValue", fa.getBaseContractValue());
             m.put("totalAdditions", fa.getTotalAdditions());
             m.put("totalAcceptedDeductions", fa.getTotalAcceptedDeductions());
@@ -226,7 +230,7 @@ public class CustomerFinancialController {
             return ResponseEntity.ok(Map.of("finalAccount", m));
         } catch (Exception e) {
             logger.error("Failed to fetch final account for project {}", projectUuid, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch final account"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR, "Failed to fetch final account"));
         }
     }
 
@@ -244,10 +248,10 @@ public class CustomerFinancialController {
                     .stream()
                     .map(CustomerBoqInvoiceDto::from)
                     .toList();
-            return ResponseEntity.ok(Map.of("invoices", invoices, "count", invoices.size()));
+            return ResponseEntity.ok(Map.of("invoices", invoices, KEY_COUNT, invoices.size()));
         } catch (Exception e) {
             logger.error("Failed to fetch BOQ invoices for project {}", projectUuid, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch BOQ invoices"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR, "Failed to fetch BOQ invoices"));
         }
     }
 
@@ -297,7 +301,7 @@ public class CustomerFinancialController {
             return ResponseEntity.ok(summary);
         } catch (Exception e) {
             logger.error("Failed to build financial summary for project {}", projectUuid, e);
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to build financial summary"));
+            return ResponseEntity.status(500).body(Map.of(KEY_ERROR, "Failed to build financial summary"));
         }
     }
 }

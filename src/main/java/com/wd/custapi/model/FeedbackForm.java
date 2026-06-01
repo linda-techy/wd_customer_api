@@ -35,7 +35,9 @@ public class FeedbackForm {
     private Boolean isActive = true;
     
     // Constructors
-    public FeedbackForm() {}
+    public FeedbackForm() {
+        // Default constructor required by JPA
+    }
     
     // Getters and Setters
     public Long getId() {
