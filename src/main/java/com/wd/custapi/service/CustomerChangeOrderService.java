@@ -22,14 +22,11 @@ public class CustomerChangeOrderService {
 
     private final ChangeOrderRepository changeOrderRepository;
     private final CustomerUserRepository customerUserRepository;
-    private final DashboardService dashboardService;
 
     public CustomerChangeOrderService(ChangeOrderRepository changeOrderRepository,
-                                       CustomerUserRepository customerUserRepository,
-                                       DashboardService dashboardService) {
+                                       CustomerUserRepository customerUserRepository) {
         this.changeOrderRepository = changeOrderRepository;
         this.customerUserRepository = customerUserRepository;
-        this.dashboardService = dashboardService;
     }
 
     @Transactional(readOnly = true)

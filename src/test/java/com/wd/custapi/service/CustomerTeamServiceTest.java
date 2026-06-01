@@ -57,12 +57,11 @@ class CustomerTeamServiceTest {
     }
 
     private ProjectMember newMember(Long memberId, Long portalUserId, String role, boolean share) {
-        ProjectMember m = new ProjectMember() {
+        return new ProjectMember() {
             @Override public Long getId() { return memberId; }
             @Override public Long getPortalUserId() { return portalUserId; }
             @Override public String getRoleInProject() { return role; }
             @Override public Boolean getShareWithCustomer() { return share; }
         };
-        return m;
     }
 }

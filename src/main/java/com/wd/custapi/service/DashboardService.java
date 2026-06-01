@@ -90,7 +90,7 @@ public class DashboardService {
             String userRole = user.getRole() != null ? user.getRole().getName() : ROLE_VIEWER;
             DashboardDto.QuickStats quickStats;
             if ("CUSTOMER".equalsIgnoreCase(userRole) || ROLE_ADMIN.equalsIgnoreCase(userRole)) {
-                quickStats = buildQuickStats(user, userProjects);
+                quickStats = buildQuickStats(userProjects);
             } else {
                 quickStats = new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
             }
@@ -171,7 +171,7 @@ public class DashboardService {
     private DashboardDto.ProjectCard toProjectCard(Project project, double designProgress) {
         String status = determineProjectStatus(project);
 
-        DashboardDto.ProjectCard card = new DashboardDto.ProjectCard(
+        return new DashboardDto.ProjectCard(
                 project.getId(),
                 project.getProjectUuid().toString(),
                 project.getName(),
@@ -184,12 +184,8 @@ public class DashboardService {
                 project.getProjectPhase() != null ? project.getProjectPhase().name() : null,
                 project.getProjectType(),
                 project.getDesignPackage(),
-                project.getIsDesignAgreementSigned() != null
-                        ? project.getIsDesignAgreementSigned()
-                        : false,
+                Boolean.TRUE.equals(project.getIsDesignAgreementSigned()),
                 designProgress);
-
-        return card;
     }
 
     private String determineProjectStatus(Project project) {
@@ -250,7 +246,7 @@ public class DashboardService {
      * Uses DB-side aggregation instead of loading all payment rows into memory.
      * Accepts the already-resolved user and projects to avoid redundant DB hits.
      */
-    private DashboardDto.QuickStats buildQuickStats(CustomerUser user, List<Project> userProjects) {
+    private DashboardDto.QuickStats buildQuickStats(List<Project> userProjects) {
         try {
             if (userProjects.isEmpty()) {
                 return new DashboardDto.QuickStats(0L, 0L, 0L, 0.0, 0.0);
@@ -284,7 +280,7 @@ public class DashboardService {
      */
     @Transactional(readOnly = true)
     public java.util.Map<String, Object> getAdminProjectsPaged(int page, int size, String search) {
-        int safeSize = Math.min(Math.max(size, 1), 100);
+        int safeSize = Math.clamp(size, 1, 100);
         int offset = Math.max(page, 0) * safeSize;
         boolean hasSearch = search != null && !search.trim().isEmpty();
         String q = hasSearch ? search.trim() : null;
@@ -423,7 +419,7 @@ public class DashboardService {
         details.setProjectType(project.getProjectType());
         details.setDesignPackage(project.getDesignPackage());
         details.setDesignAgreementSigned(
-                project.getIsDesignAgreementSigned() != null ? project.getIsDesignAgreementSigned() : false);
+                Boolean.TRUE.equals(project.getIsDesignAgreementSigned()));
 
         Double calculatedDesignProgress = projectDesignStepRepository.calculateDesignProgress(project.getId());
         if (calculatedDesignProgress == null) {

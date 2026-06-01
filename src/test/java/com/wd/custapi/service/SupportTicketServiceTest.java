@@ -145,7 +145,7 @@ class SupportTicketServiceTest {
         when(ticketRepository.findById(5L)).thenReturn(Optional.of(ticket));
         when(ticketRepository.save(any(SupportTicket.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Map<String, Object> result = supportTicketService.closeTicket("john@example.com", 5L);
+        supportTicketService.closeTicket("john@example.com", 5L);
 
         assertEquals("CLOSED", ticket.getStatus());
         assertNotNull(ticket.getClosedAt());

@@ -13,10 +13,9 @@ import com.wd.custapi.util.StreamUrlSanitizer;
  * server-side auditing, rate limiting, or access revocation.
  *
  * This DTO returns the bare stream URL only. For playback to work, the customer
- * app must stream through a backend proxy endpoint that injects credentials
- * server-side (TODO: implement /api/projects/{projectId}/cctv/{cameraId}/stream).
- * Until that proxy exists, direct playback may fail — this is intentional and
- * preferable to leaking credentials.
+ * app streams through a backend proxy endpoint that injects credentials
+ * server-side (see CustomerCctvController: /api/customer/projects/{projectId}/cctv-cameras/{cameraId}/stream).
+ * Returning the bare URL here is intentional and preferable to leaking credentials.
  */
 public record CustomerCctvCameraDto(
         Long id,

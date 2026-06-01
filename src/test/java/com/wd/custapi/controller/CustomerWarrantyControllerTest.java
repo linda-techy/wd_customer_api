@@ -98,7 +98,7 @@ class CustomerWarrantyControllerTest {
         List<CustomerWarrantyDto> warranties =
                 (List<CustomerWarrantyDto>) response.getBody().get("warranties");
         assertThat(warranties).hasSize(1);
-        assertThat(response.getBody().get("count")).isEqualTo(1);
+        assertThat(response.getBody()).containsEntry("count", 1);
     }
 
     // ---------------------------------------------------------------------------

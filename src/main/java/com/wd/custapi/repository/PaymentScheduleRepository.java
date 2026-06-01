@@ -21,10 +21,8 @@ public interface PaymentScheduleRepository extends JpaRepository<PaymentSchedule
     @Query("SELECT ps FROM PaymentSchedule ps WHERE ps.designPayment.project.id IN :projectIds")
     Page<PaymentSchedule> findByProjectIdIn(@Param("projectIds") List<Long> projectIds, Pageable pageable);
 
-    /**
-     * Aggregate query that avoids loading all rows into memory.
-     * Returns counts and sums directly from the database.
-     */
+    // Aggregate query that avoids loading all rows into memory.
+    // Returns counts and sums directly from the database.
     /**
      * Returns payment schedules due on a specific date with status PENDING or UPCOMING.
      * Result columns: [customerUserId, scheduleId, description, amount, projectId]

@@ -36,7 +36,9 @@ public class GlobalExceptionHandler {
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
                 return auth.getName();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // Security context may be unavailable or principal malformed; fall through to "anonymous".
+        }
         return "anonymous";
     }
 

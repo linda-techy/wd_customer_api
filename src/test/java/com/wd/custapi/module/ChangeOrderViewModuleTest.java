@@ -137,7 +137,7 @@ class ChangeOrderViewModuleTest extends TestcontainersPostgresBase {
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().get("success")).isEqualTo(true);
+        assertThat(response.getBody()).containsEntry("success", true);
     }
 
     // ---- Reject Change Order ----
@@ -159,7 +159,7 @@ class ChangeOrderViewModuleTest extends TestcontainersPostgresBase {
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().get("success")).isEqualTo(true);
+        assertThat(response.getBody()).containsEntry("success", true);
     }
 
     // ---- Rejection Reason Persists ----

@@ -45,10 +45,10 @@ public class EmailService {
                 logger.info("Password reset email sent successfully to {}", to);
             } catch (MessagingException | MailException e) {
                 logger.error("Failed to send password reset email to {}. Falling back to simulation.", to, e);
-                logEmailSimulation(to, firstName, resetLink);
+                logEmailSimulation(to, firstName);
             }
         } else {
-            logEmailSimulation(to, firstName, resetLink);
+            logEmailSimulation(to, firstName);
         }
     }
 
@@ -132,7 +132,7 @@ public class EmailService {
                 """.formatted(firstName, resetLink, resetLink, resetLink);
     }
 
-    private void logEmailSimulation(String to, String firstName, String resetLink) {
+    private void logEmailSimulation(String to, String firstName) {
         logger.info("================ EMAIL SIMULATION ================");
         logger.info("TO: {}", to);
         logger.info("SUBJECT: Reset Your Walldot Password");

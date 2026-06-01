@@ -173,7 +173,8 @@ class DashboardServiceTest {
         // non-admin user; project not accessible
         when(projectRepository.findByProjectUuidAndCustomerEmail(uuid, "other@example.com")).thenReturn(null);
 
+        String uuidStr = uuid.toString();
         assertThrows(RuntimeException.class,
-                () -> dashboardService.getProjectDetails(uuid.toString(), "other@example.com"));
+                () -> dashboardService.getProjectDetails(uuidStr, "other@example.com"));
     }
 }

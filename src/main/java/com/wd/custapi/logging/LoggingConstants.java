@@ -34,10 +34,11 @@ public final class LoggingConstants {
     public static final long SLOW_SERVICE_THRESHOLD_MS = 2000L;
 
     // ─── Sensitive Field Names (for masking) ─────────────────────────────────
-    public static final String[] SENSITIVE_FIELDS = {
+    // Immutable so callers cannot mutate the shared masking config.
+    public static final java.util.List<String> SENSITIVE_FIELDS = java.util.List.of(
         "password", "token", "authorization", "secret",
         "otp", "cvv", "credit_card", "creditcard", "pin"
-    };
+    );
 
     // ─── Log Prefixes ─────────────────────────────────────────────────────────
     public static final String PREFIX_ACCESS      = "ACCESS";

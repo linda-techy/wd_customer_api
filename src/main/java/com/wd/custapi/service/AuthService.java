@@ -105,7 +105,7 @@ public class AuthService {
         String refreshToken = request.getRefreshToken();
 
         // Validate refresh token signature and expiry
-        if (!jwtService.validateToken(refreshToken)) {
+        if (!Boolean.TRUE.equals(jwtService.validateToken(refreshToken))) {
             throw new RuntimeException("Invalid refresh token");
         }
 
@@ -118,7 +118,7 @@ public class AuthService {
         RefreshToken storedToken = refreshTokenRepository.findByToken(TokenHashUtil.hash(refreshToken))
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
 
-        if (storedToken.isExpired() || storedToken.getRevoked()) {
+        if (storedToken.isExpired() || Boolean.TRUE.equals(storedToken.getRevoked())) {
             throw new RuntimeException("Refresh token expired or revoked");
         }
 

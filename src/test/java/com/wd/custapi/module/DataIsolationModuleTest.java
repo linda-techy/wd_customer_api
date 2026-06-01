@@ -154,7 +154,7 @@ class DataIsolationModuleTest extends TestcontainersPostgresBase {
             // If 200, verify the success field indicates denial or empty result
             Map<String, Object> body = response.getBody();
             if (body != null && Boolean.FALSE.equals(body.get("success"))) {
-                assertThat(body.get("success")).isEqualTo(false);
+                assertThat(body).containsEntry("success", false);
             }
         }
     }

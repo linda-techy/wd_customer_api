@@ -45,14 +45,15 @@ class CctvStreamProxyIntegrationTest {
     private static final Long CAMERA_ID = 42L;
 
     // A minimal real HLS media playlist with a single relative segment ref.
-    private static final String MANIFEST =
-            "#EXTM3U\n"
-          + "#EXT-X-VERSION:3\n"
-          + "#EXT-X-TARGETDURATION:4\n"
-          + "#EXT-X-MEDIA-SEQUENCE:0\n"
-          + "#EXTINF:4.0,\n"
-          + "seg0.ts\n"
-          + "#EXT-X-ENDLIST\n";
+    private static final String MANIFEST = """
+            #EXTM3U
+            #EXT-X-VERSION:3
+            #EXT-X-TARGETDURATION:4
+            #EXT-X-MEDIA-SEQUENCE:0
+            #EXTINF:4.0,
+            seg0.ts
+            #EXT-X-ENDLIST
+            """;
     private static final byte[] SEGMENT_BYTES = "TSDATA-binary-payload".getBytes(StandardCharsets.UTF_8);
 
     private HttpServer server;

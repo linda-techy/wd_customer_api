@@ -32,7 +32,7 @@ class ProjectBaselineRepositoryTest extends TestcontainersPostgresBase {
 
     @Test
     void findByProjectIdReturnsRowWhenPresent() {
-        long projectId = seedCustomerAndProject("baseline-present@test.com", "Baseline Present");
+        long projectId = seedCustomerAndProject("Baseline Present");
 
         jdbc.update(
                 "INSERT INTO project_baseline (project_id, approved_at, project_start_date, project_finish_date) "
@@ -48,14 +48,14 @@ class ProjectBaselineRepositoryTest extends TestcontainersPostgresBase {
 
     @Test
     void findByProjectIdReturnsEmptyWhenAbsent() {
-        long projectId = seedCustomerAndProject("baseline-absent@test.com", "Baseline Absent");
+        long projectId = seedCustomerAndProject("Baseline Absent");
 
         Optional<ProjectBaseline> found = projectBaselineRepository.findByProjectId(projectId);
 
         assertThat(found).isEmpty();
     }
 
-    private long seedCustomerAndProject(String email, String projectName) {
+    private long seedCustomerAndProject(String projectName) {
         // The repository tests only need a customer_projects row to satisfy
         // the FK from project_baseline. We deliberately avoid inserting
         // customer_users / customer_roles here — those would risk a

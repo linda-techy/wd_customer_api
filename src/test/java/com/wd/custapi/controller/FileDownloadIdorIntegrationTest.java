@@ -37,7 +37,6 @@ class FileDownloadIdorIntegrationTest extends TestcontainersPostgresBase {
     private JdbcTemplate jdbc;
 
     private String aliceToken;
-    private String bobToken;
 
     @DynamicPropertySource
     static void overrideStoragePath(DynamicPropertyRegistry registry) {
@@ -115,7 +114,6 @@ class FileDownloadIdorIntegrationTest extends TestcontainersPostgresBase {
 
         // Generate JWT tokens
         aliceToken = jwtService.generateCustomerToken("alice@test.com", new HashMap<>());
-        bobToken = jwtService.generateCustomerToken("bob@test.com", new HashMap<>());
 
         // Store paths for use in tests
         this.aliceFileRelPath = aliceFilePath;

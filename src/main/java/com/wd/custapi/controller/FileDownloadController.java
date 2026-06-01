@@ -89,12 +89,9 @@ public class FileDownloadController {
                 }
             } else {
                 // Fallback: try to extract from path info
-                String pathInfo = request.getPathInfo();
-                requestPath = (pathInfo != null && pathInfo.startsWith("/")) 
-                    ? pathInfo.substring(1) 
-                    : (pathInfo != null ? pathInfo : "");
+                requestPath = extractPathInfoFallback(request.getPathInfo());
             }
-            
+
             // Validate request path is not empty
             if (requestPath == null || requestPath.isEmpty()) {
                 logger.warn("Empty request path for URI: {}", requestURI);
@@ -219,6 +216,17 @@ public class FileDownloadController {
      * supplied SLF4J template and returns the original (undecoded) path so the
      * caller can continue.
      */
+    /**
+     * Fallback extraction of the request path from {@code pathInfo} when the URI
+     * doesn't match the expected storage prefix. Strips a leading slash if present.
+     */
+    private String extractPathInfoFallback(String pathInfo) {
+        if (pathInfo == null) {
+            return "";
+        }
+        return pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo;
+    }
+
     private String decodeRequestPath(String requestPath, String warnTemplate) {
         try {
             return URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
@@ -251,12 +259,9 @@ public class FileDownloadController {
                 }
             } else {
                 // Fallback: try to extract from path info
-                String pathInfo = request.getPathInfo();
-                requestPath = (pathInfo != null && pathInfo.startsWith("/")) 
-                    ? pathInfo.substring(1) 
-                    : (pathInfo != null ? pathInfo : "");
+                requestPath = extractPathInfoFallback(request.getPathInfo());
             }
-            
+
             // Validate request path is not empty
             if (requestPath == null || requestPath.isEmpty()) {
                 logger.warn("Empty request path for HEAD request: {}", requestURI);

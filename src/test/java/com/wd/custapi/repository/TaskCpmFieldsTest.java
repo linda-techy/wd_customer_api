@@ -30,7 +30,7 @@ class TaskCpmFieldsTest extends TestcontainersPostgresBase {
 
     @Test
     void efDateColumnIsReadable() {
-        long projectId = seedCustomerAndProject("alice-ef@test.com", "Project Ef-Date");
+        long projectId = seedCustomerAndProject("Project Ef-Date");
         jdbc.update(
                 "INSERT INTO tasks (project_id, title, status, priority, due_date, ef_date, customer_visible) "
                         + "VALUES (?, 'T1', 'OPEN', 'NORMAL', '2026-08-12', '2026-08-12', true)",
@@ -44,7 +44,7 @@ class TaskCpmFieldsTest extends TestcontainersPostgresBase {
 
     @Test
     void findsMaxEfDateAcrossProjectTasks() {
-        long projectId = seedCustomerAndProject("alice-max@test.com", "Project Max-Ef");
+        long projectId = seedCustomerAndProject("Project Max-Ef");
         jdbc.update("INSERT INTO tasks (project_id, title, status, priority, due_date, ef_date, customer_visible) "
                 + "VALUES (?, 'T1', 'OPEN', 'NORMAL', '2026-07-01', '2026-07-01', true)", projectId);
         jdbc.update("INSERT INTO tasks (project_id, title, status, priority, due_date, ef_date, customer_visible) "
@@ -59,7 +59,7 @@ class TaskCpmFieldsTest extends TestcontainersPostgresBase {
 
     @Test
     void findMaxEfDateReturnsEmptyWhenNoTasksHaveEfDate() {
-        long projectId = seedCustomerAndProject("alice-noef@test.com", "Project No-Ef");
+        long projectId = seedCustomerAndProject("Project No-Ef");
         // Task with NULL ef_date — represents "CPM has not run yet for this project"
         jdbc.update("INSERT INTO tasks (project_id, title, status, priority, due_date, customer_visible) "
                 + "VALUES (?, 'T1', 'OPEN', 'NORMAL', '2026-08-12', true)", projectId);
@@ -67,14 +67,12 @@ class TaskCpmFieldsTest extends TestcontainersPostgresBase {
         assertThat(taskRepository.findMaxEfDateByProjectId(projectId)).isEmpty();
     }
 
-    private long seedCustomerAndProject(String email, String projectName) {
+    private long seedCustomerAndProject(String projectName) {
         // The repository tests only need a customer_projects row to satisfy
         // the FK from tasks. We deliberately avoid inserting customer_users
         // / customer_roles here — those would risk a customer_roles_pkey
         // collision with the JPA-driven seeder used by
         // CommercialCustomerScenarioTest, which IDENTITY-allocates id=1.
-        // The {@code email} parameter is retained only for backward
-        // compatibility of the helper signature.
         return jdbc.queryForObject(
                 "INSERT INTO customer_projects (name, project_uuid, version) VALUES (?, gen_random_uuid(), 0) RETURNING id",
                 Long.class, projectName);

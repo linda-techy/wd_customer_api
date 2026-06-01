@@ -79,7 +79,7 @@ class CustomerFinancialSummarySingleSourceTest {
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isNotNull();
         // Only the two APPROVED change orders are counted; the DRAFT is excluded.
-        assertThat(resp.getBody().get("approvedVariationOrders")).isEqualTo(2L);
+        assertThat(resp.getBody()).containsEntry("approvedVariationOrders", 2L);
     }
 
     @Test

@@ -120,7 +120,7 @@ class CustomerBoqControllerNextOnlyTest {
         assertThat(response.getBody()).isInstanceOf(java.util.Map.class);
         @SuppressWarnings("unchecked")
         java.util.Map<String, Object> body = (java.util.Map<String, Object>) response.getBody();
-        assertThat(body.get("success")).isEqualTo(true);
+        assertThat(body).containsEntry("success", true);
         assertThat(body.get("stages")).isInstanceOf(java.util.List.class);
         // The full-schedule path DID read the repository.
         verify(paymentStageRepository).findByProjectIdOrderByStageNumberAsc(7L);

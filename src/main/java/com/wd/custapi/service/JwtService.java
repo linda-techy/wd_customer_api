@@ -240,7 +240,7 @@ public class JwtService {
     // ── Validation ───────────────────────────────────────────────────────────
 
     public Boolean validateToken(String token, UserDetails userDetails) {
-        if (!validateToken(token)) {
+        if (!Boolean.TRUE.equals(validateToken(token))) {
             return false;
         }
         final String actualSubject = extractActualSubject(token);

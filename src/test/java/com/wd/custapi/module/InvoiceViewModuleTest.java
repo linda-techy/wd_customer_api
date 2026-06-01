@@ -94,7 +94,7 @@ class InvoiceViewModuleTest extends TestcontainersPostgresBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).containsKey("success");
-        assertThat(response.getBody().get("success")).isEqualTo(true);
+        assertThat(response.getBody()).containsEntry("success", true);
     }
 
     // ---- Get Invoice Details ----
@@ -140,7 +140,7 @@ class InvoiceViewModuleTest extends TestcontainersPostgresBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         Map<String, Object> body = response.getBody();
-        assertThat(body.get("success")).isEqualTo(true);
+        assertThat(body).containsEntry("success", true);
 
         // Verify no DRAFT invoices appear in the data
         Object data = body.get("data");
@@ -149,7 +149,7 @@ class InvoiceViewModuleTest extends TestcontainersPostgresBase {
             List<Map<String, Object>> content = (List<Map<String, Object>>) pageData.get("content");
             if (content != null) {
                 for (Map<String, Object> inv : content) {
-                    assertThat(inv.get("status")).isNotEqualTo("DRAFT");
+                    assertThat(inv).doesNotContainEntry("status", "DRAFT");
                 }
             }
         }

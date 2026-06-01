@@ -44,7 +44,8 @@ public class ProjectDocumentService {
         DocumentCategory category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        CustomerUser user = userRepository.findById(userId)
+        // Validate the uploader exists (result intentionally unused — existence check only).
+        userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String filePath = fileStorageService.storeFile(file, "projects/" + projectId + "/documents");

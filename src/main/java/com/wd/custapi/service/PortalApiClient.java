@@ -100,7 +100,9 @@ public class PortalApiClient {
             Map<?, ?> m = json.readValue(body, Map.class);
             Object v = m.get("retryAfterSeconds");
             if (v instanceof Number n) return n.longValue();
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            // Malformed/empty 429 body — fall back to the default retry-after below.
+        }
         return 3600L;
     }
 

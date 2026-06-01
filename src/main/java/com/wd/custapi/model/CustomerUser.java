@@ -115,7 +115,8 @@ public class CustomerUser implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        // Username is the email — delegate to avoid duplicated logic.
+        return getEmail();
     }
 
     @Override
@@ -135,7 +136,8 @@ public class CustomerUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        // Delegate to the bean getter to avoid duplicated field access.
+        return getEnabled();
     }
 
     // Getters and Setters

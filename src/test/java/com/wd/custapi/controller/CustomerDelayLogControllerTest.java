@@ -79,7 +79,7 @@ class CustomerDelayLogControllerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().get("count")).isEqualTo(1);
+        assertThat(response.getBody()).containsEntry("count", 1);
     }
 
     @Test

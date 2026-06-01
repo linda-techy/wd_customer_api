@@ -22,7 +22,7 @@ public final class SensitiveDataMasker {
     private static final Pattern[] PARAM_PATTERNS = buildParamPatterns();
 
     private static Pattern[] buildJsonPatterns() {
-        return java.util.Arrays.stream(LoggingConstants.SENSITIVE_FIELDS)
+        return LoggingConstants.SENSITIVE_FIELDS.stream()
                 .map(field -> Pattern.compile(
                         "(?i)(\"" + Pattern.quote(field) + "\"\\s*:\\s*\")([^\"]*)(\")",
                         Pattern.CASE_INSENSITIVE))
@@ -30,7 +30,7 @@ public final class SensitiveDataMasker {
     }
 
     private static Pattern[] buildParamPatterns() {
-        return java.util.Arrays.stream(LoggingConstants.SENSITIVE_FIELDS)
+        return LoggingConstants.SENSITIVE_FIELDS.stream()
                 .map(field -> Pattern.compile(
                         "(?i)(" + Pattern.quote(field) + "=)([^&\\s,}]+)",
                         Pattern.CASE_INSENSITIVE))

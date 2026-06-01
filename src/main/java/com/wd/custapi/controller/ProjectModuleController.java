@@ -118,11 +118,11 @@ public class ProjectModuleController {
 
             List<Map<String, Object>> taskDtos = new java.util.ArrayList<>();
             for (Task t : tasks) {
-                if (t.getStartDate() != null) {
-                    if (projectStart == null || t.getStartDate().isBefore(projectStart)) projectStart = t.getStartDate();
+                if (t.getStartDate() != null && (projectStart == null || t.getStartDate().isBefore(projectStart))) {
+                    projectStart = t.getStartDate();
                 }
-                if (t.getEndDate() != null) {
-                    if (projectEnd == null || t.getEndDate().isAfter(projectEnd)) projectEnd = t.getEndDate();
+                if (t.getEndDate() != null && (projectEnd == null || t.getEndDate().isAfter(projectEnd))) {
+                    projectEnd = t.getEndDate();
                 }
                 boolean overdue = t.getEndDate() != null && t.getEndDate().isBefore(today)
                         && !"COMPLETED".equals(t.getStatus()) && !"CANCELLED".equals(t.getStatus());

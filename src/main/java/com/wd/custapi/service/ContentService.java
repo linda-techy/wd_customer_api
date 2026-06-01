@@ -4,8 +4,6 @@ import com.wd.custapi.model.BlogPost;
 import com.wd.custapi.model.PortfolioItem;
 import com.wd.custapi.repository.BlogPostRepository;
 import com.wd.custapi.repository.PortfolioItemRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,8 +11,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ContentService {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContentService.class);
 
     private final BlogPostRepository blogPostRepository;
     private final PortfolioItemRepository portfolioItemRepository;

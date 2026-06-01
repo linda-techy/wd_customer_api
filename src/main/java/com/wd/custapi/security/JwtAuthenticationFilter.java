@@ -46,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt = authHeader.substring(7);
 
         // Validate token first
-        if (!jwtService.validateToken(jwt)) {
+        if (!Boolean.TRUE.equals(jwtService.validateToken(jwt))) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -69,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
 
-            if (jwtService.validateToken(jwt, userDetails)) {
+            if (Boolean.TRUE.equals(jwtService.validateToken(jwt, userDetails))) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,

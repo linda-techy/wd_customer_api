@@ -86,16 +86,6 @@ public class SiteReportService {
     }
 
     /**
-     * Get a specific site report by ID.
-     * Validates that the user has access to the report's project.
-     *
-     * @param userEmail User's email
-     * @param reportId Report ID
-     * @return CustomerSiteReportDto
-     * @throws ResourceNotFoundException if report doesn't exist
-     * @throws UnauthorizedException if user lacks access
-     */
-    /**
      * Per-project report counts across every project the customer can
      * access. Helps the customer Flutter empty-state show "no reports for
      * THIS project, but you have N on Project X" — common scenario when

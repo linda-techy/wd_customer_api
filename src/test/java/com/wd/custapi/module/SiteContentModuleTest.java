@@ -4,6 +4,9 @@ import com.wd.custapi.config.TestDataSeeder;
 import com.wd.custapi.support.AuthTestHelper;
 import com.wd.custapi.testsupport.TestcontainersPostgresBase;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -75,16 +78,20 @@ class SiteContentModuleTest extends TestcontainersPostgresBase {
         assertThat(response.getStatusCode().value()).isIn(401, 403);
     }
 
-    // ---- Quality Checks (/api/projects/{projectId}/quality-check) ----
+    // ---- Project read endpoints that return a { success: ... } envelope ----
+    //   /api/projects/{projectId}/quality-check
+    //   /api/projects/{projectId}/observations
+    //   /api/projects/{projectId}/gallery
 
-    @Test
+    @ParameterizedTest
     @Order(3)
-    void listQualityChecks_authenticated_returnsOk() {
+    @ValueSource(strings = {"quality-check", "observations", "gallery"})
+    void listProjectReadEndpoint_authenticated_returnsOk(String pathSegment) {
         String token = auth.loginAsCustomerA();
         HttpHeaders headers = auth.authHeaders(token);
 
         ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/api/projects/" + projectUuidA() + "/quality-check",
+                baseUrl() + "/api/projects/" + projectUuidA() + "/" + pathSegment,
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
                 Map.class);
@@ -93,77 +100,28 @@ class SiteContentModuleTest extends TestcontainersPostgresBase {
         assertThat(response.getBody()).containsKey("success");
     }
 
-    // ---- Observations (/api/projects/{projectId}/observations) ----
+    // ---- Customer read endpoints that return a { <key>: [...], count: N } envelope ----
+    //   /api/customer/projects/{projectId}/delays     -> "delays"
+    //   /api/customer/projects/{projectId}/warranties -> "warranties"
 
-    @Test
-    @Order(4)
-    void listObservations_authenticated_returnsOk() {
-        String token = auth.loginAsCustomerA();
-        HttpHeaders headers = auth.authHeaders(token);
-
-        ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/api/projects/" + projectUuidA() + "/observations",
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsKey("success");
-    }
-
-    // ---- Gallery (/api/projects/{projectId}/gallery) ----
-
-    @Test
-    @Order(5)
-    void listGalleryImages_authenticated_returnsOk() {
-        String token = auth.loginAsCustomerA();
-        HttpHeaders headers = auth.authHeaders(token);
-
-        ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/api/projects/" + projectUuidA() + "/gallery",
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsKey("success");
-    }
-
-    // ---- Delay Logs (/api/customer/projects/{projectId}/delays) ----
-
-    @Test
+    @ParameterizedTest
     @Order(6)
-    void listDelayLogs_authenticated_returnsOk() {
+    @CsvSource({
+            "delays, delays",
+            "warranties, warranties"
+    })
+    void listCustomerCollectionEndpoint_authenticated_returnsOk(String pathSegment, String collectionKey) {
         String token = auth.loginAsCustomerA();
         HttpHeaders headers = auth.authHeaders(token);
 
         ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/api/customer/projects/" + projectUuidA() + "/delays",
+                baseUrl() + "/api/customer/projects/" + projectUuidA() + "/" + pathSegment,
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsKey("delays");
-        assertThat(response.getBody()).containsKey("count");
-    }
-
-    // ---- Warranties (/api/customer/projects/{projectId}/warranties) ----
-
-    @Test
-    @Order(7)
-    void listWarranties_authenticated_returnsOk() {
-        String token = auth.loginAsCustomerA();
-        HttpHeaders headers = auth.authHeaders(token);
-
-        ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/api/customer/projects/" + projectUuidA() + "/warranties",
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsKey("warranties");
+        assertThat(response.getBody()).containsKey(collectionKey);
         assertThat(response.getBody()).containsKey("count");
     }
 

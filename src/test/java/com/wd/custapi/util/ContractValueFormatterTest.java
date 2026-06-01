@@ -51,7 +51,8 @@ class ContractValueFormatterTest {
 
     @Test
     void rejectsNegative() {
-        assertThatThrownBy(() -> ContractValueFormatter.formatINR(new BigDecimal("-1")))
+        BigDecimal negative = new BigDecimal("-1");
+        assertThatThrownBy(() -> ContractValueFormatter.formatINR(negative))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

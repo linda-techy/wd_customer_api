@@ -156,7 +156,7 @@ class BoqViewModuleTest extends TestcontainersPostgresBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).containsKey("success");
-        assertThat(response.getBody().get("success")).isEqualTo(true);
+        assertThat(response.getBody()).containsEntry("success", true);
     }
 
     // ---- Payment Stages ----
@@ -196,7 +196,7 @@ class BoqViewModuleTest extends TestcontainersPostgresBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).containsKey("success");
-        assertThat(response.getBody().get("success")).isEqualTo(true);
+        assertThat(response.getBody()).containsEntry("success", true);
     }
 
     // ---- Change Orders ----
