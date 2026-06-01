@@ -14,7 +14,6 @@ import com.wd.custapi.repository.RefreshTokenRepository;
 import com.wd.custapi.repository.RoleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,35 +41,46 @@ public class AuthService {
     private static final String FIELD_FIRST_NAME = "firstName";
     private static final String FIELD_LAST_NAME = "lastName";
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
-    @Autowired
-    private JwtService jwtService;
+    private final JwtService jwtService;
 
-    @Autowired
-    private CustomerUserRepository customerUserRepository;
+    private final CustomerUserRepository customerUserRepository;
 
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
+    private final RoleRepository roleRepository;
 
-    @Autowired
-    private PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
-    @Autowired
-    private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private EmailService emailService;
+    private final EmailService emailService;
 
     @Value("${app.customer-portal-base-url:https://cust.walldotbuilders.com}")
     private String customerPortalBaseUrl;
+
+    public AuthService(AuthenticationManager authenticationManager,
+                       JwtService jwtService,
+                       CustomerUserRepository customerUserRepository,
+                       RefreshTokenRepository refreshTokenRepository,
+                       RoleRepository roleRepository,
+                       PasswordResetTokenRepository passwordResetTokenRepository,
+                       EmailVerificationTokenRepository emailVerificationTokenRepository,
+                       PasswordEncoder passwordEncoder,
+                       EmailService emailService) {
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+        this.customerUserRepository = customerUserRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.roleRepository = roleRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+    }
 
     public LoginResponse login(LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(

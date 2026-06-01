@@ -7,7 +7,6 @@ import com.wd.custapi.repository.SiteReportRepository;
 import com.wd.custapi.service.DashboardService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -48,14 +47,19 @@ public class FileDownloadController {
     @Value("${storageBasePath}")
     private String storageBasePath;
 
-    @Autowired
-    private ProjectDocumentRepository projectDocumentRepository;
+    private final ProjectDocumentRepository projectDocumentRepository;
 
-    @Autowired
-    private SiteReportRepository siteReportRepository;
+    private final SiteReportRepository siteReportRepository;
 
-    @Autowired
-    private DashboardService dashboardService;
+    private final DashboardService dashboardService;
+
+    public FileDownloadController(ProjectDocumentRepository projectDocumentRepository,
+                                  SiteReportRepository siteReportRepository,
+                                  DashboardService dashboardService) {
+        this.projectDocumentRepository = projectDocumentRepository;
+        this.siteReportRepository = siteReportRepository;
+        this.dashboardService = dashboardService;
+    }
 
     private static final java.util.regex.Pattern SITE_REPORT_PATH =
             java.util.regex.Pattern.compile("^site-reports/(\\d+)/.+");

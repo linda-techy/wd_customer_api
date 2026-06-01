@@ -7,7 +7,6 @@ import com.wd.custapi.service.DashboardService;
 import com.wd.custapi.service.ProjectPhaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,11 +34,15 @@ public class DashboardController {
 
     private static final String KEY_ERROR = "error";
 
-    @Autowired
-    private DashboardService dashboardService;
+    private final DashboardService dashboardService;
 
-    @Autowired
-    private ProjectPhaseService projectPhaseService;
+    private final ProjectPhaseService projectPhaseService;
+
+    public DashboardController(DashboardService dashboardService,
+                              ProjectPhaseService projectPhaseService) {
+        this.dashboardService = dashboardService;
+        this.projectPhaseService = projectPhaseService;
+    }
 
     /**
      * Get full dashboard with summary, stats, and recent activities

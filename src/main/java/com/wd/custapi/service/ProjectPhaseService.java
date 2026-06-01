@@ -3,7 +3,6 @@ package com.wd.custapi.service;
 import com.wd.custapi.dto.ProjectModuleDtos.ProjectPhaseDto;
 import com.wd.custapi.model.ProjectPhase;
 import com.wd.custapi.repository.ProjectPhaseRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +16,11 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ProjectPhaseService {
 
-    @Autowired
-    private ProjectPhaseRepository projectPhaseRepository;
+    private final ProjectPhaseRepository projectPhaseRepository;
+
+    public ProjectPhaseService(ProjectPhaseRepository projectPhaseRepository) {
+        this.projectPhaseRepository = projectPhaseRepository;
+    }
 
     /**
      * Returns all phases for a project in display order.

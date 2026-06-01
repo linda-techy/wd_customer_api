@@ -3,7 +3,6 @@ package com.wd.custapi.service;
 import com.wd.custapi.dto.ProjectDtos;
 import com.wd.custapi.model.Project;
 import com.wd.custapi.repository.ProjectRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,14 +10,17 @@ import java.util.List;
 @Service
 public class ProjectService {
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    private final ProjectRepository projectRepository;
+    private final com.wd.custapi.repository.DesignStepRepository designStepRepository;
+    private final com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
 
-    @Autowired
-    private com.wd.custapi.repository.DesignStepRepository designStepRepository;
-
-    @Autowired
-    private com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
+    public ProjectService(ProjectRepository projectRepository,
+            com.wd.custapi.repository.DesignStepRepository designStepRepository,
+            com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository) {
+        this.projectRepository = projectRepository;
+        this.designStepRepository = designStepRepository;
+        this.projectDesignStepRepository = projectDesignStepRepository;
+    }
 
     public List<ProjectDtos.ProjectCard> getProjectsForCustomerEmail(String email) {
         return projectRepository.findAllByCustomerEmail(email).stream().map(this::toCard).toList();

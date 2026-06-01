@@ -18,14 +18,17 @@ public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
 
     @Value("${app.email.enabled:false}")
     private boolean emailEnabled;
 
     @Value("${spring.mail.username:noreply@walldotbuilders.com}")
     private String fromEmail;
+
+    public EmailService(@Autowired(required = false) JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     /**
      * Sends a branded HTML password reset email containing a secure link.

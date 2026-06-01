@@ -12,7 +12,6 @@ import com.wd.custapi.service.AuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,8 +43,7 @@ public class AuthController {
     private static final String MESSAGE_KEY = "message";
     private static final String NOT_AUTHENTICATED = "Not authenticated";
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Active Spring profile. When the profile is {@code local} or {@code dev}
@@ -55,6 +53,10 @@ public class AuthController {
      */
     @Value("${spring.profiles.active:prod}")
     private String activeProfile;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {

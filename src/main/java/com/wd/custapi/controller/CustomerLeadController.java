@@ -4,7 +4,6 @@ import com.wd.custapi.dto.NewEnquiryRequest;
 import com.wd.custapi.model.CustomerLead;
 import com.wd.custapi.service.CustomerLeadService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -17,8 +16,11 @@ import java.util.*;
 @PreAuthorize("isAuthenticated()")
 public class CustomerLeadController {
 
-    @Autowired
-    private CustomerLeadService leadService;
+    private final CustomerLeadService leadService;
+
+    public CustomerLeadController(CustomerLeadService leadService) {
+        this.leadService = leadService;
+    }
 
     @GetMapping("/my")
     public ResponseEntity<List<Map<String, Object>>> getMyLeads() {

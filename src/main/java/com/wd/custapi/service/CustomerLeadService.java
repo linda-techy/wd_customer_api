@@ -4,7 +4,6 @@ import com.wd.custapi.dto.NewEnquiryRequest;
 import com.wd.custapi.model.CustomerLead;
 import com.wd.custapi.repository.CustomerLeadRepository;
 import com.wd.custapi.repository.CustomerUserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,14 +13,17 @@ import java.util.Optional;
 @Service
 public class CustomerLeadService {
 
-    @Autowired
-    private CustomerLeadRepository leadRepository;
+    private final CustomerLeadRepository leadRepository;
+    private final CustomerUserRepository customerUserRepository;
+    private final JdbcTemplate jdbc;
 
-    @Autowired
-    private CustomerUserRepository customerUserRepository;
-
-    @Autowired
-    private JdbcTemplate jdbc;
+    public CustomerLeadService(CustomerLeadRepository leadRepository,
+            CustomerUserRepository customerUserRepository,
+            JdbcTemplate jdbc) {
+        this.leadRepository = leadRepository;
+        this.customerUserRepository = customerUserRepository;
+        this.jdbc = jdbc;
+    }
 
     @Transactional(readOnly = true)
     public List<CustomerLead> getMyLeads(String email) {

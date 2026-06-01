@@ -2,7 +2,6 @@ package com.wd.custapi.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,11 +18,14 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
 
     private static final String TBL_PASSWORD_RESET_TOKENS = "customer_password_reset_tokens";
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     @Value("${spring.profiles.active:local}")
     private String activeProfile;
+
+    public DatabaseMigrationRunner(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @Override
     public void run(String... args) throws Exception {

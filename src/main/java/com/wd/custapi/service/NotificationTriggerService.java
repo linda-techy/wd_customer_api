@@ -8,7 +8,6 @@ import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.repository.PaymentScheduleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -32,17 +31,20 @@ public class NotificationTriggerService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationTriggerService.class);
 
-    @Autowired
-    private CustomerNotificationRepository notificationRepository;
+    private final CustomerNotificationRepository notificationRepository;
+    private final CustomerUserRepository customerUserRepository;
+    private final PaymentScheduleRepository paymentScheduleRepository;
+    private final PushNotificationService pushNotificationService;
 
-    @Autowired
-    private CustomerUserRepository customerUserRepository;
-
-    @Autowired
-    private PaymentScheduleRepository paymentScheduleRepository;
-
-    @Autowired
-    private PushNotificationService pushNotificationService;
+    public NotificationTriggerService(CustomerNotificationRepository notificationRepository,
+            CustomerUserRepository customerUserRepository,
+            PaymentScheduleRepository paymentScheduleRepository,
+            PushNotificationService pushNotificationService) {
+        this.notificationRepository = notificationRepository;
+        this.customerUserRepository = customerUserRepository;
+        this.paymentScheduleRepository = paymentScheduleRepository;
+        this.pushNotificationService = pushNotificationService;
+    }
 
     // ─── Scheduled: Payment Due Reminders ────────────────────────────────────────
 

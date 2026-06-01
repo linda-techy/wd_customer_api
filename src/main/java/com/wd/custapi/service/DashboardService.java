@@ -7,7 +7,6 @@ import com.wd.custapi.model.ProjectDocument;
 import com.wd.custapi.repository.CustomerUserRepository;
 import com.wd.custapi.repository.ProjectDocumentRepository;
 import com.wd.custapi.repository.ProjectRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,27 +30,35 @@ public class DashboardService {
     private static final String ROLE_VIEWER = "VIEWER";
     private static final String ROLE_ADMIN = "ADMIN";
 
-    @Autowired
-    private CustomerUserRepository customerUserRepository;
+    private final CustomerUserRepository customerUserRepository;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    private final ProjectRepository projectRepository;
 
+    private final ProjectDocumentRepository projectDocumentRepository;
 
-    @Autowired
-    private ProjectDocumentRepository projectDocumentRepository;
+    private final com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
 
-    @Autowired
-    private com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository;
+    private final com.wd.custapi.repository.ActivityFeedRepository activityFeedRepository;
 
-    @Autowired
-    private com.wd.custapi.repository.ActivityFeedRepository activityFeedRepository;
+    private final com.wd.custapi.repository.PaymentScheduleRepository paymentScheduleRepository;
 
-    @Autowired
-    private com.wd.custapi.repository.PaymentScheduleRepository paymentScheduleRepository;
+    private final com.wd.custapi.repository.ProjectMilestoneRepository projectMilestoneRepository;
 
-    @Autowired
-    private com.wd.custapi.repository.ProjectMilestoneRepository projectMilestoneRepository;
+    public DashboardService(CustomerUserRepository customerUserRepository,
+                            ProjectRepository projectRepository,
+                            ProjectDocumentRepository projectDocumentRepository,
+                            com.wd.custapi.repository.ProjectDesignStepRepository projectDesignStepRepository,
+                            com.wd.custapi.repository.ActivityFeedRepository activityFeedRepository,
+                            com.wd.custapi.repository.PaymentScheduleRepository paymentScheduleRepository,
+                            com.wd.custapi.repository.ProjectMilestoneRepository projectMilestoneRepository) {
+        this.customerUserRepository = customerUserRepository;
+        this.projectRepository = projectRepository;
+        this.projectDocumentRepository = projectDocumentRepository;
+        this.projectDesignStepRepository = projectDesignStepRepository;
+        this.activityFeedRepository = activityFeedRepository;
+        this.paymentScheduleRepository = paymentScheduleRepository;
+        this.projectMilestoneRepository = projectMilestoneRepository;
+    }
 
     // ... existing code ...
 
