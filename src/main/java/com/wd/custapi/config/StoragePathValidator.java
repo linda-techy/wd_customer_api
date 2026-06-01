@@ -48,11 +48,13 @@ public class StoragePathValidator implements CommandLineRunner {
             }
             
             // Show Java process user info
-            logger.info("");
-            logger.info("=== JAVA PROCESS INFO ===");
-            logger.info("User: {}", System.getProperty("user.name"));
-            logger.info("User Home: {}", System.getProperty("user.home"));
-            logger.info("Working Dir: {}", System.getProperty("user.dir"));
+            if (logger.isInfoEnabled()) {
+                logger.info("");
+                logger.info("=== JAVA PROCESS INFO ===");
+                logger.info("User: {}", System.getProperty("user.name"));
+                logger.info("User Home: {}", System.getProperty("user.home"));
+                logger.info("Working Dir: {}", System.getProperty("user.dir"));
+            }
             
         } catch (Exception e) {
             logger.error("ERROR validating storage path: {}", e.getMessage(), e);

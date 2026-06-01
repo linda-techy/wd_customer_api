@@ -42,6 +42,7 @@ public class AuthController {
 
     private static final String ERROR_KEY = "error";
     private static final String MESSAGE_KEY = "message";
+    private static final String NOT_AUTHENTICATED = "Not authenticated";
 
     @Autowired
     private AuthService authService;
@@ -198,7 +199,7 @@ public class AuthController {
             if (authentication == null || !authentication.isAuthenticated()
                     || "anonymousUser".equals(authentication.getPrincipal())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(ERROR_KEY,"Not authenticated"));
+                    .body(Map.of(ERROR_KEY,NOT_AUTHENTICATED));
             }
             String email = authentication.getName();
             LoginResponse.UserInfo userInfo = authService.getCurrentUser(email);
@@ -222,7 +223,7 @@ public class AuthController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(ERROR_KEY,"Not authenticated"));
+                    .body(Map.of(ERROR_KEY,NOT_AUTHENTICATED));
             }
             LoginResponse.UserInfo updated = authService.updateProfile(authentication.getName(), updates);
             return ResponseEntity.ok(updated);
@@ -249,7 +250,7 @@ public class AuthController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(ERROR_KEY,"Not authenticated"));
+                    .body(Map.of(ERROR_KEY,NOT_AUTHENTICATED));
             }
             authService.changePassword(
                     authentication.getName(),
@@ -279,7 +280,7 @@ public class AuthController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(ERROR_KEY,"Not authenticated"));
+                    .body(Map.of(ERROR_KEY,NOT_AUTHENTICATED));
             }
             String fcmToken = body.get("fcmToken");
             if (fcmToken == null || fcmToken.isBlank()) {

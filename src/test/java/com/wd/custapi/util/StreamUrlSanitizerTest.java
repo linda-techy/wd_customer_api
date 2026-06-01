@@ -31,9 +31,9 @@ class StreamUrlSanitizerTest {
         String url = "rtsp://admin:secret123@192.168.1.100:554/live";
         String sanitized = StreamUrlSanitizer.stripCredentials(url);
 
-        assertThat(sanitized).isEqualTo("rtsp://192.168.1.100:554/live");
-        assertThat(sanitized).doesNotContain("admin");
-        assertThat(sanitized).doesNotContain("secret123");
+        assertThat(sanitized).isEqualTo("rtsp://192.168.1.100:554/live")
+                .doesNotContain("admin")
+                .doesNotContain("secret123");
     }
 
     @Test
@@ -42,8 +42,8 @@ class StreamUrlSanitizerTest {
         String url = "rtsp://admin@192.168.1.100:554/stream";
         String sanitized = StreamUrlSanitizer.stripCredentials(url);
 
-        assertThat(sanitized).isEqualTo("rtsp://192.168.1.100:554/stream");
-        assertThat(sanitized).doesNotContain("admin");
+        assertThat(sanitized).isEqualTo("rtsp://192.168.1.100:554/stream")
+                .doesNotContain("admin");
     }
 
     @Test
@@ -51,8 +51,8 @@ class StreamUrlSanitizerTest {
         String url = "rtsp://user:p%40ss!word@10.0.0.1:554/cam";
         String sanitized = StreamUrlSanitizer.stripCredentials(url);
 
-        assertThat(sanitized).isEqualTo("rtsp://10.0.0.1:554/cam");
-        assertThat(sanitized).doesNotContain("user");
+        assertThat(sanitized).isEqualTo("rtsp://10.0.0.1:554/cam")
+                .doesNotContain("user");
     }
 
     @Test
@@ -62,7 +62,7 @@ class StreamUrlSanitizerTest {
 
     @Test
     void blankUrl_returnsBlank() {
-        assertThat(StreamUrlSanitizer.stripCredentials("")).isEqualTo("");
+        assertThat(StreamUrlSanitizer.stripCredentials("")).isEmpty();
     }
 
     @Test
@@ -70,8 +70,8 @@ class StreamUrlSanitizerTest {
         String url = "http://cam:pass@192.168.0.50:8080/video.mjpeg";
         String sanitized = StreamUrlSanitizer.stripCredentials(url);
 
-        assertThat(sanitized).isEqualTo("http://192.168.0.50:8080/video.mjpeg");
-        assertThat(sanitized).doesNotContain("cam");
-        assertThat(sanitized).doesNotContain("pass");
+        assertThat(sanitized).isEqualTo("http://192.168.0.50:8080/video.mjpeg")
+                .doesNotContain("cam")
+                .doesNotContain("pass");
     }
 }

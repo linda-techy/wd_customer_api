@@ -126,12 +126,13 @@ class CctvStreamProxyIntegrationTest {
         String body = new String(resp.getBody(), StandardCharsets.UTF_8);
         // The raw upstream segment ref is replaced; the rewritten ref encodes the ABSOLUTE upstream URL.
         String expectedToken = CctvStreamProxyService.encodeRef(base + "/live/seg0.ts");
-        assertThat(body).contains("segment?s=" + expectedToken);
-        // Directives preserved
-        assertThat(body).contains("#EXTM3U").contains("#EXT-X-ENDLIST");
-        // Upstream host / path never appears in the rewritten manifest
-        assertThat(body).doesNotContain("127.0.0.1");
-        assertThat(body).doesNotContain("/live/seg0.ts");
+        assertThat(body)
+                .contains("segment?s=" + expectedToken)
+                // Directives preserved
+                .contains("#EXTM3U").contains("#EXT-X-ENDLIST")
+                // Upstream host / path never appears in the rewritten manifest
+                .doesNotContain("127.0.0.1")
+                .doesNotContain("/live/seg0.ts");
     }
 
     @Test

@@ -96,8 +96,9 @@ class CustomerReadOsivLazyLoadingIntegrationTest extends TestcontainersPostgresB
 
         // Gallery + site-visit items must be present AND have their lazy author resolved
         // (proves the proxy was initialised in-session, not merely that nothing threw).
-        assertThat(items).anyMatch(i -> "GALLERY".equals(i.type()) && expectedName.equals(i.createdByName()));
-        assertThat(items).anyMatch(i -> "SITE_VISIT".equals(i.type()) && expectedName.equals(i.createdByName()));
+        assertThat(items)
+                .anyMatch(i -> "GALLERY".equals(i.type()) && expectedName.equals(i.createdByName()))
+                .anyMatch(i -> "SITE_VISIT".equals(i.type()) && expectedName.equals(i.createdByName()));
     }
 
     @Test

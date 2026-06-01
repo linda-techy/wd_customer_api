@@ -32,16 +32,17 @@ class CctvStreamProxyServiceTest {
 
         String out = svc.rewriteHlsManifest(manifest, manifestUrl);
 
-        // Directives preserved verbatim
-        assertThat(out).contains("#EXTM3U").contains("#EXT-X-TARGETDURATION:10")
-                .contains("#EXTINF:9.0,").contains("#EXT-X-ENDLIST");
-        // Relative segment refs resolved to ABSOLUTE upstream URLs, then encoded behind the proxy
-        assertThat(out).contains("segment?s="
-                + CctvStreamProxyService.encodeRef("https://cam.example.com/live/segment0.ts"));
-        assertThat(out).contains("segment?s="
-                + CctvStreamProxyService.encodeRef("https://cam.example.com/live/720p/segment1.ts"));
-        // Raw upstream paths must not leak into the manifest
-        assertThat(out).doesNotContain("720p/segment1.ts");
+        assertThat(out)
+                // Directives preserved verbatim
+                .contains("#EXTM3U").contains("#EXT-X-TARGETDURATION:10")
+                .contains("#EXTINF:9.0,").contains("#EXT-X-ENDLIST")
+                // Relative segment refs resolved to ABSOLUTE upstream URLs, then encoded behind the proxy
+                .contains("segment?s="
+                        + CctvStreamProxyService.encodeRef("https://cam.example.com/live/segment0.ts"))
+                .contains("segment?s="
+                        + CctvStreamProxyService.encodeRef("https://cam.example.com/live/720p/segment1.ts"))
+                // Raw upstream paths must not leak into the manifest
+                .doesNotContain("720p/segment1.ts");
     }
 
     @Test
@@ -56,8 +57,8 @@ class CctvStreamProxyServiceTest {
         String out = svc.rewriteHlsManifest(manifest, manifestUrl);
 
         assertThat(out).contains("URI=\"segment?s="
-                + CctvStreamProxyService.encodeRef("https://cam.example.com/live/key.bin") + "\"");
-        assertThat(out).doesNotContain("URI=\"key.bin\"");
+                + CctvStreamProxyService.encodeRef("https://cam.example.com/live/key.bin") + "\"")
+                .doesNotContain("URI=\"key.bin\"");
     }
 
     @Test
@@ -67,7 +68,7 @@ class CctvStreamProxyServiceTest {
 
         URI upstream = svc.resolveUpstreamSegment(cameraUrl, token);
 
-        assertThat(upstream.toString()).isEqualTo("https://cam.example.com/live/segment0.ts");
+        assertThat(upstream).hasToString("https://cam.example.com/live/segment0.ts");
     }
 
     @Test

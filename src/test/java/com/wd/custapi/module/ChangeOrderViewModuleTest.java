@@ -193,8 +193,8 @@ class ChangeOrderViewModuleTest extends TestcontainersPostgresBase {
         assertThat(detailResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         Map<String, Object> coData = (Map<String, Object>) detailResponse.getBody().get("changeOrder");
         assertThat(coData).isNotNull();
-        assertThat(coData.get("rejectionReason")).isEqualTo(rejectionReason);
-        assertThat(coData.get("status")).isEqualTo("REJECTED");
+        assertThat(coData.get("rejectionReason")).hasToString(rejectionReason);
+        assertThat(coData.get("status")).hasToString("REJECTED");
     }
 
     // ---- Unauthenticated ----

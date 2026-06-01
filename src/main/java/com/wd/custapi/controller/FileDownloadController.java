@@ -102,12 +102,7 @@ public class FileDownloadController {
             }
             
             // URL decode the path to handle special characters
-            try {
-                requestPath = URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                logger.warn("Failed to decode request path '{}': {}", requestPath, e.getMessage());
-                // Continue with original path if decoding fails
-            }
+            requestPath = decodeRequestPath(requestPath, "Failed to decode request path '{}': {}");
 
             // Ownership check — file must be linked to a project the caller owns.
             // Covers both project_documents and site-report photos.
@@ -220,6 +215,21 @@ public class FileDownloadController {
     }
 
     /**
+     * URL-decodes the request path. If decoding fails, logs a warning using the
+     * supplied SLF4J template and returns the original (undecoded) path so the
+     * caller can continue.
+     */
+    private String decodeRequestPath(String requestPath, String warnTemplate) {
+        try {
+            return URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            logger.warn(warnTemplate, requestPath, e.getMessage());
+            // Continue with original path if decoding fails
+            return requestPath;
+        }
+    }
+
+    /**
      * Get file metadata without downloading
      * HEAD /api/storage/projects/1/documents/file.pdf
      */
@@ -254,11 +264,7 @@ public class FileDownloadController {
             }
             
             // URL decode the path to handle special characters
-            try {
-                requestPath = URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                logger.warn("Failed to decode path for HEAD request '{}': {}", requestPath, e.getMessage());
-            }
+            requestPath = decodeRequestPath(requestPath, "Failed to decode path for HEAD request '{}': {}");
 
             // Ownership check — file must be linked to a project the caller owns.
             // Covers both project_documents and site-report photos.

@@ -72,24 +72,7 @@ public class DashboardService {
                     .orElseThrow(() -> new RuntimeException("Customer user not found"));
 
             boolean isAdmin = user.getRole() != null && ROLE_ADMIN.equalsIgnoreCase(user.getRole().getName());
-            List<Project> userProjects;
-            try {
-                if (isAdmin) {
-                    // Dashboard only shows 5 recent project cards — load 20 max.
-                    // Previously loaded 50 full entities; reduced to 20 to limit heap pressure.
-                    // Future improvement: replace with a ProjectSummaryProjection (id, name, code,
-                    // progress, projectPhase) once the projection interface is wired to the repo.
-                    // Admin browsing beyond 20 should use GET /api/dashboard/admin/projects (paginated).
-                    userProjects = projectRepository.findRecentForAdmin(20);
-                    logger.info("Admin user {}: loaded {} recent projects for dashboard", email, userProjects.size());
-                } else {
-                    userProjects = projectRepository.findAllByCustomerEmail(email);
-                    logger.info("Found {} projects for user: {}", userProjects.size(), email);
-                }
-            } catch (Exception e) {
-                logger.error("Error fetching projects for {}: {}", email, e.getMessage());
-                userProjects = new ArrayList<>();
-            }
+            List<Project> userProjects = loadDashboardProjects(isAdmin, email);
 
             // Build dashboard data
             DashboardDto.UserSummary userSummary = new DashboardDto.UserSummary(
@@ -117,6 +100,33 @@ public class DashboardService {
             // Log full detail internally but do NOT expose it to the caller
             logger.error("Error building dashboard for user: {}", email, e);
             throw new RuntimeException("Error building dashboard. Please try again.", e);
+        }
+    }
+
+    /**
+     * Loads the projects shown on the dashboard. Tolerant of fetch failures —
+     * returns an empty list (rather than failing the whole dashboard) if the
+     * project query throws.
+     */
+    private List<Project> loadDashboardProjects(boolean isAdmin, String email) {
+        try {
+            if (isAdmin) {
+                // Dashboard only shows 5 recent project cards — load 20 max.
+                // Previously loaded 50 full entities; reduced to 20 to limit heap pressure.
+                // Future improvement: replace with a ProjectSummaryProjection (id, name, code,
+                // progress, projectPhase) once the projection interface is wired to the repo.
+                // Admin browsing beyond 20 should use GET /api/dashboard/admin/projects (paginated).
+                List<Project> userProjects = projectRepository.findRecentForAdmin(20);
+                logger.info("Admin user {}: loaded {} recent projects for dashboard", email, userProjects.size());
+                return userProjects;
+            } else {
+                List<Project> userProjects = projectRepository.findAllByCustomerEmail(email);
+                logger.info("Found {} projects for user: {}", userProjects.size(), email);
+                return userProjects;
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching projects for {}: {}", email, e.getMessage());
+            return new ArrayList<>();
         }
     }
 

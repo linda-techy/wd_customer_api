@@ -165,8 +165,8 @@ class CustomerTeamControllerIT extends TestcontainersPostgresBase {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("PROJECT_MANAGER member not found in response"));
 
-        assertThat(pm.get("phone")).isEqualTo("+91-1111");
-        assertThat(pm.get("email")).isEqualTo("pm@x.com");
+        assertThat(pm.get("phone")).hasToString("+91-1111");
+        assertThat(pm.get("email")).hasToString("pm@x.com");
 
         // Find Architect entry and assert phone/email null/absent
         @SuppressWarnings("unchecked")

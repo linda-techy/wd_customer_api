@@ -99,11 +99,12 @@ class ExpectedHandoverControllerIT extends TestcontainersPostgresBase {
         // baselineFinishDate is serialised as JSON null (no baseline seeded).
         // jsonPath cannot reliably match null keys with isEmpty()/value(null),
         // so we assert the four expected keys are present in the response body.
-        assertThat(body).contains("\"projectFinishDate\"");
-        assertThat(body).contains("\"baselineFinishDate\"");
-        assertThat(body).contains("\"weeksRemaining\"");
-        assertThat(body).contains("\"hasMaterialDelay\"");
-        // baselineFinishDate must serialise as null since no baseline row exists.
-        assertThat(body).contains("\"baselineFinishDate\":null");
+        assertThat(body)
+                .contains("\"projectFinishDate\"")
+                .contains("\"baselineFinishDate\"")
+                .contains("\"weeksRemaining\"")
+                .contains("\"hasMaterialDelay\"")
+                // baselineFinishDate must serialise as null since no baseline row exists.
+                .contains("\"baselineFinishDate\":null");
     }
 }

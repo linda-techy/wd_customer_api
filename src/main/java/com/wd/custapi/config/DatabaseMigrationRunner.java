@@ -86,25 +86,13 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
 
             if (constraintCount != null && constraintCount == 0) {
                 logger.info("Adding unique constraint 'uk_project_uuid'...");
-                try {
-                    jdbcTemplate.execute(
-                            "ALTER TABLE customer_projects ADD CONSTRAINT uk_project_uuid UNIQUE (project_uuid)");
-                    logger.info("Unique constraint added.");
-                } catch (Exception e) {
-                    logger.warn("Failed to add unique constraint (might already exist or data issue): {}",
-                            e.getMessage());
-                }
+                addUniqueProjectUuidConstraint();
             } else {
                 logger.info("Unique constraint 'uk_project_uuid' already exists.");
             }
 
             // 4. Set Not Null
-            try {
-                jdbcTemplate.execute("ALTER TABLE customer_projects ALTER COLUMN project_uuid SET NOT NULL");
-                logger.info("Set project_uuid to NOT NULL.");
-            } catch (Exception e) {
-                logger.warn("Could not set project_uuid to NOT NULL: {}", e.getMessage());
-            }
+            setProjectUuidNotNull();
 
             // 5. Add sqfeet column if missing
             String checkSqFeetSql = "SELECT count(*) FROM information_schema.columns " +
@@ -131,6 +119,33 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
         }
 
         logger.info("Database migration check completed.");
+    }
+
+    /**
+     * Add the unique constraint on project_uuid. Tolerates failure (constraint
+     * may already exist or data may violate it) — logs a warning instead.
+     */
+    private void addUniqueProjectUuidConstraint() {
+        try {
+            jdbcTemplate.execute(
+                    "ALTER TABLE customer_projects ADD CONSTRAINT uk_project_uuid UNIQUE (project_uuid)");
+            logger.info("Unique constraint added.");
+        } catch (Exception e) {
+            logger.warn("Failed to add unique constraint (might already exist or data issue): {}",
+                    e.getMessage());
+        }
+    }
+
+    /**
+     * Set project_uuid to NOT NULL. Tolerates failure — logs a warning instead.
+     */
+    private void setProjectUuidNotNull() {
+        try {
+            jdbcTemplate.execute("ALTER TABLE customer_projects ALTER COLUMN project_uuid SET NOT NULL");
+            logger.info("Set project_uuid to NOT NULL.");
+        } catch (Exception e) {
+            logger.warn("Could not set project_uuid to NOT NULL: {}", e.getMessage());
+        }
     }
 
     /**

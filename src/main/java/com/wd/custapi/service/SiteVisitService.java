@@ -82,7 +82,9 @@ public class SiteVisitService {
                         GeoUtils.formatDistance(GeoUtils.MAX_CHECKIN_DISTANCE_KM) +
                         " to check in.");
             }
-            logger.info("Check-in GPS validated: user is {} from project site", GeoUtils.formatDistance(distanceKm));
+            if (logger.isInfoEnabled()) {
+                logger.info("Check-in GPS validated: user is {} from project site", GeoUtils.formatDistance(distanceKm));
+            }
         }
 
         SiteVisit visit = new SiteVisit();
@@ -149,7 +151,9 @@ public class SiteVisitService {
                         GeoUtils.formatDistance(GeoUtils.MAX_CHECKIN_DISTANCE_KM) +
                         " to check out.");
             }
-            logger.info("Check-out GPS validated: user is {} from project site", GeoUtils.formatDistance(distanceKm));
+            if (logger.isInfoEnabled()) {
+                logger.info("Check-out GPS validated: user is {} from project site", GeoUtils.formatDistance(distanceKm));
+            }
         }
 
         visit.setCheckOutTime(LocalDateTime.now());

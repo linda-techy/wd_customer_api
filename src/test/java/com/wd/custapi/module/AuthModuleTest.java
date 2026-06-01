@@ -60,7 +60,7 @@ class AuthModuleTest extends TestcontainersPostgresBase {
         assertThat(response.getBody()).containsKey("accessToken");
         assertThat(response.getBody()).containsKey("refreshToken");
         assertThat(response.getBody()).containsKey("tokenType");
-        assertThat(response.getBody().get("tokenType")).isEqualTo("Bearer");
+        assertThat(response.getBody().get("tokenType")).hasToString("Bearer");
     }
 
     @Test
@@ -197,7 +197,7 @@ class AuthModuleTest extends TestcontainersPostgresBase {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).containsKey("email");
-        assertThat(response.getBody().get("email")).isEqualTo("customerA@test.com");
+        assertThat(response.getBody().get("email")).hasToString("customerA@test.com");
     }
 
     @Test

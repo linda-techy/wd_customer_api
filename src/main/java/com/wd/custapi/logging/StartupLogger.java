@@ -85,16 +85,18 @@ public class StartupLogger implements ApplicationRunner {
         // Mask password from DB URL for logging
         String safeDbUrl = maskDbUrl(dbUrl);
 
-        log.info("╔══════════════════════════════════════════════════════════╗");
-        log.info("║        {} — STARTUP DIAGNOSTICS                 ║", appName);
-        log.info("╠══════════════════════════════════════════════════════════╣");
-        log.info("║  Java Version  : {}",      System.getProperty("java.version"));
-        log.info("║  Spring Profile: {}",      profile);
-        log.info("║  Server Port   : {}",      serverPort);
-        log.info("║  Database URL  : {}",      safeDbUrl);
-        log.info("║  Log Directory : {}",      LOG_DIR);
-        log.info("║  App Version   : {}",      "1.0.0-SNAPSHOT");
-        log.info("╚══════════════════════════════════════════════════════════╝");
+        if (log.isInfoEnabled()) {
+            log.info("╔══════════════════════════════════════════════════════════╗");
+            log.info("║        {} — STARTUP DIAGNOSTICS                 ║", appName);
+            log.info("╠══════════════════════════════════════════════════════════╣");
+            log.info("║  Java Version  : {}",      System.getProperty("java.version"));
+            log.info("║  Spring Profile: {}",      profile);
+            log.info("║  Server Port   : {}",      serverPort);
+            log.info("║  Database URL  : {}",      safeDbUrl);
+            log.info("║  Log Directory : {}",      LOG_DIR);
+            log.info("║  App Version   : {}",      "1.0.0-SNAPSHOT");
+            log.info("╚══════════════════════════════════════════════════════════╝");
+        }
     }
 
     /**

@@ -57,24 +57,32 @@ public class NotificationTriggerService {
         try {
             List<Object[]> upcoming = paymentScheduleRepository.findDueOn(target);
             for (Object[] row : upcoming) {
-                try {
-                    Long customerId = ((Number) row[0]).longValue();
-                    Long scheduleId = ((Number) row[1]).longValue();
-                    String description = (String) row[2];
-                    java.math.BigDecimal amount = (java.math.BigDecimal) row[3];
-                    Long projectId = row[4] != null ? ((Number) row[4]).longValue() : null;
-
-                    customerUserRepository.findById(customerId).ifPresent(user -> {
-                        String title = "Payment Due in 3 Days";
-                        String body = String.format("₹%.0f due for: %s", amount, description);
-                        saveAndPush(user, projectId, scheduleId, "PAYMENT_DUE", title, body);
-                    });
-                } catch (Exception e) {
-                    logger.warn("Failed to send payment-due reminder for row: {}", e.getMessage());
-                }
+                sendPaymentDueReminderForRow(row);
             }
         } catch (Exception e) {
             logger.error("PaymentDueReminder job failed: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Sends a single payment-due reminder for one query row. Never throws —
+     * a failure on one row must not abort the rest of the batch.
+     */
+    private void sendPaymentDueReminderForRow(Object[] row) {
+        try {
+            Long customerId = ((Number) row[0]).longValue();
+            Long scheduleId = ((Number) row[1]).longValue();
+            String description = (String) row[2];
+            java.math.BigDecimal amount = (java.math.BigDecimal) row[3];
+            Long projectId = row[4] != null ? ((Number) row[4]).longValue() : null;
+
+            customerUserRepository.findById(customerId).ifPresent(user -> {
+                String title = "Payment Due in 3 Days";
+                String body = String.format("₹%.0f due for: %s", amount, description);
+                saveAndPush(user, projectId, scheduleId, "PAYMENT_DUE", title, body);
+            });
+        } catch (Exception e) {
+            logger.warn("Failed to send payment-due reminder for row: {}", e.getMessage());
         }
     }
 
