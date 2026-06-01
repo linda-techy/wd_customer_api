@@ -31,14 +31,14 @@ public class CustomerTeamController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getTeam(
+    public ResponseEntity<Object> getTeam(
             @PathVariable String projectUuid,
             Authentication auth) {
         try {
             String email = auth.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             List<TeamContactDto> team = teamService.getTeamForProject(project.getId());
-            return ResponseEntity.ok(team);
+            return ResponseEntity.ok((Object) team);
         } catch (RuntimeException e) {
             String msg = e.getMessage();
             if (msg != null && msg.toLowerCase().contains("not found")) {

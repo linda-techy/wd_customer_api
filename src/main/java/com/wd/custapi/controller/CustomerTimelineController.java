@@ -34,7 +34,7 @@ public class CustomerTimelineController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getTimeline(
+    public ResponseEntity<Object> getTimeline(
             @PathVariable String projectUuid,
             @RequestParam(defaultValue = "week") String bucket,
             @RequestParam(defaultValue = "0") int page,
@@ -43,7 +43,7 @@ public class CustomerTimelineController {
         try {
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
             TimelineResponseDto resp = timelineService.getTimeline(project.getId(), bucket, page, size);
-            return ResponseEntity.ok(resp);
+            return ResponseEntity.ok((Object) resp);
         } catch (RuntimeException e) {
             String msg = e.getMessage();
             if (msg != null && msg.toLowerCase().contains("not found")) {
@@ -58,13 +58,13 @@ public class CustomerTimelineController {
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<?> getSummary(
+    public ResponseEntity<Object> getSummary(
             @PathVariable String projectUuid,
             Authentication auth) {
         try {
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, auth.getName());
             TimelineSummaryDto summary = timelineService.getSummary(project.getId());
-            return ResponseEntity.ok(summary);
+            return ResponseEntity.ok((Object) summary);
         } catch (RuntimeException e) {
             String msg = e.getMessage();
             if (msg != null && msg.toLowerCase().contains("not found")) {

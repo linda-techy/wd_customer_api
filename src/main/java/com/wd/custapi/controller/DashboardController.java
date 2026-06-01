@@ -49,11 +49,11 @@ public class DashboardController {
      * GET /api/dashboard
      */
     @GetMapping
-    public ResponseEntity<?> getDashboard(Authentication authentication) {
+    public ResponseEntity<Object> getDashboard(Authentication authentication) {
         try {
             String email = authentication.getName();
             DashboardDto dashboard = dashboardService.getCustomerDashboard(email);
-            return ResponseEntity.ok(dashboard);
+            return ResponseEntity.ok((Object) dashboard);
         } catch (Exception e) {
             logger.error("Failed to load dashboard for user {}: {}",
                     authentication.getName(), e.getMessage(), e);
@@ -67,7 +67,7 @@ public class DashboardController {
      * GET /api/dashboard/recent-projects?limit=5
      */
     @GetMapping("/recent-projects")
-    public ResponseEntity<?> getRecentProjects(
+    public ResponseEntity<Object> getRecentProjects(
             @RequestParam(defaultValue = "5") int limit,
             Authentication authentication) {
         try {
@@ -77,7 +77,7 @@ public class DashboardController {
             }
             String email = authentication.getName();
             List<DashboardDto.ProjectCard> projects = dashboardService.getRecentProjects(email, limit);
-            return ResponseEntity.ok(projects);
+            return ResponseEntity.ok((Object) projects);
         } catch (Exception e) {
             logger.error("Failed to fetch recent projects for user {}: {}",
                     authentication.getName(), e.getMessage(), e);
@@ -92,13 +92,13 @@ public class DashboardController {
      * If no search term provided, returns recent 5 projects
      */
     @GetMapping("/search-projects")
-    public ResponseEntity<?> searchProjects(
+    public ResponseEntity<Object> searchProjects(
             @RequestParam(required = false) String q,
             Authentication authentication) {
         try {
             String email = authentication.getName();
             List<DashboardDto.ProjectCard> projects = dashboardService.searchProjects(email, q);
-            return ResponseEntity.ok(projects);
+            return ResponseEntity.ok((Object) projects);
         } catch (Exception e) {
             logger.error("Project search failed for user {}, query '{}': {}",
                     authentication.getName(), q, e.getMessage(), e);
@@ -113,13 +113,13 @@ public class DashboardController {
      * Returns: Project details, progress data, progress chart data, and documents
      */
     @GetMapping("/projects/{projectUuid}")
-    public ResponseEntity<?> getProjectDetails(
+    public ResponseEntity<Object> getProjectDetails(
             @PathVariable String projectUuid,
             Authentication authentication) {
         try {
             String email = authentication.getName();
             DashboardDto.ProjectDetails details = dashboardService.getProjectDetails(projectUuid, email);
-            return ResponseEntity.ok(details);
+            return ResponseEntity.ok((Object) details);
         } catch (RuntimeException e) {
             return handleRuntimeException(e, "fetch project details", projectUuid, authentication);
         } catch (Exception e) {
@@ -137,14 +137,14 @@ public class DashboardController {
      * GET /api/dashboard/projects/{projectUuid}/phases
      */
     @GetMapping("/projects/{projectUuid}/phases")
-    public ResponseEntity<?> getProjectPhases(
+    public ResponseEntity<Object> getProjectPhases(
             @PathVariable String projectUuid,
             Authentication authentication) {
         try {
             String email = authentication.getName();
             Project project = dashboardService.getProjectByUuidAndEmail(projectUuid, email);
             java.util.List<ProjectPhaseDto> phases = projectPhaseService.getProjectPhases(project.getId());
-            return ResponseEntity.ok(phases);
+            return ResponseEntity.ok((Object) phases);
         } catch (RuntimeException e) {
             return handleRuntimeException(e, "fetch project phases", projectUuid, authentication);
         } catch (Exception e) {
@@ -167,7 +167,7 @@ public class DashboardController {
      * Request body: { "designPackage": "custom|premium|bespoke" }
      */
     @PutMapping("/projects/{projectUuid}/design-package")
-    public ResponseEntity<?> updateDesignPackage(
+    public ResponseEntity<Object> updateDesignPackage(
             @PathVariable String projectUuid,
             @Valid @RequestBody DesignPackageUpdateRequest payload,
             Authentication authentication) {
@@ -175,7 +175,7 @@ public class DashboardController {
             String email = authentication.getName();
             DashboardDto.ProjectDetails details = dashboardService.updateDesignPackage(projectUuid,
                     payload.designPackage(), email);
-            return ResponseEntity.ok(details);
+            return ResponseEntity.ok((Object) details);
         } catch (RuntimeException e) {
             return handleRuntimeException(e, "update design package", projectUuid, authentication);
         } catch (Exception e) {
@@ -192,7 +192,7 @@ public class DashboardController {
      */
     @GetMapping("/admin/projects")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getAdminProjects(
+    public ResponseEntity<Map<String, Object>> getAdminProjects(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String q,
@@ -208,7 +208,7 @@ public class DashboardController {
         }
     }
 
-    private ResponseEntity<?> handleRuntimeException(RuntimeException e, String operation, String projectUuid,
+    private ResponseEntity<Object> handleRuntimeException(RuntimeException e, String operation, String projectUuid,
             Authentication auth) {
         String message = e.getMessage();
         if (message != null && message.toLowerCase().contains("not found")) {

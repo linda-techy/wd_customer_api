@@ -29,7 +29,7 @@ public class SupportTicketController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<?> createTicket(@Valid @RequestBody SupportTicketRequest request,
+    public ResponseEntity<Map<String, Object>> createTicket(@Valid @RequestBody SupportTicketRequest request,
                                           Authentication authentication) {
         try {
             String email = authentication.getName();
@@ -45,7 +45,7 @@ public class SupportTicketController {
     }
 
     @GetMapping("/")
-    public ResponseEntity<?> getMyTickets(@RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<Map<String, Object>> getMyTickets(@RequestParam(defaultValue = "0") int page,
                                           @RequestParam(defaultValue = "10") int size,
                                           @RequestParam(required = false) String status,
                                           Authentication authentication) {
@@ -69,7 +69,7 @@ public class SupportTicketController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTicketDetail(@PathVariable Long id,
+    public ResponseEntity<Map<String, Object>> getTicketDetail(@PathVariable Long id,
                                              Authentication authentication) {
         try {
             String email = authentication.getName();
@@ -88,7 +88,7 @@ public class SupportTicketController {
     }
 
     @PostMapping("/{id}/replies")
-    public ResponseEntity<?> addReply(@PathVariable Long id,
+    public ResponseEntity<Map<String, Object>> addReply(@PathVariable Long id,
                                       @Valid @RequestBody SupportTicketReplyRequest request,
                                       Authentication authentication) {
         try {
@@ -108,7 +108,7 @@ public class SupportTicketController {
     }
 
     @GetMapping("/by-project/{projectId}")
-    public ResponseEntity<?> getTicketsByProject(@PathVariable Long projectId,
+    public ResponseEntity<Map<String, Object>> getTicketsByProject(@PathVariable Long projectId,
                                                  Authentication authentication) {
         try {
             String email = authentication.getName();
@@ -124,7 +124,7 @@ public class SupportTicketController {
     }
 
     @PutMapping("/{id}/close")
-    public ResponseEntity<?> closeTicket(@PathVariable Long id,
+    public ResponseEntity<Map<String, Object>> closeTicket(@PathVariable Long id,
                                          Authentication authentication) {
         try {
             String email = authentication.getName();

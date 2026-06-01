@@ -220,7 +220,7 @@ public class CustomerBoqController {
     // ---- Payment Schedule ----
 
     @GetMapping("/payment-schedule")
-    public ResponseEntity<?> getPaymentSchedule(
+    public ResponseEntity<Object> getPaymentSchedule(
             @PathVariable("projectId") String projectUuid,
             @RequestParam(value = "nextOnly", required = false, defaultValue = "false") boolean nextOnly,
             Authentication auth) {
@@ -230,7 +230,7 @@ public class CustomerBoqController {
 
             if (nextOnly) {
                 NextPaymentMilestoneDto dto = nextPaymentService.getNextPaymentMilestone(project);
-                return ResponseEntity.ok(dto);
+                return ResponseEntity.ok((Object) dto);
             }
 
             List<Map<String, Object>> stages = paymentStageRepository

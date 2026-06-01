@@ -101,7 +101,7 @@ public class ProjectModuleController {
     // The /schedule/gantt endpoint below still aggregates tasks into a customer-facing timeline.
 
     @GetMapping("/schedule/gantt")
-    public ResponseEntity<?> getGanttData(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getGanttData(
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {

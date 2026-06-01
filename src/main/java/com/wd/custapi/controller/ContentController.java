@@ -39,7 +39,7 @@ public class ContentController {
      * Returns paginated blog summaries (id, title, slug, excerpt, imageUrl, author, publishedAt).
      */
     @GetMapping("/blogs")
-    public ResponseEntity<?> getBlogs(
+    public ResponseEntity<Map<String, Object>> getBlogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
@@ -67,7 +67,7 @@ public class ContentController {
      * Returns full blog post with content. 404 if not found.
      */
     @GetMapping("/blogs/{slug}")
-    public ResponseEntity<?> getBlogBySlug(@PathVariable String slug) {
+    public ResponseEntity<Map<String, Object>> getBlogBySlug(@PathVariable String slug) {
         try {
             BlogPost blog = contentService.getBlogBySlug(slug);
             if (blog == null) {
@@ -87,7 +87,7 @@ public class ContentController {
      * Returns paginated portfolio summaries.
      */
     @GetMapping("/portfolio")
-    public ResponseEntity<?> getPortfolio(
+    public ResponseEntity<Map<String, Object>> getPortfolio(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String projectType) {
@@ -115,7 +115,7 @@ public class ContentController {
      * Returns full portfolio item with gallery. 404 if not found.
      */
     @GetMapping("/portfolio/{slug}")
-    public ResponseEntity<?> getPortfolioBySlug(@PathVariable String slug) {
+    public ResponseEntity<Map<String, Object>> getPortfolioBySlug(@PathVariable String slug) {
         try {
             PortfolioItem item = contentService.getPortfolioBySlug(slug);
             if (item == null) {
@@ -135,7 +135,7 @@ public class ContentController {
      * Placeholder — returns empty list.
      */
     @GetMapping("/live-activities")
-    public ResponseEntity<?> getLiveActivities() {
+    public ResponseEntity<Map<String, Object>> getLiveActivities() {
         return ResponseEntity.ok(Map.of("activities", List.of()));
     }
 

@@ -59,10 +59,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<Object> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             LoginResponse response = authService.login(loginRequest);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok((Object) response);
         } catch (IllegalArgumentException e) {
             logger.warn("Login validation failed for email {}: {}", loginRequest.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -106,10 +106,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequest registerRequest) {
         try {
             LoginResponse response = authService.register(registerRequest);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok((Object) response);
         } catch (IllegalArgumentException e) {
             logger.warn("Registration validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -122,7 +122,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<Map<String, Object>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
         try {
             authService.forgotPassword(request, extractClientKey(httpRequest));
             return ResponseEntity.ok(Map.of(
@@ -143,7 +143,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<Map<String, Object>> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
         try {
             authService.resetPassword(request, extractClientKey(httpRequest));
             return ResponseEntity.ok(Map.of(MESSAGE_KEY,"Password has been reset successfully"));
@@ -166,10 +166,10 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<Object> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         try {
             RefreshTokenResponse response = authService.refreshToken(request);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok((Object) response);
         } catch (IllegalArgumentException e) {
             logger.warn("Refresh token validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -182,7 +182,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@Valid @RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         try {
             authService.logout(request.getRefreshToken());
             return ResponseEntity.ok().build();
@@ -195,7 +195,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser() {
+    public ResponseEntity<Object> getCurrentUser() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()
@@ -205,7 +205,7 @@ public class AuthController {
             }
             String email = authentication.getName();
             LoginResponse.UserInfo userInfo = authService.getCurrentUser(email);
-            return ResponseEntity.ok(userInfo);
+            return ResponseEntity.ok((Object) userInfo);
         } catch (Exception e) {
             logger.error("Failed to get current user: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -219,7 +219,7 @@ public class AuthController {
      * Email and role are immutable by the customer.
      */
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(
+    public ResponseEntity<Object> updateProfile(
             @RequestBody Map<String, String> updates,
             Authentication authentication) {
         try {
@@ -228,7 +228,7 @@ public class AuthController {
                     .body(Map.of(ERROR_KEY,NOT_AUTHENTICATED));
             }
             LoginResponse.UserInfo updated = authService.updateProfile(authentication.getName(), updates);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok((Object) updated);
         } catch (IllegalArgumentException e) {
             logger.warn("Profile update validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -246,7 +246,7 @@ public class AuthController {
      * All existing sessions are invalidated after a successful change.
      */
     @PutMapping("/change-password")
-    public ResponseEntity<?> changePassword(
+    public ResponseEntity<Map<String, Object>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
         try {
@@ -276,7 +276,7 @@ public class AuthController {
      * Should be called after login and after Firebase assigns a new token.
      */
     @PostMapping("/fcm-token")
-    public ResponseEntity<?> registerFcmToken(
+    public ResponseEntity<Map<String, Object>> registerFcmToken(
             @RequestBody Map<String, String> body,
             Authentication authentication) {
         try {
@@ -299,7 +299,7 @@ public class AuthController {
     }
 
     @GetMapping("/verify-email")
-    public ResponseEntity<?> verifyEmail(@org.springframework.web.bind.annotation.RequestParam String token) {
+    public ResponseEntity<Map<String, Object>> verifyEmail(@org.springframework.web.bind.annotation.RequestParam String token) {
         try {
             authService.verifyEmail(token);
             return ResponseEntity.ok(Map.of(MESSAGE_KEY,"Email verified successfully"));
