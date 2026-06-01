@@ -2,6 +2,9 @@ package com.wd.custapi.model;
 
 import com.wd.custapi.config.AppConfig;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,6 +14,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+@Getter
+@Setter
 @Entity
 @Table(name = AppConfig.USER_TABLE)
 public class CustomerUser implements UserDetails {
@@ -46,12 +51,15 @@ public class CustomerUser implements UserDetails {
     @Column(name = "gst_number", length = 20)
     private String gstNumber;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "lead_source", length = 50, insertable = false, updatable = false)
     private String leadSource;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "notes", columnDefinition = "TEXT", insertable = false, updatable = false)
     private String notes;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "customer_type", length = 50, insertable = false, updatable = false)
     private String customerType;
 
@@ -139,155 +147,8 @@ public class CustomerUser implements UserDetails {
     @Override
     public boolean isEnabled() {
         // Delegate to the bean getter to avoid duplicated field access.
+        // Lombok generates getEnabled() for the Boolean field; UserDetails
+        // requires isEnabled(), so this method is kept manual.
         return getEnabled();
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public Set<Project> getProjects() {
-        return projects;
-    }
-
-    public void setProjects(Set<Project> projects) {
-        this.projects = projects;
-    }
-
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public Boolean getEmailVerified() {
-        return emailVerified;
-    }
-
-    public void setEmailVerified(Boolean emailVerified) {
-        this.emailVerified = emailVerified;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getWhatsappNumber() {
-        return whatsappNumber;
-    }
-
-    public void setWhatsappNumber(String whatsappNumber) {
-        this.whatsappNumber = whatsappNumber;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getCompanyName() {
-        return companyName;
-    }
-
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
-    }
-
-    public String getGstNumber() {
-        return gstNumber;
-    }
-
-    public void setGstNumber(String gstNumber) {
-        this.gstNumber = gstNumber;
-    }
-
-    public String getLeadSource() {
-        return leadSource;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public String getCustomerType() {
-        return customerType;
-    }
-
-    public String getFcmToken() {
-        return fcmToken;
-    }
-
-    public void setFcmToken(String fcmToken) {
-        this.fcmToken = fcmToken;
     }
 }

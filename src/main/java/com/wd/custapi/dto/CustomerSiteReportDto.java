@@ -3,6 +3,7 @@ package com.wd.custapi.dto;
 import com.wd.custapi.model.SiteReport;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * Customer-safe DTO for Site Reports.
@@ -12,6 +13,7 @@ import java.util.List;
  * app renders a real progress card instead of a bare title + description.
  * Internal-only audit fields stay hidden.
  */
+@Getter
 public class CustomerSiteReportDto {
 
     private Long id;
@@ -76,26 +78,8 @@ public class CustomerSiteReportDto {
                 : Collections.emptyList();
     }
 
+    // Kept manual: setter has null-coalescing logic (not a plain assignment)
     public void setActivities(List<CustomerSiteReportActivityDto> activities) {
         this.activities = activities != null ? activities : Collections.emptyList();
     }
-
-    public Long getId() { return id; }
-    public Long getProjectId() { return projectId; }
-    public String getProjectName() { return projectName; }
-    public String getTitle() { return title; }
-    public String getDescription() { return description; }
-    public String getReportDate() { return reportDate; }
-    public String getStatus() { return status; }
-    public String getReportType() { return reportType; }
-    public String getSubmittedByName() { return submittedByName; }
-    public String getWeather() { return weather; }
-    public Integer getManpowerDeployed() { return manpowerDeployed; }
-    public String getEquipmentUsed() { return equipmentUsed; }
-    public String getWorkProgress() { return workProgress; }
-    public Double getLatitude() { return latitude; }
-    public Double getLongitude() { return longitude; }
-    public Double getDistanceFromProject() { return distanceFromProject; }
-    public List<CustomerSiteReportPhotoDto> getPhotos() { return photos; }
-    public List<CustomerSiteReportActivityDto> getActivities() { return activities; }
 }

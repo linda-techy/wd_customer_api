@@ -1,10 +1,14 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @SQLDelete(sql = "UPDATE observations SET deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Entity
@@ -75,118 +79,5 @@ public class Observation {
     // Constructors
     public Observation() {
         // Default constructor required by JPA
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Project getProject() {
-        return project;
-    }
-
-    public void setProject(Project project) {
-        this.project = project;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public CustomerUser getReportedBy() {
-        return reportedBy;
-    }
-
-    public void setReportedBy(CustomerUser reportedBy) {
-        this.reportedBy = reportedBy;
-    }
-
-    public StaffRole getReportedByRole() {
-        return reportedByRole;
-    }
-
-    public void setReportedByRole(StaffRole reportedByRole) {
-        this.reportedByRole = reportedByRole;
-    }
-
-    public LocalDateTime getReportedDate() {
-        return reportedDate;
-    }
-
-    public void setReportedDate(LocalDateTime reportedDate) {
-        this.reportedDate = reportedDate;
-    }
-
-    public ObservationStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ObservationStatus status) {
-        this.status = status;
-    }
-
-    public Priority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Priority priority) {
-        this.priority = priority;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public String getImagePath() {
-        return imagePath;
-    }
-
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
-    }
-
-    public LocalDateTime getResolvedDate() {
-        return resolvedDate;
-    }
-
-    public void setResolvedDate(LocalDateTime resolvedDate) {
-        this.resolvedDate = resolvedDate;
-    }
-
-    public CustomerUser getResolvedBy() {
-        return resolvedBy;
-    }
-
-    public void setResolvedBy(CustomerUser resolvedBy) {
-        this.resolvedBy = resolvedBy;
-    }
-
-    public String getResolutionNotes() {
-        return resolutionNotes;
-    }
-
-    public void setResolutionNotes(String resolutionNotes) {
-        this.resolutionNotes = resolutionNotes;
     }
 }

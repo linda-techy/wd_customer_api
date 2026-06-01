@@ -36,22 +36,42 @@ public class EmailService {
      */
     @Async
     public void sendPasswordResetEmail(String to, String firstName, String resetLink) {
+        dispatchEmail(
+                to,
+                "Reset Your Walldot Password",
+                buildPasswordResetHtml(firstName, resetLink),
+                "Password reset email sent successfully to {}",
+                "Failed to send password reset email to {}. Falling back to simulation.",
+                () -> logEmailSimulation(to, firstName));
+    }
+
+    /**
+     * Shared send pipeline for branded HTML emails. Builds a UTF-8 MIME message,
+     * sends it, and logs success. On any mail failure (or when email is disabled /
+     * no mail sender is configured) it runs the supplied simulation fallback.
+     */
+    private void dispatchEmail(String to,
+                               String subject,
+                               String htmlBody,
+                               String successLogMessage,
+                               String failureLogMessage,
+                               Runnable simulationFallback) {
         if (emailEnabled && mailSender != null) {
             try {
                 MimeMessage message = mailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                 helper.setFrom(fromEmail);
                 helper.setTo(to);
-                helper.setSubject("Reset Your Walldot Password");
-                helper.setText(buildPasswordResetHtml(firstName, resetLink), true);
+                helper.setSubject(subject);
+                helper.setText(htmlBody, true);
                 mailSender.send(message);
-                logger.info("Password reset email sent successfully to {}", to);
+                logger.info(successLogMessage, to);
             } catch (MessagingException | MailException e) {
-                logger.error("Failed to send password reset email to {}. Falling back to simulation.", to, e);
-                logEmailSimulation(to, firstName);
+                logger.error(failureLogMessage, to, e);
+                simulationFallback.run();
             }
         } else {
-            logEmailSimulation(to, firstName);
+            simulationFallback.run();
         }
     }
 
@@ -151,23 +171,13 @@ public class EmailService {
      */
     @Async
     public void sendVerificationEmail(String to, String firstName, String verificationLink) {
-        if (emailEnabled && mailSender != null) {
-            try {
-                MimeMessage message = mailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                helper.setFrom(fromEmail);
-                helper.setTo(to);
-                helper.setSubject("Verify Your Walldot Email Address");
-                helper.setText(buildVerificationEmailHtml(firstName, verificationLink), true);
-                mailSender.send(message);
-                logger.info("Verification email sent successfully to {}", to);
-            } catch (MessagingException | MailException e) {
-                logger.error("Failed to send verification email to {}. Falling back to simulation.", to, e);
-                logVerificationEmailSimulation(to, firstName);
-            }
-        } else {
-            logVerificationEmailSimulation(to, firstName);
-        }
+        dispatchEmail(
+                to,
+                "Verify Your Walldot Email Address",
+                buildVerificationEmailHtml(firstName, verificationLink),
+                "Verification email sent successfully to {}",
+                "Failed to send verification email to {}. Falling back to simulation.",
+                () -> logVerificationEmailSimulation(to, firstName));
     }
 
     private String buildVerificationEmailHtml(String firstName, String verificationLink) {

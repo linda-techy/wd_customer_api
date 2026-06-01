@@ -4,7 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class DashboardDto {
 
     private UserSummary user;
@@ -24,40 +28,9 @@ public class DashboardDto {
         this.quickStats = quickStats;
     }
 
-    // Getters and Setters
-    public UserSummary getUser() {
-        return user;
-    }
-
-    public void setUser(UserSummary user) {
-        this.user = user;
-    }
-
-    public ProjectSummary getProjects() {
-        return projects;
-    }
-
-    public void setProjects(ProjectSummary projects) {
-        this.projects = projects;
-    }
-
-    public List<RecentActivity> getRecentActivities() {
-        return recentActivities;
-    }
-
-    public void setRecentActivities(List<RecentActivity> recentActivities) {
-        this.recentActivities = recentActivities;
-    }
-
-    public QuickStats getQuickStats() {
-        return quickStats;
-    }
-
-    public void setQuickStats(QuickStats quickStats) {
-        this.quickStats = quickStats;
-    }
-
     // Inner classes
+    @Getter
+    @Setter
     public static class UserSummary {
         private Long id;
         private String email;
@@ -77,57 +50,10 @@ public class DashboardDto {
             this.role = role;
             this.fullName = firstName + " " + lastName;
         }
-
-        // Getters and Setters
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getRole() {
-            return role;
-        }
-
-        public void setRole(String role) {
-            this.role = role;
-        }
-
-        public String getFullName() {
-            return fullName;
-        }
-
-        public void setFullName(String fullName) {
-            this.fullName = fullName;
-        }
     }
 
+    @Getter
+    @Setter
     public static class ProjectSummary {
         private Long totalProjects;
         private Long activeProjects;
@@ -144,41 +70,10 @@ public class DashboardDto {
             this.completedProjects = completedProjects;
             this.recentProjects = recentProjects;
         }
-
-        // Getters and Setters
-        public Long getTotalProjects() {
-            return totalProjects;
-        }
-
-        public void setTotalProjects(Long totalProjects) {
-            this.totalProjects = totalProjects;
-        }
-
-        public Long getActiveProjects() {
-            return activeProjects;
-        }
-
-        public void setActiveProjects(Long activeProjects) {
-            this.activeProjects = activeProjects;
-        }
-
-        public Long getCompletedProjects() {
-            return completedProjects;
-        }
-
-        public void setCompletedProjects(Long completedProjects) {
-            this.completedProjects = completedProjects;
-        }
-
-        public List<ProjectCard> getRecentProjects() {
-            return recentProjects;
-        }
-
-        public void setRecentProjects(List<ProjectCard> recentProjects) {
-            this.recentProjects = recentProjects;
-        }
     }
 
+    @Getter
+    @Setter
     public static class ProjectCard {
         private Long id;
         private String projectUuid;
@@ -219,103 +114,7 @@ public class DashboardDto {
             this.designProgress = designProgress;
         }
 
-        // Getters and Setters
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getProjectUuid() {
-            return projectUuid;
-        }
-
-        public void setProjectUuid(String projectUuid) {
-            this.projectUuid = projectUuid;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public String getLocation() {
-            return location;
-        }
-
-        public void setLocation(String location) {
-            this.location = location;
-        }
-
-        public String getStartDate() {
-            return startDate;
-        }
-
-        public void setStartDate(String startDate) {
-            this.startDate = startDate;
-        }
-
-        public String getEndDate() {
-            return endDate;
-        }
-
-        public void setEndDate(String endDate) {
-            this.endDate = endDate;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
-        public Double getProgress() {
-            return progress;
-        }
-
-        public void setProgress(Double progress) {
-            this.progress = progress;
-        }
-
-        public String getProjectPhase() {
-            return projectPhase;
-        }
-
-        public void setProjectPhase(String projectPhase) {
-            this.projectPhase = projectPhase;
-        }
-
-        public String getProjectType() {
-            return projectType;
-        }
-
-        public void setProjectType(String projectType) {
-            this.projectType = projectType;
-        }
-
-        public String getDesignPackage() {
-            return designPackage;
-        }
-
-        public void setDesignPackage(String designPackage) {
-            this.designPackage = designPackage;
-        }
-
+        // Kept manual: boolean accessor — preserves Jackson JSON property name
         public boolean isDesignAgreementSigned() {
             return isDesignAgreementSigned;
         }
@@ -323,16 +122,10 @@ public class DashboardDto {
         public void setDesignAgreementSigned(boolean designAgreementSigned) {
             this.isDesignAgreementSigned = designAgreementSigned;
         }
-
-        public Double getDesignProgress() {
-            return designProgress;
-        }
-
-        public void setDesignProgress(Double designProgress) {
-            this.designProgress = designProgress;
-        }
     }
 
+    @Getter
+    @Setter
     public static class RecentActivity {
         private String type;
         private String description;
@@ -350,49 +143,10 @@ public class DashboardDto {
             this.projectId = projectId;
             this.projectName = projectName;
         }
-
-        // Getters and Setters
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
-
-        public String getTimestamp() {
-            return timestamp;
-        }
-
-        public void setTimestamp(String timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        public Long getProjectId() {
-            return projectId;
-        }
-
-        public void setProjectId(Long projectId) {
-            this.projectId = projectId;
-        }
-
-        public String getProjectName() {
-            return projectName;
-        }
-
-        public void setProjectName(String projectName) {
-            this.projectName = projectName;
-        }
     }
 
+    @Getter
+    @Setter
     public static class QuickStats {
         private Long totalBills;
         private Long pendingBills;
@@ -411,50 +165,11 @@ public class DashboardDto {
             this.totalAmount = totalAmount;
             this.pendingAmount = pendingAmount;
         }
-
-        // Getters and Setters
-        public Long getTotalBills() {
-            return totalBills;
-        }
-
-        public void setTotalBills(Long totalBills) {
-            this.totalBills = totalBills;
-        }
-
-        public Long getPendingBills() {
-            return pendingBills;
-        }
-
-        public void setPendingBills(Long pendingBills) {
-            this.pendingBills = pendingBills;
-        }
-
-        public Long getPaidBills() {
-            return paidBills;
-        }
-
-        public void setPaidBills(Long paidBills) {
-            this.paidBills = paidBills;
-        }
-
-        public Double getTotalAmount() {
-            return totalAmount;
-        }
-
-        public void setTotalAmount(Double totalAmount) {
-            this.totalAmount = totalAmount;
-        }
-
-        public Double getPendingAmount() {
-            return pendingAmount;
-        }
-
-        public void setPendingAmount(Double pendingAmount) {
-            this.pendingAmount = pendingAmount;
-        }
     }
 
     // Project Details DTO - Used when viewing a single project
+    @Getter
+    @Setter
     public static class ProjectDetails {
         private Long id;
         private String projectUuid;
@@ -483,104 +198,13 @@ public class DashboardDto {
             // Default constructor required by Jackson for serialization
         }
 
-        // Getters and Setters
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getProjectUuid() {
-            return projectUuid;
-        }
-
-        public void setProjectUuid(String projectUuid) {
-            this.projectUuid = projectUuid;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public String getLocation() {
-            return location;
-        }
-
-        public void setLocation(String location) {
-            this.location = location;
-        }
-
-        public String getStartDate() {
-            return startDate;
-        }
-
-        public void setStartDate(String startDate) {
-            this.startDate = startDate;
-        }
-
-        public String getEndDate() {
-            return endDate;
-        }
-
-        public void setEndDate(String endDate) {
-            this.endDate = endDate;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
-        public Double getProgress() {
-            return progress;
-        }
-
-        public void setProgress(Double progress) {
-            this.progress = progress;
-        }
-
+        // Kept manual: @JsonProperty maps field `phase` -> JSON "projectPhase"
         @JsonProperty("projectPhase")
         public String getPhase() {
             return phase;
         }
 
-        public void setPhase(String phase) {
-            this.phase = phase;
-        }
-
-        public String getProjectType() {
-            return projectType;
-        }
-
-        public void setProjectType(String projectType) {
-            this.projectType = projectType;
-        }
-
-        public String getDesignPackage() {
-            return designPackage;
-        }
-
-        public void setDesignPackage(String designPackage) {
-            this.designPackage = designPackage;
-        }
-
+        // Kept manual: boolean accessor + @JsonProperty preserve JSON property name
         @JsonProperty("isDesignAgreementSigned")
         public boolean isDesignAgreementSigned() {
             return isDesignAgreementSigned;
@@ -590,76 +214,15 @@ public class DashboardDto {
             isDesignAgreementSigned = designAgreementSigned;
         }
 
-        public Double getSqFeet() {
-            return sqFeet;
+        // Kept manual: setStartDate/setEndDate are overloaded (String + LocalDate).
+        // Lombok skips generating setStartDate(String)/setEndDate(String) because a
+        // method with the same name already exists, so both String + LocalDate are kept.
+        public void setStartDate(String startDate) {
+            this.startDate = startDate;
         }
 
-        public void setSqFeet(Double sqFeet) {
-            this.sqFeet = sqFeet;
-        }
-
-        public Double getDesignProgress() {
-            return designProgress;
-        }
-
-        public void setDesignProgress(Double designProgress) {
-            this.designProgress = designProgress;
-        }
-
-        public String getState() {
-            return state;
-        }
-
-        public void setState(String state) {
-            this.state = state;
-        }
-
-        public String getCreatedBy() {
-            return createdBy;
-        }
-
-        public void setCreatedBy(String createdBy) {
-            this.createdBy = createdBy;
-        }
-
-        public String getResponsiblePerson() {
-            return responsiblePerson;
-        }
-
-        public void setResponsiblePerson(String responsiblePerson) {
-            this.responsiblePerson = responsiblePerson;
-        }
-
-        public List<ProjectDocumentSummary> getDocuments() {
-            return documents;
-        }
-
-        public void setDocuments(List<ProjectDocumentSummary> documents) {
-            this.documents = documents;
-        }
-
-        public ProgressData getProgressData() {
-            return progressData;
-        }
-
-        public void setProgressData(ProgressData progressData) {
-            this.progressData = progressData;
-        }
-
-        public String getContractValueDisplay() {
-            return contractValueDisplay;
-        }
-
-        public void setContractValueDisplay(String contractValueDisplay) {
-            this.contractValueDisplay = contractValueDisplay;
-        }
-
-        public String getEstimatedCompletionDate() {
-            return estimatedCompletionDate;
-        }
-
-        public void setEstimatedCompletionDate(String estimatedCompletionDate) {
-            this.estimatedCompletionDate = estimatedCompletionDate;
+        public void setEndDate(String endDate) {
+            this.endDate = endDate;
         }
 
         // Helper setters for LocalDate conversion
@@ -673,6 +236,8 @@ public class DashboardDto {
     }
 
     // Project Document Summary for listing
+    @Getter
+    @Setter
     public static class ProjectDocumentSummary {
         private Long id;
         private String filename;
@@ -698,74 +263,11 @@ public class DashboardDto {
             this.uploadDate = uploadDate;
             this.uploadedBy = uploadedBy;
         }
-
-        // Getters and Setters
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getFilename() {
-            return filename;
-        }
-
-        public void setFilename(String filename) {
-            this.filename = filename;
-        }
-
-        public String getDownloadUrl() {
-            return downloadUrl;
-        }
-
-        public void setDownloadUrl(String downloadUrl) {
-            this.downloadUrl = downloadUrl;
-        }
-
-        public Long getFileSize() {
-            return fileSize;
-        }
-
-        public void setFileSize(Long fileSize) {
-            this.fileSize = fileSize;
-        }
-
-        public String getFileType() {
-            return fileType;
-        }
-
-        public void setFileType(String fileType) {
-            this.fileType = fileType;
-        }
-
-        public String getCategoryName() {
-            return categoryName;
-        }
-
-        public void setCategoryName(String categoryName) {
-            this.categoryName = categoryName;
-        }
-
-        public LocalDateTime getUploadDate() {
-            return uploadDate;
-        }
-
-        public void setUploadDate(LocalDateTime uploadDate) {
-            this.uploadDate = uploadDate;
-        }
-
-        public String getUploadedBy() {
-            return uploadedBy;
-        }
-
-        public void setUploadedBy(String uploadedBy) {
-            this.uploadedBy = uploadedBy;
-        }
     }
 
     // Progress Data for charts and visualization
+    @Getter
+    @Setter
     public static class ProgressData {
         private Double overallProgress;
         private Integer daysRemaining;
@@ -777,58 +279,11 @@ public class DashboardDto {
         public ProgressData() {
             // Default constructor required by Jackson for serialization
         }
-
-        // Getters and Setters
-        public Double getOverallProgress() {
-            return overallProgress;
-        }
-
-        public void setOverallProgress(Double overallProgress) {
-            this.overallProgress = overallProgress;
-        }
-
-        public Integer getDaysRemaining() {
-            return daysRemaining;
-        }
-
-        public void setDaysRemaining(Integer daysRemaining) {
-            this.daysRemaining = daysRemaining;
-        }
-
-        public Integer getTotalDays() {
-            return totalDays;
-        }
-
-        public void setTotalDays(Integer totalDays) {
-            this.totalDays = totalDays;
-        }
-
-        public Integer getDaysElapsed() {
-            return daysElapsed;
-        }
-
-        public void setDaysElapsed(Integer daysElapsed) {
-            this.daysElapsed = daysElapsed;
-        }
-
-        public String getProgressStatus() {
-            return progressStatus;
-        }
-
-        public void setProgressStatus(String progressStatus) {
-            this.progressStatus = progressStatus;
-        }
-
-        public List<ProgressMilestone> getMilestones() {
-            return milestones;
-        }
-
-        public void setMilestones(List<ProgressMilestone> milestones) {
-            this.milestones = milestones;
-        }
     }
 
     // Progress Milestone for timeline
+    @Getter
+    @Setter
     public static class ProgressMilestone {
         private String name;
         private Double progressPercentage;
@@ -845,47 +300,6 @@ public class DashboardDto {
             this.progressPercentage = progressPercentage;
             this.targetDate = targetDate;
             this.completedDate = completedDate;
-            this.status = status;
-        }
-
-        // Getters and Setters
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public Double getProgressPercentage() {
-            return progressPercentage;
-        }
-
-        public void setProgressPercentage(Double progressPercentage) {
-            this.progressPercentage = progressPercentage;
-        }
-
-        public LocalDate getTargetDate() {
-            return targetDate;
-        }
-
-        public void setTargetDate(LocalDate targetDate) {
-            this.targetDate = targetDate;
-        }
-
-        public LocalDate getCompletedDate() {
-            return completedDate;
-        }
-
-        public void setCompletedDate(LocalDate completedDate) {
-            this.completedDate = completedDate;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
             this.status = status;
         }
     }

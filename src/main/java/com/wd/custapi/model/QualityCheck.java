@@ -1,8 +1,12 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "quality_checks")
 public class QualityCheck {
@@ -65,111 +69,6 @@ public class QualityCheck {
     // Constructors
     public QualityCheck() {
         // Default constructor required by JPA
-    }
-    
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public Project getProject() {
-        return project;
-    }
-    
-    public void setProject(Project project) {
-        this.project = project;
-    }
-    
-    public String getTitle() {
-        return title;
-    }
-    
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public String getSopReference() {
-        return sopReference;
-    }
-    
-    public void setSopReference(String sopReference) {
-        this.sopReference = sopReference;
-    }
-    
-    public QualityCheckStatus getStatus() {
-        return status;
-    }
-    
-    public void setStatus(QualityCheckStatus status) {
-        this.status = status;
-    }
-    
-    public Priority getPriority() {
-        return priority;
-    }
-    
-    public void setPriority(Priority priority) {
-        this.priority = priority;
-    }
-    
-    public CustomerUser getAssignedTo() {
-        return assignedTo;
-    }
-    
-    public void setAssignedTo(CustomerUser assignedTo) {
-        this.assignedTo = assignedTo;
-    }
-    
-    public CustomerUser getCreatedBy() {
-        return createdBy;
-    }
-    
-    public void setCreatedBy(CustomerUser createdBy) {
-        this.createdBy = createdBy;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public LocalDateTime getResolvedAt() {
-        return resolvedAt;
-    }
-    
-    public void setResolvedAt(LocalDateTime resolvedAt) {
-        this.resolvedAt = resolvedAt;
-    }
-    
-    public CustomerUser getResolvedBy() {
-        return resolvedBy;
-    }
-    
-    public void setResolvedBy(CustomerUser resolvedBy) {
-        this.resolvedBy = resolvedBy;
-    }
-    
-    public String getResolutionNotes() {
-        return resolutionNotes;
-    }
-    
-    public void setResolutionNotes(String resolutionNotes) {
-        this.resolutionNotes = resolutionNotes;
     }
 }
 

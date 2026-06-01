@@ -2,12 +2,17 @@ package com.wd.custapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
+@Setter
 @SQLDelete(sql = "UPDATE site_reports SET deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Entity
@@ -66,24 +71,31 @@ public class SiteReport {
     // (which extends BaseEntity + has GPS/weather/manpower fields). The
     // Customer API doesn't write here; insertable/updatable=false keeps
     // these out of any Hibernate-generated INSERT/UPDATE statements.
+    @Setter(AccessLevel.NONE)
     @Column(name = "weather", length = 100, insertable = false, updatable = false)
     private String weather;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "manpower_deployed", insertable = false, updatable = false)
     private Integer manpowerDeployed;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "equipment_used", columnDefinition = "TEXT", insertable = false, updatable = false)
     private String equipmentUsed;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "work_progress", columnDefinition = "TEXT", insertable = false, updatable = false)
     private String workProgress;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "latitude", insertable = false, updatable = false)
     private Double latitude;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "longitude", insertable = false, updatable = false)
     private Double longitude;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "distance_from_project", insertable = false, updatable = false)
     private Double distanceFromProject;
 
@@ -103,117 +115,4 @@ public class SiteReport {
     public SiteReport() {
         // Default constructor required by JPA
     }
-    
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public Project getProject() {
-        return project;
-    }
-    
-    public void setProject(Project project) {
-        this.project = project;
-    }
-    
-    public LocalDateTime getReportDate() {
-        return reportDate;
-    }
-    
-    public void setReportDate(LocalDateTime reportDate) {
-        this.reportDate = reportDate;
-    }
-    
-    public String getTitle() {
-        return title;
-    }
-    
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public String getStatus() {
-        return status;
-    }
-    
-    public void setStatus(String status) {
-        this.status = status;
-    }
-    
-    public String getReportType() {
-        return reportType;
-    }
-    
-    public void setReportType(String reportType) {
-        this.reportType = reportType;
-    }
-    
-    public SiteVisit getSiteVisit() {
-        return siteVisit;
-    }
-    
-    public void setSiteVisit(SiteVisit siteVisit) {
-        this.siteVisit = siteVisit;
-    }
-    
-    public Long getSubmittedById() {
-        return submittedById;
-    }
-    
-    public void setSubmittedById(Long submittedById) {
-        this.submittedById = submittedById;
-    }
-    
-    public String getSubmittedByName() {
-        return submittedByName;
-    }
-    
-    public void setSubmittedByName(String submittedByName) {
-        this.submittedByName = submittedByName;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-    
-    public List<SiteReportPhoto> getPhotos() {
-        return photos;
-    }
-
-    public void setPhotos(List<SiteReportPhoto> photos) {
-        this.photos = photos;
-    }
-
-    public String getWeather() { return weather; }
-    public Integer getManpowerDeployed() { return manpowerDeployed; }
-    public String getEquipmentUsed() { return equipmentUsed; }
-    public String getWorkProgress() { return workProgress; }
-    public Double getLatitude() { return latitude; }
-    public Double getLongitude() { return longitude; }
-    public Double getDistanceFromProject() { return distanceFromProject; }
 }

@@ -1,8 +1,12 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "feedback_forms")
 public class FeedbackForm {
@@ -40,62 +44,7 @@ public class FeedbackForm {
     }
     
     // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public Project getProject() {
-        return project;
-    }
-    
-    public void setProject(Project project) {
-        this.project = project;
-    }
-    
-    public String getTitle() {
-        return title;
-    }
-    
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public String getFormType() {
-        return formType;
-    }
-    
-    public void setFormType(String formType) {
-        this.formType = formType;
-    }
-    
-    public CustomerUser getCreatedBy() {
-        return createdBy;
-    }
-    
-    public void setCreatedBy(CustomerUser createdBy) {
-        this.createdBy = createdBy;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
+    // Boolean isActive accessors kept manual (Lombok skips fields with existing accessors)
     public Boolean getIsActive() {
         return isActive;
     }

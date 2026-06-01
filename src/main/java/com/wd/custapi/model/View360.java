@@ -1,8 +1,12 @@
 package com.wd.custapi.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "view_360")
 public class View360 {
@@ -55,100 +59,13 @@ public class View360 {
     }
     
     // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public Project getProject() {
-        return project;
-    }
-    
-    public void setProject(Project project) {
-        this.project = project;
-    }
-    
-    public String getTitle() {
-        return title;
-    }
-    
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public String getViewUrl() {
-        return viewUrl;
-    }
-    
-    public void setViewUrl(String viewUrl) {
-        this.viewUrl = viewUrl;
-    }
-    
-    public String getThumbnailUrl() {
-        return thumbnailUrl;
-    }
-    
-    public void setThumbnailUrl(String thumbnailUrl) {
-        this.thumbnailUrl = thumbnailUrl;
-    }
-    
-    public LocalDateTime getCaptureDate() {
-        return captureDate;
-    }
-
-    public void setCaptureDate(LocalDateTime captureDate) {
-        this.captureDate = captureDate;
-    }
-    
-    public String getLocation() {
-        return location;
-    }
-    
-    public void setLocation(String location) {
-        this.location = location;
-    }
-    
-    public CustomerUser getUploadedBy() {
-        return uploadedBy;
-    }
-    
-    public void setUploadedBy(CustomerUser uploadedBy) {
-        this.uploadedBy = uploadedBy;
-    }
-    
-    public LocalDateTime getUploadedAt() {
-        return uploadedAt;
-    }
-    
-    public void setUploadedAt(LocalDateTime uploadedAt) {
-        this.uploadedAt = uploadedAt;
-    }
-    
+    // Boolean isActive accessors kept manual (Lombok skips fields with existing accessors)
     public Boolean getIsActive() {
         return isActive;
     }
-    
+
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
-    }
-    
-    public Integer getViewCount() {
-        return viewCount;
-    }
-    
-    public void setViewCount(Integer viewCount) {
-        this.viewCount = viewCount;
     }
 }
 

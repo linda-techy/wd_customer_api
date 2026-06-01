@@ -2,6 +2,9 @@ package com.wd.custapi.model;
 
 import com.wd.custapi.model.enums.ProjectPhase;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
@@ -12,6 +15,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @SQLDelete(sql = "UPDATE customer_projects SET deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Entity
@@ -49,6 +54,9 @@ public class Project {
     @Column(name = "design_package")
     private String designPackage;
 
+    // Boolean accessor kept manual (Lombok naming for Boolean is ambiguous)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @Column(name = "is_design_agreement_signed")
     private Boolean isDesignAgreementSigned = false;
 
@@ -65,24 +73,32 @@ public class Project {
     @Column(name = "longitude")
     private Double longitude;
 
+    // The following fields are read-only mirrors with getters only.
+    @Setter(AccessLevel.NONE)
     @Column(name = "project_status")
     private String projectStatus;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "budget", precision = 15, scale = 2)
     private java.math.BigDecimal budget;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "contract_type")
     private String contractType;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "permit_status")
     private String permitStatus;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "plot_area", precision = 10, scale = 2)
     private java.math.BigDecimal plotArea;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "floors")
     private Integer floors;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "facing")
     private String facing;
 
@@ -95,9 +111,7 @@ public class Project {
     @Column(name = "customer_id")
     private Long customerId;
 
-    public Long getCustomerId() { return customerId; }
-    public void setCustomerId(Long customerId) { this.customerId = customerId; }
-
+    @Setter(AccessLevel.NONE)
     @Version
     @Column(nullable = false)
     private Long version = 0L;
@@ -106,103 +120,7 @@ public class Project {
     @ManyToMany(mappedBy = "projects")
     private java.util.Set<CustomerUser> customers;
 
-    public java.util.Set<CustomerUser> getCustomers() {
-        return customers;
-    }
-
-    public void setCustomers(java.util.Set<CustomerUser> customers) {
-        this.customers = customers;
-    }
-
-    // Minimal getters/setters for DTO mapping
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public java.util.UUID getProjectUuid() {
-        return projectUuid;
-    }
-
-    public void setProjectUuid(java.util.UUID projectUuid) {
-        this.projectUuid = projectUuid;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
-
-    public BigDecimal getProgress() {
-        return progress;
-    }
-
-    public void setProgress(BigDecimal progress) {
-        this.progress = progress;
-    }
-
-    public ProjectPhase getProjectPhase() {
-        return projectPhase;
-    }
-
-    public void setProjectPhase(ProjectPhase projectPhase) {
-        this.projectPhase = projectPhase;
-    }
-
-    public String getProjectType() {
-        return projectType;
-    }
-
-    public void setProjectType(String projectType) {
-        this.projectType = projectType;
-    }
-
-    public String getDesignPackage() {
-        return designPackage;
-    }
-
-    public void setDesignPackage(String designPackage) {
-        this.designPackage = designPackage;
-    }
-
+    // Boolean accessors kept manual (see field annotation above)
     public Boolean getIsDesignAgreementSigned() {
         return isDesignAgreementSigned;
     }
@@ -211,69 +129,8 @@ public class Project {
         this.isDesignAgreementSigned = isDesignAgreementSigned;
     }
 
-    public Double getSqFeet() {
-        return sqFeet;
-    }
-
-    public void setSqFeet(Double sqFeet) {
-        this.sqFeet = sqFeet;
-    }
-
-    public Double getDesignProgress() {
-        return designProgress;
-    }
-
-    public void setDesignProgress(Double progress) {
-        this.designProgress = progress;
-    }
-
-    public Double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(Double latitude) {
-        this.latitude = latitude;
-    }
-
-    public Double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(Double longitude) {
-        this.longitude = longitude;
-    }
-
+    // Computed accessor — kept manual
     public boolean hasLocation() {
         return latitude != null && longitude != null;
     }
-
-    public String getProjectStatus() {
-        return projectStatus;
-    }
-
-    public java.math.BigDecimal getBudget() {
-        return budget;
-    }
-
-    public String getContractType() {
-        return contractType;
-    }
-
-    public String getPermitStatus() {
-        return permitStatus;
-    }
-
-    public java.math.BigDecimal getPlotArea() {
-        return plotArea;
-    }
-
-    public Integer getFloors() {
-        return floors;
-    }
-
-    public String getFacing() {
-        return facing;
-    }
-
-    public Long getVersion() { return version; }
 }
