@@ -133,16 +133,12 @@ public class ProjectModuleController {
 
         List<Map<String, Object>> taskDtos = new java.util.ArrayList<>();
         for (Task t : tasks) {
-            if (t.getStartDate() != null && (projectStart == null || t.getStartDate().isBefore(projectStart))) {
-                projectStart = t.getStartDate();
-            }
-            if (t.getEndDate() != null && (projectEnd == null || t.getEndDate().isAfter(projectEnd))) {
-                projectEnd = t.getEndDate();
-            }
+            projectStart = earliest(projectStart, t.getStartDate());
+            projectEnd = latest(projectEnd, t.getEndDate());
             boolean overdue = isTaskOverdue(t, today);
             if (overdue) overdueTasks++;
             if (!"CANCELLED".equals(t.getStatus())) {
-                totalProgress += (t.getProgressPercent() != null ? t.getProgressPercent() : 0);
+                totalProgress += progressOf(t);
                 countForProgress++;
             }
             taskDtos.add(toGanttTaskDto(t, overdue));
@@ -164,6 +160,23 @@ public class ProjectModuleController {
     private boolean isTaskOverdue(Task t, LocalDate today) {
         return t.getEndDate() != null && t.getEndDate().isBefore(today)
                 && !"COMPLETED".equals(t.getStatus()) && !"CANCELLED".equals(t.getStatus());
+    }
+
+    /** Earlier of the running minimum and a candidate date (nulls ignored). */
+    private static LocalDate earliest(LocalDate current, LocalDate candidate) {
+        if (candidate == null) return current;
+        return (current == null || candidate.isBefore(current)) ? candidate : current;
+    }
+
+    /** Later of the running maximum and a candidate date (nulls ignored). */
+    private static LocalDate latest(LocalDate current, LocalDate candidate) {
+        if (candidate == null) return current;
+        return (current == null || candidate.isAfter(current)) ? candidate : current;
+    }
+
+    /** Task progress percent, defaulting null to 0. */
+    private static int progressOf(Task t) {
+        return t.getProgressPercent() != null ? t.getProgressPercent() : 0;
     }
 
     /**
