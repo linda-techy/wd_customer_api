@@ -66,7 +66,7 @@ class WebhookIngestionTest {
     }
 
     @Test
-    void receivePortalEvent_invalidSignature_returns401() throws Exception {
+    void receivePortalEvent_invalidSignature_returns401() {
         String payload = buildPayload();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -80,7 +80,7 @@ class WebhookIngestionTest {
     }
 
     @Test
-    void receivePortalEvent_missingSignatureHeader_returns401() throws Exception {
+    void receivePortalEvent_missingSignatureHeader_returns401() {
         String payload = buildPayload();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -129,7 +129,7 @@ class WebhookIngestionTest {
     }
 
     @Test
-    void receivePortalEvent_noSecretConfigured_acceptsWithoutSignatureCheck() throws Exception {
+    void receivePortalEvent_noSecretConfigured_acceptsWithoutSignatureCheck() {
         // When secret is blank, signature is NOT verified
         ReflectionTestUtils.setField(webhookController, "webhookSecret", "");
         String payload = buildPayload();

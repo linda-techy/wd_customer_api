@@ -178,9 +178,9 @@ class QualityCheckServiceTest {
     void resolveQualityCheck_notFound_throws() {
         when(qualityCheckRepository.findById(200L)).thenReturn(Optional.empty());
 
+        QualityCheckUpdateRequest request = new QualityCheckUpdateRequest("notes");
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.resolveQualityCheck(200L,
-                        new QualityCheckUpdateRequest("notes"), 1L));
+                () -> service.resolveQualityCheck(200L, request, 1L));
         assertEquals("Quality check not found", ex.getMessage());
     }
 
@@ -190,9 +190,9 @@ class QualityCheckServiceTest {
         when(qualityCheckRepository.findById(200L)).thenReturn(Optional.of(qc));
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
+        QualityCheckUpdateRequest request = new QualityCheckUpdateRequest("notes");
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.resolveQualityCheck(200L,
-                        new QualityCheckUpdateRequest("notes"), 1L));
+                () -> service.resolveQualityCheck(200L, request, 1L));
         assertEquals("User not found", ex.getMessage());
         verify(qualityCheckRepository, never()).save(any());
     }

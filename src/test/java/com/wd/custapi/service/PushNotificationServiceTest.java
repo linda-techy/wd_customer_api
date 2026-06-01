@@ -135,7 +135,6 @@ class PushNotificationServiceTest {
     @Test
     void sendToToken_swallowsException_whenSendThrows() throws Exception {
         FirebaseMessaging messaging = mock(FirebaseMessaging.class);
-        // Generic exception exercises the catch(Exception) arm; must NOT propagate
         when(messaging.send(any(Message.class))).thenThrow(new RuntimeException("network down"));
 
         try (MockedStatic<FirebaseApp> appStatic = mockStatic(FirebaseApp.class);
@@ -284,7 +283,6 @@ class PushNotificationServiceTest {
     @Test
     void sendToTokens_swallowsException_whenMulticastThrows() throws Exception {
         FirebaseMessaging messaging = mock(FirebaseMessaging.class);
-        // catch(Exception) arm in sendMulticast must absorb this — fire-and-forget
         when(messaging.sendEachForMulticast(any(MulticastMessage.class)))
                 .thenThrow(new RuntimeException("FCM down"));
 

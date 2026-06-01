@@ -34,12 +34,20 @@ public class ProjectModuleController {
 
     private static final String STATUS_KEY = "status";
 
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_ARCHITECT = "ARCHITECT";
+    private static final String ROLE_SITE_ENGINEER = "SITE_ENGINEER";
+    private static final String ROLE_CONTRACTOR = "CONTRACTOR";
+    private static final String ROLE_BUILDER = "BUILDER";
+    private static final String ROLE_CUSTOMER_ADMIN = "CUSTOMER_ADMIN";
+    private static final String ROLE_CUSTOMER = "CUSTOMER";
+
     /**
      * Roles allowed to READ feature data (quality checks, observations, etc.).
      * Customer-facing read access set, shared across multiple endpoints.
      */
     private static final String[] READ_ACCESS_ROLES =
-            {"CUSTOMER", "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CUSTOMER_ADMIN", "CONTRACTOR", "BUILDER"};
+            {ROLE_CUSTOMER, ROLE_ADMIN, ROLE_ARCHITECT, ROLE_SITE_ENGINEER, ROLE_CUSTOMER_ADMIN, ROLE_CONTRACTOR, ROLE_BUILDER};
 
     private final ProjectDocumentService documentService;
     private final DashboardService dashboardService;
@@ -247,7 +255,7 @@ public class ProjectModuleController {
             @RequestBody @jakarta.validation.Valid QualityCheckUpdateRequest request,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, ROLE_ADMIN, ROLE_ARCHITECT, ROLE_SITE_ENGINEER, ROLE_CONTRACTOR, ROLE_BUILDER)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new ApiResponse<>(false, "Quality checks are read-only for your role", null));
             }
@@ -458,7 +466,7 @@ public class ProjectModuleController {
                     .body(new ApiResponse<>(false, "Priority is required", null));
             }
             String email = auth.getName();
-            if (!canAccessFeature(auth, "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, ROLE_ADMIN, ROLE_ARCHITECT, ROLE_SITE_ENGINEER, ROLE_CONTRACTOR, ROLE_BUILDER)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new ApiResponse<>(false, "Snags are read-only for your role", null));
             }
@@ -569,7 +577,7 @@ public class ProjectModuleController {
             @RequestBody ObservationResolveRequest request,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "ADMIN", "ARCHITECT", "SITE_ENGINEER", "CONTRACTOR", "BUILDER")) {
+            if (!canAccessFeature(auth, ROLE_ADMIN, ROLE_ARCHITECT, ROLE_SITE_ENGINEER, ROLE_CONTRACTOR, ROLE_BUILDER)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new ApiResponse<>(false, "Snags are read-only for your role", null));
             }
@@ -596,7 +604,7 @@ public class ProjectModuleController {
             @PathVariable("projectId") String projectUuid,
             Authentication auth) {
         try {
-            if (!canAccessFeature(auth, "CUSTOMER", "ADMIN", "ARCHITECT", "CUSTOMER_ADMIN")) {
+            if (!canAccessFeature(auth, ROLE_CUSTOMER, ROLE_ADMIN, ROLE_ARCHITECT, ROLE_CUSTOMER_ADMIN)) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Cameras retrieved successfully", java.util.List.of()));
             }
             String email = auth.getName();
@@ -861,8 +869,8 @@ public class ProjectModuleController {
             Long projectId = project.getId();
             String role = dashboardService.getUserRole(email);
             // Roles that see no BOQ at all
-            if ("SITE_ENGINEER".equalsIgnoreCase(role) || "VIEWER".equalsIgnoreCase(role)
-                    || "CONTRACTOR".equalsIgnoreCase(role) || "BUILDER".equalsIgnoreCase(role)) {
+            if (ROLE_SITE_ENGINEER.equalsIgnoreCase(role) || "VIEWER".equalsIgnoreCase(role)
+                    || ROLE_CONTRACTOR.equalsIgnoreCase(role) || ROLE_BUILDER.equalsIgnoreCase(role)) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "BoQ items retrieved successfully", java.util.List.of()));
             }
             List<BoqItemDto> items;
@@ -873,8 +881,8 @@ public class ProjectModuleController {
             }
             // ARCHITECT / INTERIOR_DESIGNER do not see DRAFT items.
             // CUSTOMER and CUSTOMER_ADMIN must see all items (including DRAFT) so they can review and approve the BOQ.
-            boolean isCustomerRole = "CUSTOMER".equalsIgnoreCase(role) || "CUSTOMER_ADMIN".equalsIgnoreCase(role);
-            if (!"ADMIN".equalsIgnoreCase(role) && !isCustomerRole) {
+            boolean isCustomerRole = ROLE_CUSTOMER.equalsIgnoreCase(role) || ROLE_CUSTOMER_ADMIN.equalsIgnoreCase(role);
+            if (!ROLE_ADMIN.equalsIgnoreCase(role) && !isCustomerRole) {
                 items = items.stream()
                         .filter(i -> i.status() != null && !"DRAFT".equalsIgnoreCase(i.status()))
                         .toList();
@@ -883,7 +891,7 @@ public class ProjectModuleController {
             // Customer sees: description, item code, scope/specs/notes, status, progress %, work type/category, item kind.
             // Customer does NOT see: quantity, unit, rate, line-item amount, executed/billed quantities or amounts.
             // Per construction-BA rule, contractor BoQ pricing (qty × rate breakdown) is internal IP.
-            if ("CUSTOMER".equalsIgnoreCase(role) || "CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
+            if (ROLE_CUSTOMER.equalsIgnoreCase(role) || ROLE_CUSTOMER_ADMIN.equalsIgnoreCase(role)) {
                 items = items.stream().map(i -> new BoqItemDto(
                         i.id(), i.projectId(), i.workTypeId(), i.workTypeName(),
                         i.categoryId(), i.categoryName(), i.itemCode(), i.description(),
@@ -904,7 +912,7 @@ public class ProjectModuleController {
                 )).toList();
             }
             // ARCHITECT / INTERIOR_DESIGNER see items but NOT financial amounts
-            if (!"CUSTOMER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role) && !"CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
+            if (!ROLE_CUSTOMER.equalsIgnoreCase(role) && !ROLE_ADMIN.equalsIgnoreCase(role) && !ROLE_CUSTOMER_ADMIN.equalsIgnoreCase(role)) {
                 items = items.stream().map(i -> new BoqItemDto(
                         i.id(), i.projectId(), i.workTypeId(), i.workTypeName(),
                         i.categoryId(), i.categoryName(), i.itemCode(), i.description(),
@@ -953,7 +961,7 @@ public class ProjectModuleController {
         try {
             String email = auth.getName();
             String role = dashboardService.getUserRole(email);
-            if (!"CUSTOMER".equalsIgnoreCase(role) && !"CUSTOMER_ADMIN".equalsIgnoreCase(role)) {
+            if (!ROLE_CUSTOMER.equalsIgnoreCase(role) && !ROLE_CUSTOMER_ADMIN.equalsIgnoreCase(role)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new ApiResponse<>(false, "BOQ approval is not available for your role", null));
             }

@@ -457,7 +457,7 @@ public class CustomerBoqController {
         m.put(GST_AMOUNT_KEY, s.getGstAmount());
         m.put(STAGE_AMOUNT_INCL_GST_KEY, s.getStageAmountInclGst());
         m.put("stagePercentage", s.getStagePercentage());
-        m.put("status", s.getStatus());
+        m.put(STATUS_KEY, s.getStatus());
         m.put("dueDate", s.getDueDate());
         m.put("milestoneDescription", s.getMilestoneDescription());
         return m;

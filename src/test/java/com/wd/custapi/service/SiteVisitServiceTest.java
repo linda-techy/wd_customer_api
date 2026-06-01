@@ -119,8 +119,8 @@ class SiteVisitServiceTest {
         assertNotNull(saved.getDistanceFromProjectCheckIn());
         assertTrue(saved.getDistanceFromProjectCheckIn() < 0.001);
 
-        verify(activityFeedService).createActivity(eq(100L), eq("SITE_VISIT_LOGGED"),
-                eq("Site visit started"), eq(555L), eq(7L));
+        verify(activityFeedService).createActivity(100L, "SITE_VISIT_LOGGED",
+                "Site visit started", 555L, 7L);
 
         // DTO mapping reflects the saved data
         assertEquals(555L, dto.id());
@@ -162,8 +162,9 @@ class SiteVisitServiceTest {
     void checkIn_projectNotFound_throws() {
         when(projectRepository.findById(999L)).thenReturn(Optional.empty());
 
+        SiteVisitCheckInRequest request = checkInReq(NEAR_LAT, NEAR_LON, null, null);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkIn(999L, checkInReq(NEAR_LAT, NEAR_LON, null, null), 7L));
+                () -> service.checkIn(999L, request, 7L));
         assertEquals("Project not found", ex.getMessage());
         verify(siteVisitRepository, never()).save(any());
     }
@@ -173,8 +174,9 @@ class SiteVisitServiceTest {
         when(projectRepository.findById(100L)).thenReturn(Optional.of(projectWithLocation));
         when(userRepository.findById(7L)).thenReturn(Optional.empty());
 
+        SiteVisitCheckInRequest request = checkInReq(NEAR_LAT, NEAR_LON, null, null);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkIn(100L, checkInReq(NEAR_LAT, NEAR_LON, null, null), 7L));
+                () -> service.checkIn(100L, request, 7L));
         assertEquals("User not found", ex.getMessage());
     }
 
@@ -186,8 +188,9 @@ class SiteVisitServiceTest {
                 .findTopByProjectIdAndVisitorIdAndCheckOutTimeIsNullOrderByCheckInTimeDesc(100L, 7L))
                 .thenReturn(Optional.of(new SiteVisit()));
 
+        SiteVisitCheckInRequest request = checkInReq(NEAR_LAT, NEAR_LON, null, null);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkIn(100L, checkInReq(NEAR_LAT, NEAR_LON, null, null), 7L));
+                () -> service.checkIn(100L, request, 7L));
         assertEquals("Please check out from your current visit first", ex.getMessage());
         verify(siteVisitRepository, never()).save(any());
     }
@@ -200,8 +203,9 @@ class SiteVisitServiceTest {
                 .findTopByProjectIdAndVisitorIdAndCheckOutTimeIsNullOrderByCheckInTimeDesc(100L, 7L))
                 .thenReturn(Optional.empty());
 
+        SiteVisitCheckInRequest request = checkInReq(null, null, null, null);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkIn(100L, checkInReq(null, null, null, null), 7L));
+                () -> service.checkIn(100L, request, 7L));
         assertTrue(ex.getMessage().contains("GPS coordinates are required"));
         verify(siteVisitRepository, never()).save(any());
     }
@@ -214,8 +218,9 @@ class SiteVisitServiceTest {
                 .findTopByProjectIdAndVisitorIdAndCheckOutTimeIsNullOrderByCheckInTimeDesc(100L, 7L))
                 .thenReturn(Optional.empty());
 
+        SiteVisitCheckInRequest request = checkInReq(FAR_LAT, FAR_LON, null, null);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkIn(100L, checkInReq(FAR_LAT, FAR_LON, null, null), 7L));
+                () -> service.checkIn(100L, request, 7L));
         assertTrue(ex.getMessage().startsWith("Check-in failed"));
         verify(siteVisitRepository, never()).save(any());
     }
@@ -229,8 +234,9 @@ class SiteVisitServiceTest {
                 .thenReturn(Optional.empty());
         when(staffRoleRepository.findById(99L)).thenReturn(Optional.empty());
 
+        SiteVisitCheckInRequest request = checkInReq(NEAR_LAT, NEAR_LON, 99L, null);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkIn(100L, checkInReq(NEAR_LAT, NEAR_LON, 99L, null), 7L));
+                () -> service.checkIn(100L, request, 7L));
         assertEquals("Staff role not found", ex.getMessage());
         verify(siteVisitRepository, never()).save(any());
     }
@@ -281,8 +287,9 @@ class SiteVisitServiceTest {
     void checkOut_visitNotFound_throws() {
         when(siteVisitRepository.findById(404L)).thenReturn(Optional.empty());
 
+        SiteVisitCheckOutRequest request = checkOutReq(NEAR_LAT, NEAR_LON);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkOut(404L, checkOutReq(NEAR_LAT, NEAR_LON)));
+                () -> service.checkOut(404L, request));
         assertEquals("Site visit not found", ex.getMessage());
     }
 
@@ -294,8 +301,9 @@ class SiteVisitServiceTest {
         visit.setCheckOutTime(java.time.LocalDateTime.now());
         when(siteVisitRepository.findById(202L)).thenReturn(Optional.of(visit));
 
+        SiteVisitCheckOutRequest request = checkOutReq(NEAR_LAT, NEAR_LON);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkOut(202L, checkOutReq(NEAR_LAT, NEAR_LON)));
+                () -> service.checkOut(202L, request));
         assertEquals("Already checked out", ex.getMessage());
         verify(siteVisitRepository, never()).save(any());
     }
@@ -307,8 +315,9 @@ class SiteVisitServiceTest {
         visit.setProject(projectWithLocation);
         when(siteVisitRepository.findById(203L)).thenReturn(Optional.of(visit));
 
+        SiteVisitCheckOutRequest request = checkOutReq(null, null);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkOut(203L, checkOutReq(null, null)));
+                () -> service.checkOut(203L, request));
         assertTrue(ex.getMessage().contains("GPS coordinates are required"));
         verify(siteVisitRepository, never()).save(any());
     }
@@ -320,8 +329,9 @@ class SiteVisitServiceTest {
         visit.setProject(projectWithLocation);
         when(siteVisitRepository.findById(204L)).thenReturn(Optional.of(visit));
 
+        SiteVisitCheckOutRequest request = checkOutReq(FAR_LAT, FAR_LON);
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkOut(204L, checkOutReq(FAR_LAT, FAR_LON)));
+                () -> service.checkOut(204L, request));
         assertTrue(ex.getMessage().startsWith("Check-out failed"));
         verify(siteVisitRepository, never()).save(any());
     }

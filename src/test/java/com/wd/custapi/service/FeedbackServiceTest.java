@@ -347,8 +347,8 @@ class FeedbackServiceTest {
 
         // Activity logged with the FEEDBACK_SUBMITTED type and response id
         verify(activityFeedService).createActivity(
-                eq(PROJECT_ID), eq("FEEDBACK_SUBMITTED"),
-                eq("Feedback submitted: Survey X"), eq(500L), eq(USER_ID));
+                PROJECT_ID, "FEEDBACK_SUBMITTED",
+                "Feedback submitted: Survey X", 500L, USER_ID);
 
         assertThat(dto.id()).isEqualTo(500L);
         assertThat(dto.formId()).isEqualTo(FORM_ID);

@@ -132,7 +132,7 @@ class ObservationServiceTest {
 
         when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(fileStorageService.storeFile(eq(image), eq("projects/10/observations")))
+        when(fileStorageService.storeFile(image, "projects/10/observations"))
                 .thenReturn("projects/10/observations/photo.jpg");
         when(observationRepository.save(any(Observation.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -217,16 +217,16 @@ class ObservationServiceTest {
         verify(activityFeedService).createActivity(eq(10L), eq("OBSERVATION_RESOLVED"),
                 contains("Crack in wall"), eq(100L), eq(1L));
         verify(notificationTriggerService).notifyObservationResolved(
-                eq(1L), eq(10L), eq(100L), eq("Crack in wall"));
+                1L, 10L, 100L, "Crack in wall");
     }
 
     @Test
     void resolveObservation_notFound_throws() {
         when(observationRepository.findById(100L)).thenReturn(Optional.empty());
 
+        ObservationResolveRequest request = new ObservationResolveRequest("notes");
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.resolveObservation(10L, 100L,
-                        new ObservationResolveRequest("notes"), 1L));
+                () -> service.resolveObservation(10L, 100L, request, 1L));
         assertEquals("Observation not found", ex.getMessage());
     }
 
@@ -239,9 +239,9 @@ class ObservationServiceTest {
 
         when(observationRepository.findById(100L)).thenReturn(Optional.of(obs));
 
+        ObservationResolveRequest request = new ObservationResolveRequest("notes");
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.resolveObservation(10L, 100L,
-                        new ObservationResolveRequest("notes"), 1L));
+                () -> service.resolveObservation(10L, 100L, request, 1L));
         assertEquals("Observation not found", ex.getMessage());
         verify(observationRepository, never()).save(any());
     }
@@ -252,9 +252,9 @@ class ObservationServiceTest {
         when(observationRepository.findById(100L)).thenReturn(Optional.of(obs));
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
+        ObservationResolveRequest request = new ObservationResolveRequest("notes");
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.resolveObservation(10L, 100L,
-                        new ObservationResolveRequest("notes"), 1L));
+                () -> service.resolveObservation(10L, 100L, request, 1L));
         assertEquals("User not found", ex.getMessage());
     }
 
@@ -307,7 +307,7 @@ class ObservationServiceTest {
         Observation obs = existingObservation(100L, ObservationStatus.OPEN);
         when(observationRepository
                 .findByProjectIdAndStatusInOrderByPriorityDescReportedDateDesc(
-                        eq(10L), eq(List.of(ObservationStatus.OPEN, ObservationStatus.IN_PROGRESS))))
+                        10L, List.of(ObservationStatus.OPEN, ObservationStatus.IN_PROGRESS)))
                 .thenReturn(List.of(obs));
 
         List<ObservationDto> result = service.getActiveObservations(10L);
