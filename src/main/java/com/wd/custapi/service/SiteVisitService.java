@@ -1,6 +1,7 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.dto.ProjectModuleDtos.*;
+import com.wd.custapi.exception.CustomerApiException;
 import com.wd.custapi.model.*;
 import com.wd.custapi.repository.*;
 import com.wd.custapi.util.GeoUtils;
@@ -49,20 +50,20 @@ public class SiteVisitService {
     @Transactional
     public SiteVisitDto checkIn(Long projectId, SiteVisitCheckInRequest request, Long userId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new CustomerApiException("Project not found"));
 
         CustomerUser visitor = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new CustomerApiException("User not found"));
 
         // Check if there's an active visit (no checkout)
         siteVisitRepository.findTopByProjectIdAndVisitorIdAndCheckOutTimeIsNullOrderByCheckInTimeDesc(projectId, userId)
                 .ifPresent(activeVisit -> {
-                    throw new RuntimeException("Please check out from your current visit first");
+                    throw new CustomerApiException("Please check out from your current visit first");
                 });
 
         // Validate GPS coordinates are provided
         if (request.latitude() == null || request.longitude() == null) {
-            throw new RuntimeException("GPS coordinates are required for check-in. Please enable location services.");
+            throw new CustomerApiException("GPS coordinates are required for check-in. Please enable location services.");
         }
 
         // Validate GPS proximity - must be within 200 m of project site (see GeoUtils.MAX_CHECKIN_DISTANCE_KM)
@@ -76,7 +77,7 @@ public class SiteVisitService {
                     request.latitude(), request.longitude(),
                     project.getLatitude(), project.getLongitude(),
                     GeoUtils.MAX_CHECKIN_DISTANCE_KM)) {
-                throw new RuntimeException(
+                throw new CustomerApiException(
                         "Check-in failed: You are " + GeoUtils.formatDistance(distanceKm) +
                         " away from the project site. You must be within " +
                         GeoUtils.formatDistance(GeoUtils.MAX_CHECKIN_DISTANCE_KM) +
@@ -102,7 +103,7 @@ public class SiteVisitService {
 
         if (request.visitorRoleId() != null) {
             StaffRole role = staffRoleRepository.findById(request.visitorRoleId())
-                    .orElseThrow(() -> new RuntimeException("Staff role not found"));
+                    .orElseThrow(() -> new CustomerApiException("Staff role not found"));
             visit.setVisitorRole(role);
         }
 
@@ -122,15 +123,15 @@ public class SiteVisitService {
     @Transactional
     public SiteVisitDto checkOut(Long visitId, SiteVisitCheckOutRequest request) {
         SiteVisit visit = siteVisitRepository.findById(visitId)
-                .orElseThrow(() -> new RuntimeException("Site visit not found"));
+                .orElseThrow(() -> new CustomerApiException("Site visit not found"));
 
         if (visit.getCheckOutTime() != null) {
-            throw new RuntimeException("Already checked out");
+            throw new CustomerApiException("Already checked out");
         }
 
         // Validate GPS coordinates are provided
         if (request.latitude() == null || request.longitude() == null) {
-            throw new RuntimeException("GPS coordinates are required for check-out. Please enable location services.");
+            throw new CustomerApiException("GPS coordinates are required for check-out. Please enable location services.");
         }
 
         // Validate GPS proximity - must be within 200 m of project site (see GeoUtils.MAX_CHECKIN_DISTANCE_KM)
@@ -145,7 +146,7 @@ public class SiteVisitService {
                     request.latitude(), request.longitude(),
                     project.getLatitude(), project.getLongitude(),
                     GeoUtils.MAX_CHECKIN_DISTANCE_KM)) {
-                throw new RuntimeException(
+                throw new CustomerApiException(
                         "Check-out failed: You are " + GeoUtils.formatDistance(distanceKm) +
                         " away from the project site. You must be within " +
                         GeoUtils.formatDistance(GeoUtils.MAX_CHECKIN_DISTANCE_KM) +

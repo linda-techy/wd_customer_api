@@ -1,6 +1,7 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.dto.ProjectModuleDtos.*;
+import com.wd.custapi.exception.CustomerApiException;
 import com.wd.custapi.model.*;
 import com.wd.custapi.repository.*;
 import org.springframework.stereotype.Service;
@@ -26,10 +27,10 @@ public class View360Service {
     @Transactional
     public View360Dto addView360(Long projectId, View360Request request, Long userId) {
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new RuntimeException("Project not found"));
+            .orElseThrow(() -> new CustomerApiException("Project not found"));
         
         CustomerUser user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new CustomerApiException("User not found"));
         
         View360 view = new View360();
         view.setProject(project);
@@ -49,11 +50,11 @@ public class View360Service {
     @Transactional
     public View360Dto incrementViewCount(Long viewId, Long projectId) {
         View360 view = view360Repository.findById(viewId)
-            .orElseThrow(() -> new RuntimeException("360 view not found"));
+            .orElseThrow(() -> new CustomerApiException("360 view not found"));
 
         if (view.getProject() == null || !projectId.equals(view.getProject().getId())) {
             // Same message as not-found to avoid cross-project enumeration
-            throw new RuntimeException("360 view not found");
+            throw new CustomerApiException("360 view not found");
         }
 
         view.setViewCount(view.getViewCount() + 1);

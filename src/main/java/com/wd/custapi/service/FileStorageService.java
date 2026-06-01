@@ -1,6 +1,7 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.config.FileUploadConfig;
+import com.wd.custapi.exception.CustomerApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class FileStorageService {
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
-            throw new RuntimeException("Could not create the directory where the uploaded files will be stored.", ex);
+            throw new CustomerApiException("Could not create the directory where the uploaded files will be stored.", ex);
         }
     }
 
@@ -53,7 +54,7 @@ public class FileStorageService {
         try {
             // Check if the file's name contains invalid characters
             if (originalFileName.contains("..")) {
-                throw new RuntimeException("Sorry! Filename contains invalid path sequence " + originalFileName);
+                throw new CustomerApiException("Sorry! Filename contains invalid path sequence " + originalFileName);
             }
 
             // Generate unique filename
@@ -75,7 +76,7 @@ public class FileStorageService {
 
             return subDirectory + "/" + uniqueFileName;
         } catch (IOException ex) {
-            throw new RuntimeException("Could not store file " + originalFileName + ". Please try again!", ex);
+            throw new CustomerApiException("Could not store file " + originalFileName + ". Please try again!", ex);
         }
     }
 
@@ -99,7 +100,7 @@ public class FileStorageService {
             Path file = this.fileStorageLocation.resolve(filePath).normalize();
             Files.deleteIfExists(file);
         } catch (IOException ex) {
-            throw new RuntimeException("Could not delete file " + filePath, ex);
+            throw new CustomerApiException("Could not delete file " + filePath, ex);
         }
     }
 

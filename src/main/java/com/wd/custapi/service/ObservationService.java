@@ -1,6 +1,7 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.dto.ProjectModuleDtos.*;
+import com.wd.custapi.exception.CustomerApiException;
 import com.wd.custapi.model.*;
 import com.wd.custapi.model.Observation.ObservationStatus;
 import com.wd.custapi.repository.*;
@@ -42,10 +43,10 @@ public class ObservationService {
         public ObservationDto createObservation(Long projectId, ObservationRequest request,
                         MultipartFile image, Long userId) {
                 Project project = projectRepository.findById(projectId)
-                                .orElseThrow(() -> new RuntimeException("Project not found"));
+                                .orElseThrow(() -> new CustomerApiException("Project not found"));
 
                 CustomerUser user = userRepository.findById(userId)
-                                .orElseThrow(() -> new RuntimeException("User not found"));
+                                .orElseThrow(() -> new CustomerApiException("User not found"));
 
                 Observation observation = new Observation();
                 observation.setProject(project);
@@ -57,7 +58,7 @@ public class ObservationService {
 
                 if (request.reportedByRoleId() != null) {
                         StaffRole role = staffRoleRepository.findById(request.reportedByRoleId())
-                                        .orElseThrow(() -> new RuntimeException("Staff role not found"));
+                                        .orElseThrow(() -> new CustomerApiException("Staff role not found"));
                         observation.setReportedByRole(role);
                 }
 
@@ -79,13 +80,13 @@ public class ObservationService {
         @Transactional
         public ObservationDto resolveObservation(Long projectId, Long observationId, ObservationResolveRequest request, Long userId) {
                 Observation observation = observationRepository.findById(observationId)
-                                .orElseThrow(() -> new RuntimeException("Observation not found"));
+                                .orElseThrow(() -> new CustomerApiException("Observation not found"));
                 if (!observation.getProject().getId().equals(projectId)) {
-                        throw new RuntimeException("Observation not found");
+                        throw new CustomerApiException("Observation not found");
                 }
 
                 CustomerUser resolvedBy = userRepository.findById(userId)
-                                .orElseThrow(() -> new RuntimeException("User not found"));
+                                .orElseThrow(() -> new CustomerApiException("User not found"));
 
                 observation.setStatus(ObservationStatus.RESOLVED);
                 observation.setResolvedDate(LocalDateTime.now());

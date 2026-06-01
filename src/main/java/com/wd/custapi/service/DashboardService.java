@@ -1,6 +1,7 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.dto.DashboardDto;
+import com.wd.custapi.exception.CustomerApiException;
 import com.wd.custapi.model.CustomerUser;
 import com.wd.custapi.model.Project;
 import com.wd.custapi.model.ProjectDocument;
@@ -76,7 +77,7 @@ public class DashboardService {
     public DashboardDto getCustomerDashboard(String email) {
         try {
             CustomerUser user = customerUserRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Customer user not found"));
+                    .orElseThrow(() -> new CustomerApiException("Customer user not found"));
 
             boolean isAdmin = user.getRole() != null && ROLE_ADMIN.equalsIgnoreCase(user.getRole().getName());
             List<Project> userProjects = loadDashboardProjects(isAdmin, email);
@@ -106,7 +107,7 @@ public class DashboardService {
         } catch (Exception e) {
             // Log full detail internally but do NOT expose it to the caller
             logger.error("Error building dashboard for user: {}", email, e);
-            throw new RuntimeException("Error building dashboard. Please try again.", e);
+            throw new CustomerApiException("Error building dashboard. Please try again.", e);
         }
     }
 
@@ -345,13 +346,13 @@ public class DashboardService {
         try {
             projectUuid = java.util.UUID.fromString(projectUuidStr);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid project UUID format: " + projectUuidStr);
+            throw new CustomerApiException("Invalid project UUID format: " + projectUuidStr);
         }
         Project project = isAdminByEmail(email)
                 ? projectRepository.findByProjectUuid(projectUuid)
                 : projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
         if (project == null) {
-            throw new RuntimeException("Project not found or access denied");
+            throw new CustomerApiException("Project not found or access denied");
         }
         return project;
     }
@@ -362,7 +363,7 @@ public class DashboardService {
                 ? projectRepository.findById(projectId).orElse(null)
                 : projectRepository.findByIdAndCustomerEmail(projectId, email);
         if (project == null) {
-            throw new RuntimeException("Project not found or access denied");
+            throw new CustomerApiException("Project not found or access denied");
         }
         return project;
     }
@@ -397,7 +398,7 @@ public class DashboardService {
         try {
             projectUuid = java.util.UUID.fromString(projectUuidStr);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid project UUID format: " + projectUuidStr);
+            throw new CustomerApiException("Invalid project UUID format: " + projectUuidStr);
         }
 
         // Get project (admin can access any; others must be in project_members)
@@ -408,7 +409,7 @@ public class DashboardService {
             project = projectRepository.findByProjectUuidAndCustomerEmail(projectUuid, email);
         }
         if (project == null) {
-            throw new RuntimeException("Project not found or access denied");
+            throw new CustomerApiException("Project not found or access denied");
         }
 
         // Build project details
@@ -466,18 +467,18 @@ public class DashboardService {
         try {
             projectUuid = java.util.UUID.fromString(projectUuidStr);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid project UUID format: " + projectUuidStr);
+            throw new CustomerApiException("Invalid project UUID format: " + projectUuidStr);
         }
 
         // Validate design package value
         if (designPackage == null || designPackage.trim().isEmpty()) {
-            throw new RuntimeException("Design package cannot be empty");
+            throw new CustomerApiException("Design package cannot be empty");
         }
 
         String normalizedPackage = designPackage.trim().toLowerCase();
         if (!normalizedPackage.equals("custom") && !normalizedPackage.equals("premium")
                 && !normalizedPackage.equals("bespoke")) {
-            throw new RuntimeException("Invalid design package. Must be: custom, premium, or bespoke");
+            throw new CustomerApiException("Invalid design package. Must be: custom, premium, or bespoke");
         }
 
         // Get project (admin can access any; others must be in project_members)
@@ -489,7 +490,7 @@ public class DashboardService {
         }
         if (project == null) {
             logger.warn("Project not found for uuid: {} and email: {}", projectUuid, email);
-            throw new RuntimeException("Project not found or access denied");
+            throw new CustomerApiException("Project not found or access denied");
         }
 
         // Update design package

@@ -1,6 +1,7 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.dto.*;
+import com.wd.custapi.exception.CustomerApiException;
 import com.wd.custapi.model.CustomerUser;
 import com.wd.custapi.model.EmailVerificationToken;
 import com.wd.custapi.util.TokenHashUtil;
@@ -116,20 +117,20 @@ public class AuthService {
 
         // Validate refresh token signature and expiry
         if (!Boolean.TRUE.equals(jwtService.validateToken(refreshToken))) {
-            throw new RuntimeException("Invalid refresh token");
+            throw new CustomerApiException("Invalid refresh token");
         }
 
         // Get user from refresh token
         String userEmail = jwtService.extractUsername(refreshToken);
         CustomerUser user = customerUserRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomerApiException(CUSTOMER_USER_NOT_FOUND));
 
         // Check if refresh token exists and is not revoked (compare against stored hash)
         RefreshToken storedToken = refreshTokenRepository.findByToken(TokenHashUtil.hash(refreshToken))
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+                .orElseThrow(() -> new CustomerApiException("Refresh token not found"));
 
         if (storedToken.isExpired() || Boolean.TRUE.equals(storedToken.getRevoked())) {
-            throw new RuntimeException("Refresh token expired or revoked");
+            throw new CustomerApiException("Refresh token expired or revoked");
         }
 
         // TOKEN ROTATION — revoke the old token and issue a new one.
@@ -150,7 +151,7 @@ public class AuthService {
 
     public LoginResponse.UserInfo getCurrentUser(String email) {
         CustomerUser user = customerUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomerApiException(CUSTOMER_USER_NOT_FOUND));
 
         return buildUserInfo(user);
     }
@@ -162,7 +163,7 @@ public class AuthService {
     @Transactional
     public LoginResponse.UserInfo updateProfile(String email, Map<String, String> updates) {
         CustomerUser user = customerUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomerApiException(CUSTOMER_USER_NOT_FOUND));
 
         if (updates.containsKey(FIELD_FIRST_NAME) && updates.get(FIELD_FIRST_NAME) != null) {
             user.setFirstName(updates.get(FIELD_FIRST_NAME).trim());
@@ -201,7 +202,7 @@ public class AuthService {
     @Transactional
     public void changePassword(String email, String currentPassword, String newPassword) {
         CustomerUser user = customerUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new CustomerApiException("User not found"));
 
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect");
@@ -230,7 +231,7 @@ public class AuthService {
             throw new IllegalArgumentException("FCM token cannot be empty");
         }
         CustomerUser user = customerUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException(CUSTOMER_USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomerApiException(CUSTOMER_USER_NOT_FOUND));
         user.setFcmToken(fcmToken);
         customerUserRepository.save(user);
         log.info("FCM token registered for user: {}", email);
@@ -275,12 +276,12 @@ public class AuthService {
     public LoginResponse register(RegisterRequest request) {
         // Check if email already exists
         if (customerUserRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("An account with this email already exists");
+            throw new CustomerApiException("An account with this email already exists");
         }
 
         // Get default customer role
         Role customerRole = roleRepository.findByName("CUSTOMER")
-                .orElseThrow(() -> new RuntimeException("Default customer role not found"));
+                .orElseThrow(() -> new CustomerApiException("Default customer role not found"));
 
         // Create new user
         CustomerUser newUser = new CustomerUser();
@@ -389,21 +390,21 @@ public class AuthService {
                 .findByEmailAndResetCodeAndUsedFalse(
                         normalizedEmail,
                         resetTokenHash)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired reset code"));
+                .orElseThrow(() -> new CustomerApiException("Invalid or expired reset code"));
 
         // Check if token is expired
         if (token.isExpired()) {
-            throw new RuntimeException("Reset code has expired. Please request a new one.");
+            throw new CustomerApiException("Reset code has expired. Please request a new one.");
         }
 
         int consumedRows = passwordResetTokenRepository.markTokenUsedIfUnused(token.getId());
         if (consumedRows == 0) {
-            throw new RuntimeException("Reset code has already been used. Please request a new one.");
+            throw new CustomerApiException("Reset code has already been used. Please request a new one.");
         }
 
         // Find the user
         CustomerUser user = customerUserRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new CustomerApiException("User not found"));
 
         // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));

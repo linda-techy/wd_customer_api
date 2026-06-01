@@ -1,6 +1,7 @@
 package com.wd.custapi.service;
 
 import com.wd.custapi.dto.ProjectModuleDtos.*;
+import com.wd.custapi.exception.CustomerApiException;
 import com.wd.custapi.model.*;
 import com.wd.custapi.repository.*;
 import org.springframework.stereotype.Service;
@@ -32,10 +33,10 @@ public class FeedbackService {
     @Transactional
     public FeedbackFormDto createForm(Long projectId, FeedbackFormRequest request, Long userId) {
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new RuntimeException("Project not found"));
+            .orElseThrow(() -> new CustomerApiException("Project not found"));
         
         CustomerUser user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new CustomerApiException("User not found"));
         
         FeedbackForm form = new FeedbackForm();
         form.setProject(project);
@@ -51,15 +52,15 @@ public class FeedbackService {
     @Transactional
     public FeedbackResponseDto submitResponse(Long formId, FeedbackResponseRequest request, Long userId) {
         FeedbackForm form = feedbackFormRepository.findById(formId)
-            .orElseThrow(() -> new RuntimeException("Feedback form not found"));
+            .orElseThrow(() -> new CustomerApiException("Feedback form not found"));
         
         CustomerUser user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new CustomerApiException("User not found"));
         
         // Check if user already submitted
         feedbackResponseRepository.findByFormIdAndCustomerId(formId, userId)
             .ifPresent(existing -> {
-                throw new RuntimeException("You have already submitted feedback for this form");
+                throw new CustomerApiException("You have already submitted feedback for this form");
             });
         
         FeedbackResponse response = new FeedbackResponse();
