@@ -32,20 +32,40 @@ public class SupportTicketController {
         return ResponseEntity.status(status).body(Map.of(KEY_ERROR, message));
     }
 
+    /** An endpoint body that produces a success response or throws a runtime exception. */
+    @FunctionalInterface
+    private interface TicketAction {
+        ResponseEntity<Map<String, Object>> run();
+    }
+
+    /**
+     * Runs an endpoint body with the shared error contract: bad input → 400,
+     * authorization failure → 403, anything else → 500 with {@code failureMessage}.
+     * The error response bodies are identical to the previous per-endpoint handlers.
+     */
+    private ResponseEntity<Map<String, Object>> execute(String failureMessage, TicketAction action) {
+        try {
+            return action.run();
+        } catch (IllegalArgumentException e) {
+            logger.warn("{} (bad request): {}", failureMessage, e.getMessage());
+            return errorResponse(400, e.getMessage());
+        } catch (SecurityException e) {
+            logger.warn("{} (access denied): {}", failureMessage, e.getMessage());
+            return errorResponse(403, e.getMessage());
+        } catch (Exception e) {
+            logger.error(failureMessage, e);
+            return errorResponse(500, failureMessage);
+        }
+    }
+
     @PostMapping("/")
     public ResponseEntity<Map<String, Object>> createTicket(@Valid @RequestBody SupportTicketRequest request,
                                           Authentication authentication) {
-        try {
+        return execute("Failed to create support ticket", () -> {
             String email = authentication.getName();
             Map<String, Object> ticket = supportTicketService.createTicket(email, request);
             return ResponseEntity.status(201).body(ticket);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Bad request creating support ticket: {}", e.getMessage());
-            return errorResponse(400, e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error creating support ticket", e);
-            return errorResponse(500, "Failed to create support ticket");
-        }
+        });
     }
 
     @GetMapping("/")
@@ -53,7 +73,7 @@ public class SupportTicketController {
                                           @RequestParam(defaultValue = "10") int size,
                                           @RequestParam(required = false) String status,
                                           Authentication authentication) {
-        try {
+        return execute("Failed to list support tickets", () -> {
             String email = authentication.getName();
             Page<Map<String, Object>> tickets = supportTicketService.getMyTickets(email, status, page, size);
             return ResponseEntity.ok(Map.of(
@@ -63,86 +83,47 @@ public class SupportTicketController {
                     "page", tickets.getNumber(),
                     "size", tickets.getSize()
             ));
-        } catch (IllegalArgumentException e) {
-            logger.warn("Bad request listing support tickets: {}", e.getMessage());
-            return errorResponse(400, e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error listing support tickets", e);
-            return errorResponse(500, "Failed to list support tickets");
-        }
+        });
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getTicketDetail(@PathVariable Long id,
                                              Authentication authentication) {
-        try {
+        return execute("Failed to fetch ticket", () -> {
             String email = authentication.getName();
             Map<String, Object> ticket = supportTicketService.getTicketDetail(email, id);
             return ResponseEntity.ok(ticket);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Bad request fetching ticket {}: {}", id, e.getMessage());
-            return errorResponse(400, e.getMessage());
-        } catch (SecurityException e) {
-            logger.warn("Access denied for ticket {}: {}", id, e.getMessage());
-            return errorResponse(403, e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error fetching ticket {}", id, e);
-            return errorResponse(500, "Failed to fetch ticket");
-        }
+        });
     }
 
     @PostMapping("/{id}/replies")
     public ResponseEntity<Map<String, Object>> addReply(@PathVariable Long id,
                                       @Valid @RequestBody SupportTicketReplyRequest request,
                                       Authentication authentication) {
-        try {
+        return execute("Failed to add reply", () -> {
             String email = authentication.getName();
             Map<String, Object> reply = supportTicketService.addReply(email, id, request);
             return ResponseEntity.status(201).body(reply);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Bad request adding reply to ticket {}: {}", id, e.getMessage());
-            return errorResponse(400, e.getMessage());
-        } catch (SecurityException e) {
-            logger.warn("Access denied adding reply to ticket {}: {}", id, e.getMessage());
-            return errorResponse(403, e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error adding reply to ticket {}", id, e);
-            return errorResponse(500, "Failed to add reply");
-        }
+        });
     }
 
     @GetMapping("/by-project/{projectId}")
     public ResponseEntity<Map<String, Object>> getTicketsByProject(@PathVariable Long projectId,
                                                  Authentication authentication) {
-        try {
+        return execute("Failed to list tickets for project", () -> {
             String email = authentication.getName();
             List<?> tickets = supportTicketService.listByProjectForCustomer(projectId, email);
             return ResponseEntity.ok(Map.of("tickets", tickets));
-        } catch (IllegalArgumentException e) {
-            logger.warn("Bad request listing tickets for project {}: {}", projectId, e.getMessage());
-            return errorResponse(400, e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error listing tickets for project {}", projectId, e);
-            return errorResponse(500, "Failed to list tickets for project");
-        }
+        });
     }
 
     @PutMapping("/{id}/close")
     public ResponseEntity<Map<String, Object>> closeTicket(@PathVariable Long id,
                                          Authentication authentication) {
-        try {
+        return execute("Failed to close ticket", () -> {
             String email = authentication.getName();
             Map<String, Object> ticket = supportTicketService.closeTicket(email, id);
             return ResponseEntity.ok(ticket);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Bad request closing ticket {}: {}", id, e.getMessage());
-            return errorResponse(400, e.getMessage());
-        } catch (SecurityException e) {
-            logger.warn("Access denied closing ticket {}: {}", id, e.getMessage());
-            return errorResponse(403, e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error closing ticket {}", id, e);
-            return errorResponse(500, "Failed to close ticket");
-        }
+        });
     }
 }

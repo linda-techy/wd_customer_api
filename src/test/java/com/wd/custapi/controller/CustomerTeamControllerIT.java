@@ -161,7 +161,7 @@ class CustomerTeamControllerIT extends TestcontainersPostgresBase {
         // Find PM entry and assert phone/email present
         @SuppressWarnings("unchecked")
         java.util.Map<String, Object> pm = (java.util.Map<String, Object>) members.stream()
-                .filter(m -> "PROJECT_MANAGER".equals(((java.util.Map<?, ?>) m).get("role")))
+                .filter(m -> "PROJECT_MANAGER".equals(((java.util.Map<String, Object>) m).get("role")))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("PROJECT_MANAGER member not found in response"));
 
@@ -171,7 +171,7 @@ class CustomerTeamControllerIT extends TestcontainersPostgresBase {
         // Find Architect entry and assert phone/email null/absent
         @SuppressWarnings("unchecked")
         java.util.Map<String, Object> arch = (java.util.Map<String, Object>) members.stream()
-                .filter(m -> "ARCHITECT".equals(((java.util.Map<?, ?>) m).get("role")))
+                .filter(m -> "ARCHITECT".equals(((java.util.Map<String, Object>) m).get("role")))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("ARCHITECT member not found in response"));
 

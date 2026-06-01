@@ -74,7 +74,7 @@ class ContentControllerTest {
         assertTrue(body.containsKey("blogs"));
         List<?> blogs = (List<?>) body.get("blogs");
         assertEquals(1, blogs.size());
-        assertEquals(1L, ((Map<?, ?>) blogs.get(0)).get("id"));
+        assertEquals(1L, ((Map<String, Object>) blogs.get(0)).get("id"));
     }
 
     // ── GET /api/public/content/blogs/{slug} ──────────────────────────────────
