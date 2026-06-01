@@ -96,11 +96,11 @@ class CustomerTimelineServiceTest {
 
         TimelineResponseDto resp = service.getTimeline(7L, "WEEK", 0, 10);
 
-        assertEquals("week", resp.bucket);
-        assertEquals(1, resp.items.size());
-        assertEquals("Footing", resp.items.get(0).title);
-        assertEquals(1L, resp.totalElements);
-        assertEquals(1, resp.totalPages);
+        assertEquals("week", resp.getBucket());
+        assertEquals(1, resp.getItems().size());
+        assertEquals("Footing", resp.getItems().get(0).getTitle());
+        assertEquals(1L, resp.getTotalElements());
+        assertEquals(1, resp.getTotalPages());
         verify(taskRepo).findWeekBucket(7L, week.start(), week.end());
     }
 
@@ -112,9 +112,9 @@ class CustomerTimelineServiceTest {
 
         TimelineResponseDto resp = service.getTimeline(7L, "upcoming", 0, 10);
 
-        assertEquals("upcoming", resp.bucket);
-        assertTrue(resp.items.isEmpty());
-        assertEquals(0L, resp.totalElements);
+        assertEquals("upcoming", resp.getBucket());
+        assertTrue(resp.getItems().isEmpty());
+        assertEquals(0L, resp.getTotalElements());
         verify(taskRepo).findUpcomingBucket(7L, week.end());
     }
 
@@ -126,7 +126,7 @@ class CustomerTimelineServiceTest {
 
         TimelineResponseDto resp = service.getTimeline(7L, "completed", 0, 10);
 
-        assertEquals("completed", resp.bucket);
+        assertEquals("completed", resp.getBucket());
         verify(taskRepo).findCompletedBucket(7L);
     }
 
@@ -153,12 +153,12 @@ class CustomerTimelineServiceTest {
         // page 1, size 2 -> [t3]
         TimelineResponseDto resp = service.getTimeline(7L, "WEEK", 1, 2);
 
-        assertEquals(1, resp.items.size());
-        assertEquals(3L, resp.items.get(0).taskId);
-        assertEquals(3L, resp.totalElements);
-        assertEquals(2, resp.totalPages);
-        assertEquals(1, resp.page);
-        assertEquals(2, resp.size);
+        assertEquals(1, resp.getItems().size());
+        assertEquals(3L, resp.getItems().get(0).getTaskId());
+        assertEquals(3L, resp.getTotalElements());
+        assertEquals(2, resp.getTotalPages());
+        assertEquals(1, resp.getPage());
+        assertEquals(2, resp.getSize());
     }
 
     @Test
@@ -170,8 +170,8 @@ class CustomerTimelineServiceTest {
 
         TimelineResponseDto resp = service.getTimeline(7L, "WEEK", 5, 10);
 
-        assertTrue(resp.items.isEmpty());
-        assertEquals(1L, resp.totalElements);
+        assertTrue(resp.getItems().isEmpty());
+        assertEquals(1L, resp.getTotalElements());
     }
 
     // ===== getTimeline — toDto / milestone enrichment ====================
@@ -191,9 +191,9 @@ class CustomerTimelineServiceTest {
 
         TimelineResponseDto resp = service.getTimeline(7L, "WEEK", 0, 10);
 
-        assertEquals(42L, resp.items.get(0).milestoneId);
-        assertEquals("Foundation Done", resp.items.get(0).milestoneName);
-        assertEquals("AT_RISK", resp.items.get(0).statusLabel);
+        assertEquals(42L, resp.getItems().get(0).getMilestoneId());
+        assertEquals("Foundation Done", resp.getItems().get(0).getMilestoneName());
+        assertEquals("AT_RISK", resp.getItems().get(0).getStatusLabel());
     }
 
     @Test
@@ -206,8 +206,8 @@ class CustomerTimelineServiceTest {
 
         TimelineResponseDto resp = service.getTimeline(7L, "WEEK", 0, 10);
 
-        assertEquals(42L, resp.items.get(0).milestoneId);
-        assertNull(resp.items.get(0).milestoneName);
+        assertEquals(42L, resp.getItems().get(0).getMilestoneId());
+        assertNull(resp.getItems().get(0).getMilestoneName());
     }
 
     @Test
@@ -236,7 +236,7 @@ class CustomerTimelineServiceTest {
 
         TimelineResponseDto resp = service.getTimeline(7L, "WEEK", 0, 10);
 
-        assertEquals(55, resp.projectProgressPercent, "intValue() truncates 55.5 -> 55");
+        assertEquals(55, resp.getProjectProgressPercent(), "intValue() truncates 55.5 -> 55");
 
         @SuppressWarnings("unchecked")
         org.mockito.ArgumentCaptor<List<ProgressRollupService.MilestoneInput>> captor =
@@ -272,10 +272,10 @@ class CustomerTimelineServiceTest {
 
         TimelineSummaryDto s = service.getSummary(7L);
 
-        assertEquals(2, s.weekCount);
-        assertEquals(1, s.upcomingCount);
-        assertEquals(3, s.completedCount);
-        assertEquals(73, s.projectProgressPercent);
+        assertEquals(2, s.getWeekCount());
+        assertEquals(1, s.getUpcomingCount());
+        assertEquals(3, s.getCompletedCount());
+        assertEquals(73, s.getProjectProgressPercent());
     }
 
     @Test
@@ -288,9 +288,9 @@ class CustomerTimelineServiceTest {
 
         TimelineSummaryDto s = service.getSummary(7L);
 
-        assertEquals(0, s.weekCount);
-        assertEquals(0, s.upcomingCount);
-        assertEquals(0, s.completedCount);
-        assertEquals(0, s.projectProgressPercent);
+        assertEquals(0, s.getWeekCount());
+        assertEquals(0, s.getUpcomingCount());
+        assertEquals(0, s.getCompletedCount());
+        assertEquals(0, s.getProjectProgressPercent());
     }
 }

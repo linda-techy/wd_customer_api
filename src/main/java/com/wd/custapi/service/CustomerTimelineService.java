@@ -54,13 +54,13 @@ public class CustomerTimelineService {
         List<Task> pageSlice = tasks.subList(from, to);
 
         TimelineResponseDto resp = new TimelineResponseDto();
-        resp.bucket = bucketName.toLowerCase();
-        resp.items = pageSlice.stream().map(t -> toDto(t, today)).toList();
-        resp.totalElements = (long) tasks.size();
-        resp.totalPages = (int) Math.ceil((double) tasks.size() / size);
-        resp.page = page;
-        resp.size = size;
-        resp.projectProgressPercent = computeProjectProgress(projectId);
+        resp.setBucket(bucketName.toLowerCase());
+        resp.setItems(pageSlice.stream().map(t -> toDto(t, today)).toList());
+        resp.setTotalElements((long) tasks.size());
+        resp.setTotalPages((int) Math.ceil((double) tasks.size() / size));
+        resp.setPage(page);
+        resp.setSize(size);
+        resp.setProjectProgressPercent(computeProjectProgress(projectId));
         return resp;
     }
 
@@ -70,10 +70,10 @@ public class CustomerTimelineService {
         TimelineBucketingService.WeekBounds w = bucketing.weekBounds(today);
 
         TimelineSummaryDto s = new TimelineSummaryDto();
-        s.weekCount = taskRepo.findWeekBucket(projectId, w.start(), w.end()).size();
-        s.upcomingCount = taskRepo.findUpcomingBucket(projectId, w.end()).size();
-        s.completedCount = taskRepo.findCompletedBucket(projectId).size();
-        s.projectProgressPercent = computeProjectProgress(projectId);
+        s.setWeekCount(taskRepo.findWeekBucket(projectId, w.start(), w.end()).size());
+        s.setUpcomingCount(taskRepo.findUpcomingBucket(projectId, w.end()).size());
+        s.setCompletedCount(taskRepo.findCompletedBucket(projectId).size());
+        s.setProjectProgressPercent(computeProjectProgress(projectId));
         return s;
     }
 
@@ -90,18 +90,18 @@ public class CustomerTimelineService {
 
     private TimelineItemDto toDto(Task t, LocalDate today) {
         TimelineItemDto d = new TimelineItemDto();
-        d.taskId = t.getId();
-        d.title = t.getTitle();
-        d.plannedStart = t.getStartDate();
-        d.plannedEnd = t.getEndDate();
-        d.actualEnd = t.getActualEndDate();
-        d.progressPercent = t.getProgressPercent();
-        d.status = t.getStatus();
-        d.statusLabel = labelDeriver.derive(t.getStartDate(), t.getEndDate(), today,
-                t.getProgressPercent() != null ? t.getProgressPercent() : 0).name();
+        d.setTaskId(t.getId());
+        d.setTitle(t.getTitle());
+        d.setPlannedStart(t.getStartDate());
+        d.setPlannedEnd(t.getEndDate());
+        d.setActualEnd(t.getActualEndDate());
+        d.setProgressPercent(t.getProgressPercent());
+        d.setStatus(t.getStatus());
+        d.setStatusLabel(labelDeriver.derive(t.getStartDate(), t.getEndDate(), today,
+                t.getProgressPercent() != null ? t.getProgressPercent() : 0).name());
         if (t.getMilestoneId() != null) {
-            d.milestoneId = t.getMilestoneId();
-            milestoneRepo.findById(t.getMilestoneId()).ifPresent(m -> d.milestoneName = m.getName());
+            d.setMilestoneId(t.getMilestoneId());
+            milestoneRepo.findById(t.getMilestoneId()).ifPresent(m -> d.setMilestoneName(m.getName()));
         }
         return d;
     }

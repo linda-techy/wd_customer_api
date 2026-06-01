@@ -43,12 +43,12 @@ public class ProjectService {
 
     private ProjectDtos.ProjectCard toCard(Project project) {
         ProjectDtos.ProjectCard card = new ProjectDtos.ProjectCard();
-        card.id = project.getId();
-        card.name = project.getName();
-        card.code = project.getCode();
-        card.location = project.getLocation();
-        card.startDate = project.getStartDate();
-        card.endDate = project.getEndDate();
+        card.setId(project.getId());
+        card.setName(project.getName());
+        card.setCode(project.getCode());
+        card.setLocation(project.getLocation());
+        card.setStartDate(project.getStartDate());
+        card.setEndDate(project.getEndDate());
         return card;
     }
 }
